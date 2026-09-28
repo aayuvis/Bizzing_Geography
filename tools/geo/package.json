@@ -1,0 +1,2 @@
+{ "name": "bizzing-geography-geo", "private": true, "type": "module",
+  "dependencies": { "mapshaper": "^0.6.0", "world-countries": "^5.0.0", "flag-icons": "^7.0.0" } }

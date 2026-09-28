@@ -1,0 +1,61 @@
+/* ================================================================
+   BIZZING GEOGRAPHY TOKENS v1
+   The family contract (Bizzing Bee ds-src):
+   · ACTION (the app's accent) = "do it". One filled action per screen.
+   · TREASURE gold = stars and rank. Never a button.
+   · MASTERED green / FIX coral = answer states. Never decoration.
+   · Everything you READ is ink on paper.
+   The accent is terracotta — the earth on an old map — because Bee is
+   violet, Finance teal, Maths cobalt, and blue here belongs to the SEA:
+   every map paints water blue and land warm, so the accent never has to
+   compete with an ocean.
+   ================================================================ */
+:root{
+  --display:"Baloo 2","Nunito",system-ui,sans-serif;
+  --ui:"Nunito",system-ui,-apple-system,sans-serif;
+  --mono:"Sono",ui-monospace,monospace;
+  --fs-meta:12px; --fs-label:13px; --fs-body:15px; --fs-lead:17px;
+  --fs-h3:20px; --fs-h2:24px; --fs-h1:30px;
+  --r-sm:6px; --r-md:10px; --r-lg:14px; --r-xl:20px; --r-pill:999px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px; --sp-6:32px;
+  --treasure:#F0B429; --treasure-tint:#FFF3D6; --treasure-deep:#8A5B00;
+  --mastered:#178A4C; --mastered-tint:#E1F4E8;
+  --fix:#C4453C;      --fix-tint:#FBE9E7;
+  --medium:#B7791F;   --medium-tint:#FBF0DC;
+  --quick:#2E7FA8;    --quick-tint:#E2EFF6;
+}
+:root{
+  --paper:#FFFDF8; --surface:#FFFFFF; --surface2:#F7F2EA;
+  --tint:#FBF6EE; --tint-deep:#F2E9DB; --line:#E6DACA; --line-soft:#F0E7DA;
+  --dot:rgb(168 80 36 / .10);
+  --ink:#2A2118; --muted:#6E6153;
+  --action:#A94A1C; --action-ink:#FFFFFF; --action-tint:#F8E6DA; --action-deep:#833813;
+  --sea:#BFDDEB; --sea-line:#A7CFE2; --land:#EDE0C2; --land-edge:#FFFDF6; --land-hl:#E9A82A; --land-dim:#E2D8C4;
+  --sh:0 1px 2px rgb(60 30 10 / .05);
+  --sh-raised:0 2px 6px rgb(60 30 10 / .07), 0 12px 30px rgb(60 30 10 / .07);
+  --sh-overlay:0 24px 64px rgb(40 20 10 / .28);
+  --edge:inset 0 -2.5px 0 rgb(0 0 0 / .16);
+  --focus:0 0 0 3px color-mix(in srgb,var(--action) 34%,transparent);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-mode="light"]){
+    --paper:#16130F; --surface:#1F1B16; --surface2:#27221B;
+    --tint:#12100C; --tint-deep:#0E0C09; --line:#3A3228; --line-soft:#2E281F;
+    --dot:rgb(240 145 94 / .08); --ink:#F2EBE1; --muted:#B5A898;
+    --action:#F0915E; --action-ink:#241208; --action-tint:#3B2417; --action-deep:#F7B48E;
+    --treasure-tint:#33280F; --treasure-deep:#F0C25A; --mastered:#5BC98C; --mastered-tint:#0F2E20;
+    --fix:#EC8B81; --fix-tint:#351A18; --medium:#E8B45A; --medium-tint:#33260F; --quick:#6EB6D8; --quick-tint:#122B36;
+    --sea:#17313F; --sea-line:#24495C; --land:#4A4234; --land-edge:#1F1B16; --land-hl:#D9A12A; --land-dim:#3A342A;
+    --sh:0 1px 2px rgb(0 0 0 / .4); --sh-raised:0 2px 6px rgb(0 0 0 / .35), 0 12px 30px rgb(0 0 0 / .45); --sh-overlay:0 24px 64px rgb(0 0 0 / .6);
+  }
+}
+:root[data-mode="dark"]{
+  --paper:#16130F; --surface:#1F1B16; --surface2:#27221B;
+  --tint:#12100C; --tint-deep:#0E0C09; --line:#3A3228; --line-soft:#2E281F;
+  --dot:rgb(240 145 94 / .08); --ink:#F2EBE1; --muted:#B5A898;
+  --action:#F0915E; --action-ink:#241208; --action-tint:#3B2417; --action-deep:#F7B48E;
+  --treasure-tint:#33280F; --treasure-deep:#F0C25A; --mastered:#5BC98C; --mastered-tint:#0F2E20;
+  --fix:#EC8B81; --fix-tint:#351A18; --medium:#E8B45A; --medium-tint:#33260F; --quick:#6EB6D8; --quick-tint:#122B36;
+  --sea:#17313F; --sea-line:#24495C; --land:#4A4234; --land-edge:#1F1B16; --land-hl:#D9A12A; --land-dim:#3A342A;
+  --sh:0 1px 2px rgb(0 0 0 / .4); --sh-raised:0 2px 6px rgb(0 0 0 / .35), 0 12px 30px rgb(0 0 0 / .45); --sh-overlay:0 24px 64px rgb(0 0 0 / .6);
+}
