@@ -15,12 +15,12 @@
    reading the picture, and there is nothing to buy, spin or win back. */
 import { POSTCARDS, postcardById } from '../data/postcards.js';
 import { PLACES } from '../data/places.js';
-import { SV_OK } from '../data/sv-ok.js';
+import { SV_OK, SV_PANO } from '../data/sv-ok.js';
 import { worldSVG, nearCountry } from '../map.js';
 import { haversine, fmtKm, byCc, capOf, hemiNS, hemiEW } from '../geo.js';
 import { FAMOUS } from '../chapters/kit.js';
 import { seeded, shuffle, dayKey } from '../rand.js';
-import { svUrl } from '../photos.js';
+import { svUrl, GKEY } from '../photos.js';
 
 export const TOOL = { id: 'geoguess', name: 'GeoGuesser', glyph: '🌍', art: 'lib-geoguess', blurb: 'A real place somewhere on Earth. Read the land, the roads and the buildings — then tap where you think it is.' };
 
@@ -82,7 +82,7 @@ export function view(ctx) {
       <p class="lead">Look at the place — the land, the plants, the roads and the buildings — then tap the map where you think it is. The closer you are, the more points: up to 5,000 a card.</p>
       <div class="t-geo-decks">
         <div class="t-geo-deck${on ? '' : ' off'}"><h3>📷 Real photos</h3>
-          <p class="muted">Street View photos of <b>${photoPool('11-14').length.toLocaleString('en-US')} real places</b> in ${new Set(photoPool('11-14').map((p) => p.cc)).size} countries. Look around, then guess.</p>
+          <p class="muted">Street View photos of <b>${photoPool('11-14').length.toLocaleString('en-US')} real places</b>, shot by Google, in ${new Set(photoPool('11-14').map((p) => p.cc)).size} countries. Look around, then guess.</p>
           ${on ? `<button class="btn primary big" data-act="lib" data-arg="geoguess|start|photo">Play a round of ${ROUND}</button>`
             : `<p class="t-review">${ctx.photosReady ? 'A grown-up can switch real photos on in the grown-ups’ page (🔒). They come from Google Street View.' : 'Real photos are not set up in this copy of the app yet.'}</p>`}</div>
         <div class="t-geo-deck"><h3>🎨 Painted postcards</h3>
@@ -104,7 +104,7 @@ export function view(ctx) {
   if (g.guess) pins.push({ at: g.guess, cls: 'guess', r: 7 });
   if (last) pins.push({ at: c.at, cls: 'good', r: 8, label: c.short });
   const pic = g.mode === 'photo'
-    ? `<figure class="t-geo-card photo"><img data-sv="1" src="${esc(svUrl(c.at, g.heading))}" alt="A Street View photo. Where in the world is it?" width="640" height="400" referrerpolicy="origin">
+    ? `<figure class="t-geo-card photo"><img data-sv="1" src="${esc(svUrl(c.at, g.heading, GKEY, SV_PANO[c.id]))}" alt="A Street View photo. Where in the world is it?" width="640" height="400" referrerpolicy="origin">
         <figcaption><span>Card ${g.i + 1} of ${g.ids.length} · a real photo · Imagery © Google</span>
         <span class="row gap"><button class="btn small" data-act="lib" data-arg="geoguess|turn|-90" aria-label="Look left">◀</button><span class="muted small">look around</span><button class="btn small" data-act="lib" data-arg="geoguess|turn|90" aria-label="Look right">▶</button></span></figcaption></figure>`
     : `<figure class="t-geo-card"><img src="art/${c.id}.webp" alt="A painted scene. Where in the world is it?" width="1280" height="720"><figcaption>Card ${g.i + 1} of ${g.ids.length} · a painting, not a photo</figcaption></figure>`;
@@ -159,7 +159,12 @@ export function selftest(ok) {
   ok(new Set(PLACES.map((p) => p.cc)).size >= 150, 'places in at least 150 countries');
   ok(new Set(PLACES.map((p) => p.id)).size === PLACES.length, 'place ids are unique');
   ok(SV_OK.every((id) => placeById[id]), 'every verified id is a place');
-  if (SV_OK.length) ok(SV_OK.length >= 1000, `at least 1,000 places with verified imagery (${SV_OK.length})`);
+  if (SV_OK.length) {
+    ok(SV_OK.length >= 1000, `at least 1,000 places with verified Google imagery (${SV_OK.length})`);
+    ok(new Set(SV_OK.map((id) => placeById[id].cc)).size >= 100, 'verified places in at least 100 countries');
+    ok(SV_OK.every((id) => typeof SV_PANO[id] === 'string' && SV_PANO[id].length > 10), 'every verified place is pinned to a Google panorama');
+    ok(svUrl([1, 2], 0, 'K', 'PANO1').includes('pano=PANO1') && !svUrl([1, 2], 0, 'K', 'PANO1').includes('location='), 'a pinned place asks for its panorama, not the nearest');
+  }
   for (const p of PLACES) ok(byCc[p.cc] && byCc[p.cc].quiz && nearCountry(p.at, p.cc), `${p.id}: ${p.n} lies inside ${p.cc}`);
   for (const band of BANDS) {
     const ids = pickPhotos(band, seeded(band));

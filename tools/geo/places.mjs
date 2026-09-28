@@ -7,8 +7,8 @@
    puts in the wrong country is exactly what a child would notice.
 
    Spread, not density: each country gets a quota that grows with the square
-   root of how many places Natural Earth lists for it (2 to 20), biggest
-   towns first, and no two places within 25 km. So India, Brazil and the US
+   root of how many places Natural Earth lists for it (3 to 32), biggest
+   towns first, and no two places within 20 km. So India, Brazil and the US
    are well covered without drowning out Kenya or Laos.
 
    Output: app/src/data/places.js. Whether Google has Street View imagery at
@@ -37,12 +37,12 @@ const slug = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().rep
 let dropped = 0;
 for (const c of QUIZ) {
   const list = (per[c.cc] || []).slice().sort((a, b) => (b.pop_max || 0) - (a.pop_max || 0));
-  const quota = Math.max(2, Math.min(20, Math.round(Math.sqrt(list.length) * 2.2)));
+  const quota = Math.max(3, Math.min(32, Math.round(Math.sqrt(list.length) * 3.4)));
   const mine = [];
   for (const p of list) {
     if (mine.length >= quota) break;
     const at = [+p.latitude.toFixed(4), +p.longitude.toFixed(4)];
-    if (mine.some((m) => haversine(m.at, at) < 25)) continue;
+    if (mine.some((m) => haversine(m.at, at) < 20)) continue;
     if (!nearCountry(at, c.cc)) { dropped++; continue; }
     mine.push({ id: `${c.cc.toLowerCase()}-${slug(p.nameascii || p.name)}`, n: p.name, cc: c.cc, at, big: (p.pop_max || 0) >= 1e6 ? 1 : 0 });
   }

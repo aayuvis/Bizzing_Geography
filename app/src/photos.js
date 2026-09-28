@@ -11,8 +11,10 @@
 export const GKEY = (import.meta.env && import.meta.env.VITE_GMAPS_KEY) || '';
 export const photosOn = (h) => !!(GKEY && h && h.parent && h.parent.streetview);
 
-/* One view of a place: a heading (0 north, 90 east…) and a field of view. */
-export function svUrl(at, heading = 0, key = GKEY) {
-  return `https://maps.googleapis.com/maps/api/streetview?size=640x400&location=${at[0]},${at[1]}` +
+/* One view of a place: a heading (0 north, 90 east…) and a field of view.
+   With a verified panorama id (data/sv-ok.js — Google's own, never a
+   user's photosphere) the view is pinned to it; otherwise the nearest. */
+export function svUrl(at, heading = 0, key = GKEY, pano = null) {
+  return `https://maps.googleapis.com/maps/api/streetview?size=640x400&${pano ? `pano=${encodeURIComponent(pano)}` : `location=${at[0]},${at[1]}`}` +
     `&radius=5000&source=outdoor&heading=${heading}&fov=90&pitch=0&return_error_code=true&key=${encodeURIComponent(key)}`;
 }
