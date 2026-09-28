@@ -60,7 +60,7 @@ export function rankOf(xp) {
 
 /* ---------------------------------------------------------------- kids */
 
-export function newHousehold() { return { v: 1, kids: [], active: null, parent: { pin: null, tester: false } }; }
+export function newHousehold() { return { v: 2, kids: [], active: null, parent: { pin: null, tester: false, streetview: false } }; }
 
 export function newKid(name, band, avatar) {
   return {

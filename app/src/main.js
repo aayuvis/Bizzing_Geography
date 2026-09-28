@@ -13,6 +13,7 @@ import { toolById, SHELF } from './library/index.js';
 import { bindMaps, restoreMaps, zoomMap, resetMap } from './mapui.js';
 import { shapeName } from './map.js';
 import { regionsOf } from './library/states.js';
+import { GKEY, photosOn } from './photos.js';
 
 const root = document.getElementById('app');
 
@@ -34,6 +35,7 @@ function libCtx(id) {
   const data = k.lib[id] || (k.lib[id] = {});
   return {
     id, kid: k, band: k.band, ui, data, save, render, toast, sfx, confetti, say,
+    photos: photosOn(R.h), photosReady: !!GKEY,
     tick: (right, xp = 1) => { tick(k, right, xp); save(); },
     startRun: (title, items, extra = {}) => startRun('lib', title, items, { ...extra, lib: id }),
     go: (nav, arg) => go(nav, arg), openStop: (sid) => fire('openStop', sid),
@@ -221,6 +223,7 @@ on('gate', () => {
   render();
 });
 on('tester', () => { R.h.parent.tester = !R.h.parent.tester; save(); render(); });
+on('streetview', () => { if (!GKEY) return; R.h.parent.streetview = !R.h.parent.streetview; R.ui.lib = {}; save(); render(); });
 on('testerOff', () => { R.h.parent.tester = false; save(); render(); });
 on('backup', () => {
   const b = new Blob([Store.exportBlob(R.h)], { type: 'application/json' });
@@ -238,6 +241,11 @@ on('wipeYes', () => { Store.wipe(); R.h = newHousehold(); R.ui = { nav: 'welcome
 /* ------------------------------------------------------------- inputs & keys */
 
 bindRoot(root);
+/* a Street View photo with no imagery answers 404: swap in another place, uncounted */
+root.addEventListener('error', (e) => {
+  const t = e.target;
+  if (t && t.tagName === 'IMG' && t.dataset.sv && !t.dataset.gone) { t.dataset.gone = '1'; fire('lib', 'geoguess|skip'); }
+}, true);
 let inT = null;
 root.addEventListener('input', (e) => {
   const t = e.target;

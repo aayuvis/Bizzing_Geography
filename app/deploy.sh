@@ -16,6 +16,11 @@ trap 'git -C "$ROOT" worktree remove --force "$WORK" 2>/dev/null || true; rm -rf
 
 cd "$HERE"
 npm test                                # a question with two right answers never ships
+# Real photos in GeoGuesser: a Google Maps key, restricted by HTTP referrer to
+# aayuvis.github.io, lives OUTSIDE the repo at $GMAPS_KEY_FILE (default
+# /root/.gmapskey). With no key the build simply has no real-photo deck.
+KEYF="${GMAPS_KEY_FILE:-/root/.gmapskey}"
+if [ -f "$KEYF" ]; then export VITE_GMAPS_KEY="$(tr -d '[:space:]' < "$KEYF")"; echo "real photos: key found"; else echo "real photos: no key at $KEYF — building without the photo deck"; fi
 npm run build
 touch build/.nojekyll
 

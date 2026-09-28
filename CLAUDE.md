@@ -92,15 +92,31 @@ Inherited from the family, and it holds here:
 - **Tester mode opens gates; it never rewrites the child.**
 - **Never** put a real model identifier in commits, PRs, code, or any pushed artefact.
 
-## Google Maps / Street View — deliberately not used
+## Real photos — Google Street View, opt-in
 
-A Street View GeoGuesser would need the child's browser to call Google with an API key that
-ships in public JavaScript, and Google's terms forbid storing the images so they cannot be
-bundled. That breaks "nothing is transmitted". If it is ever wanted, it must be a
-grown-up-enabled, clearly labelled mode, the privacy page updated **first**, the key
-restricted by HTTP referrer to `aayuvis.github.io` — and a decision by the owner, not a
-default. Freely licensed photos (Wikimedia Commons, credited) would fit the rules better;
-this environment's network policy currently blocks Wikimedia.
+GeoGuesser has two decks: **1,765 real places in 191 countries** (`data/places.js`, generated
+by `tools/geo/places.mjs` from Natural Earth, each inside its own country on the map) shown as
+live Street View photos, and 42 painted postcards. `geoguess.js` selftest fails below 1,000
+places or 150 countries — proven by breaking it.
+
+The photos come from Google, live, into the child's browser: the one third-party request in
+the app. So, by rule:
+- They load **only** when a key is built in (`VITE_GMAPS_KEY`, from `/root/.gmapskey` via
+  `deploy.sh`, never in the repo, **restricted by HTTP referrer to `aayuvis.github.io`** and
+  to the Street View Static API) **and** a grown-up has ticked the switch on the grown-ups'
+  page (`household.parent.streetview`, store v2, off by default).
+- The privacy page and the switch say exactly what Google sees (the device's address and which
+  photo) and what it does not (anything about the child).
+- **Nothing from Google is stored** — their terms forbid caching imagery. `return_error_code`
+  makes a place with no imagery answer 404; the game swaps in a spare, uncounted.
+- `tools/geo/verify-streetview.mjs` asks Google's free metadata endpoint which places have
+  imagery and writes `data/sv-ok.js` (ids only). Run it once a key exists; the selftest then
+  requires 1,000+ verified.
+- `test/photos-ui.mjs` builds with a stand-in key and answers Google's requests locally: off
+  by default means no request; the switch turns it on; a 404 place is skipped.
+
+Wikimedia Commons photos (freely licensed, bundleable) would need no third party at run time;
+this environment's network policy blocks Wikimedia.
 
 ## Verify
 
@@ -138,8 +154,8 @@ wholesale and refuses to publish if the staged file count differs from the build
 
 1. **A second reader for Landmarks and Earth Through Time** — then set `LANDMARK_NEEDS_REVIEW`
    / `ERAS_NEED_REVIEW` false.
-2. **Real photos**, if the owner wants them: Wikimedia Commons (network policy) or an opt-in
-   Street View mode (above) — the owner's call.
+2. **Street View key**: put a referrer-restricted key at `/root/.gmapskey`, run
+   `tools/geo/verify-streetview.mjs`, commit `sv-ok.js`, deploy.
 3. **More postcards** per continent (Africa and South America are thinnest), and more states
    (Brazil, China, Germany) — each needs a capital list checked against its government.
 4. **Wire the Schedule writer** (`Bizzing_Schedule/integration/bizzing-activity.js`).

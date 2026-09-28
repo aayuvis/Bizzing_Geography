@@ -135,7 +135,8 @@ async function run(vp, tag) {
   }
   // GeoGuesser: a round, a guess, the reveal
   await page.evaluate(() => window.__bzg.go('lib', 'geoguess'));
-  await page.click('[data-arg="geoguess|start"]'); await page.waitForSelector('.t-geo-card');
+  ok(await page.locator('[data-arg="geoguess|start|photo"]').count() === 0, 'with no Maps key built in, there is no real-photo deck to start');
+  await page.click('[data-arg="geoguess|start|painted"]'); await page.waitForSelector('.t-geo-card');
   const g = await page.locator('.t-geo-map .gmap').boundingBox();
   if (phone) await page.touchscreen.tap(g.x + g.width * 0.6, g.y + g.height * 0.4); else await page.mouse.click(g.x + g.width * 0.6, g.y + g.height * 0.4);
   await page.waitForTimeout(200);

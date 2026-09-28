@@ -16,11 +16,13 @@
 
 const KEY = 'bzg_household';
 const DEV = 'bzg_device';
-export const SCHEMA = 1;
+export const SCHEMA = 2;
 
 const STEPS = {
   // v0 is "no version field at all": anything from a pre-release build
   0: (h) => { h.v = 1; h.kids = h.kids || []; h.parent = h.parent || { pin: null, tester: false }; return h; },
+  // v2: real Street View photos in GeoGuesser — off until a grown-up switches them on
+  1: (h) => { h.v = 2; h.parent.streetview = !!h.parent.streetview; return h; },
 };
 
 export function migrate(h) {
