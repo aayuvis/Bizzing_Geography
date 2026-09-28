@@ -156,6 +156,8 @@ async function run(vp, tag) {
   await page.fill('#t-states-ans', 'jaipur'); await page.press('#t-states-ans', 'Enter');
   await page.waitForTimeout(150);
   ok(await page.evaluate(() => window.__bzg.R.ui.lib.states.ask.state) === 'right', 'typing “jaipur” + Enter is right');
+  ok(await page.evaluate(() => (window.__bzg.R.h.kids[0].lib.states.box || {})['IN-RJ']) === 1, 'a right state capital climbs its box');
+  ok(/\b0\s+of 36 capitals known/.test(await page.locator('.t-cap-bar').innerText()), 'State Capitals shows a known count (one right answer is not yet known)');
   await shot('13-states-india');
   ok(await page.locator('.reg-IN path.ct').count() === 36, 'India draws 36 states and union territories');
 

@@ -8,6 +8,8 @@ import { regionSVG, regionCap } from '../map.js';
 import { mc, mapQ } from '../chapters/kit.js';
 import { shuffle, seeded, rnd } from '../rand.js';
 import { panel, handle } from './ask.js';
+/* the same Leitner record Country Capitals keeps: right on two different days = known */
+import { record, known } from './capitals.js';
 
 export const TOOL = { id: 'states', name: 'State Capitals', glyph: '🗺️', art: 'lib-states', blurb: 'The states and capitals of the United States, India, Canada and Australia — tap, learn, quiz.' };
 
@@ -36,20 +38,24 @@ export function view(ctx) {
   const sel = regs.find((s) => s.id === u.sel) || null, st = u.ask || {};
   const answered = st.state === 'right' || st.state === 'picked' || st.state === 'revealed';
   const pins = sel && answered ? [{ xy: regionCap(c, sel.id, sel.at), cls: 'red', r: 6, label: sel.cap }] : [];
+  const fill = Object.fromEntries(regs.filter((x) => known(ctx.data, x.id)).map((x) => [x.id, 'kn']));
+  if (sel) fill[sel.id] = 'hl';
+  const nk = regs.filter((x) => known(ctx.data, x.id)).length;
   return `<div class="seg" role="tablist" aria-label="Country">${COUNTRY.map((x) => `<button role="tab" aria-selected="${x.c === c}" class="${x.c === c ? 'on' : ''}" data-act="lib" data-arg="states|c|${x.c}"><img src="flags/${x.c.toLowerCase()}.svg" alt="" width="20" height="15"> ${esc(x.name)}</button>`).join('')}</div>
-    <div class="t-cap-bar"><span class="muted">${esc(C.note)}</span>
+    <p class="muted center-t">${esc(C.note)}</p>
+    <div class="t-cap-bar"><span><b class="t-cap-n">${nk}</b> <span class="muted">of ${regs.length} capitals known — right on two different days, typed or picked</span></span>
       <span class="row gap"><button class="btn primary" data-act="lib" data-arg="states|quiz">Quiz: capitals</button><button class="btn" data-act="lib" data-arg="states|find">Quiz: find it on the map</button></span></div>
     <div class="t-cap-wide">
-      ${regionSVG(c, { key: 'st-' + c, tap: true, fill: sel ? { [sel.id]: 'hl' } : {}, pins, label: `Map of ${C.name}: tap a ${C.unit}, then type its capital` })}
+      ${regionSVG(c, { key: 'st-' + c, tap: true, fill, pins, label: `Map of ${C.name}: tap a ${C.unit}, then type its capital` })}
       <div class="row gap center map-ctl"><button class="btn small" data-act="mapZoom" data-arg="st-${c}|in" aria-label="Zoom in">＋</button><button class="btn small" data-act="mapZoom" data-arg="st-${c}|out" aria-label="Zoom out">－</button><button class="btn small" data-act="mapZoom" data-arg="st-${c}|home" aria-label="Whole map">⟲</button><span class="muted small">Tap a ${esc(C.unit)} — or arrows and Enter — then type its capital.</span></div>
     </div>
     ${sel ? panel('states', askOf(sel, regs, C), st) : `<div class="card t-ask"><p class="muted">Tap a ${esc(C.unit)} on the map. You’ll be asked for its capital.</p></div>`}
-    <details class="card"><summary><b>Every ${esc(C.unit)} of ${esc(C.name)}</b></summary><ul class="t-cap-list">${regs.map((s) => `<li><button class="linkish" data-act="lib" data-arg="states|sel|${s.id}">${esc(s.name)}</button> — ${esc(s.capFull)}</li>`).join('')}</ul></details>`;
+    <details class="card"><summary><b>Every ${esc(C.unit)} of ${esc(C.name)}</b></summary><ul class="t-cap-list">${regs.map((s) => `<li class="${known(ctx.data, s.id) ? 'k' : ''}"><button class="linkish" data-act="lib" data-arg="states|sel|${s.id}">${esc(s.name)}</button> — ${esc(s.capFull)}</li>`).join('')}</ul></details>`;
 }
 
 export function capQuiz(c, r = rnd) {
   const regs = regionsOf(c).filter(fair);
-  return shuffle(regs, r).slice(0, 10).map((s) => ({ ...mc(r, `What is the capital of ${s.name}?`, s.cap, regs.filter((x) => x !== s).map((x) => x.cap).filter((n) => n !== s.cap), `The capital of ${s.name} is ${s.capFull}.`) }));
+  return shuffle(regs, r).slice(0, 10).map((s) => ({ ...mc(r, `What is the capital of ${s.name}?`, s.cap, regs.filter((x) => x !== s).map((x) => x.cap).filter((n) => n !== s.cap), `The capital of ${s.name} is ${s.capFull}.`), rid: s.id }));
 }
 export function findQuiz(c, r = rnd) {
   const regs = regionsOf(c).filter((s) => s.id !== 'US-DC' && !['IN-LD', 'IN-CH', 'IN-DL', 'IN-PY', 'IN-DH', 'AU-ACT'].includes(s.id));
@@ -65,8 +71,9 @@ export function act(name, arg, ctx) {
   else if (['check', 'four', 'pick', 'reveal'].includes(name) && ctx.ui.sel) {
     const regs = regionsOf(c), s = regs.find((x) => x.id === ctx.ui.sel), st = ctx.ui.ask || (ctx.ui.ask = {});
     const how = handle(name, arg, askOf(s, regs, C), st, name === 'check' ? ctx.ui.ans : null);
-    if (how === 'typed') { ctx.tick(true, 2); ctx.sfx.good(); }
-    else if (how === 'picked') { ctx.tick(true, 1); ctx.sfx.good(); }
+    if (how === 'typed') { record(ctx.data, s.id, true); ctx.tick(true, 2); ctx.sfx.good(); ctx.save(); }
+    else if (how === 'picked') { record(ctx.data, s.id, true); ctx.tick(true, 1); ctx.sfx.good(); ctx.save(); }
+    else if (how === 'revealed') { record(ctx.data, s.id, false); ctx.save(); }
     else if (!how && (name === 'check' || name === 'pick')) ctx.sfx.bad();
     if (how) ctx.ui.ans = '';
   }
@@ -81,6 +88,8 @@ export function key(e, ctx) {
   if (st.opts && n >= 1 && n <= st.opts.length && !(e.target && e.target.tagName === 'INPUT')) { act('pick', st.opts[n - 1], ctx); return true; }
   return false;
 }
+/* a capitals-quiz answer counts toward known, as a tap-and-type one does */
+export function answered(q, right, ctx) { if (q.rid) { record(ctx.data, q.rid, right); ctx.save(); } }
 export function done(run) {
   const right = run.results.filter((x) => x.right).length;
   return { stars: right >= 9 ? 3 : right >= 7 ? 2 : 1, lines: [] };
@@ -94,4 +103,5 @@ export function selftest(ok) {
     for (const s of regionsOf(c)) ok(regionCap(c, s.id, s.at), `${c}: ${s.name} capital has a place on the map`);
   }
   ok(byCc.IN, 'India exists');
+  ok(capQuiz('US', seeded('rid')).every((q) => regionsOf('US').some((s) => s.id === q.rid)), 'every quiz question names its state, so it can count');
 }

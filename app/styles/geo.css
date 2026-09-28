@@ -22,6 +22,7 @@
 .gmap .outline{fill:var(--land-dim);stroke:var(--land-edge);stroke-width:1.5px}
 .gmap.tap .ct:hover{fill:color-mix(in srgb,var(--land) 70%,var(--action) 30%)}
 .gmap .ct.hl{fill:var(--land-hl)} .gmap .ct.hl2{fill:color-mix(in srgb,var(--land-hl) 45%,var(--land))}
+.gmap .ct.kn{fill:color-mix(in srgb,var(--mastered) 38%,var(--land))}
 .gmap .ct.ok{fill:var(--mastered)} .gmap .ct.bad{fill:var(--fix)} .gmap .ct.pick{fill:var(--action)} .gmap .ct.dim{fill:var(--land-dim)}
 .gmap .gl{fill:none;stroke:var(--fix);stroke-width:calc(1.2px * var(--s,1));stroke-dasharray:calc(5px * var(--s,1)) calc(4px * var(--s,1))}
 .gmap .gl-equator{stroke:var(--action);stroke-dasharray:none}

@@ -378,7 +378,7 @@ export function viewGrownups() {
       return `<div class="card report"><div class="row gap">${av(k.avatar, 44)}<div><h3>${esc(k.name)}</h3><p class="muted small">Level ${k.road.level} · ${rankOf(k.xp).n}</p></div></div>
         <p>Last seven days: <b>${q}</b> questions, <b>${ok}</b> right.</p>
         <p>Stops passed (★★ or better): ${passed.length ? passed.map((s) => esc(s.title)).join(', ') : 'none yet'}.</p>
-        <p>Capitals known in the Library: ${Object.values((k.lib.capitals || {}).box || {}).filter((b) => b >= 2).length} of 195.</p></div>`;
+        <p>Capitals known in the Library: ${Object.values((k.lib.capitals || {}).box || {}).filter((b) => b >= 2).length} of 195 countries, ${Object.values((k.lib.states || {}).box || {}).filter((b) => b >= 2).length} states and provinces.</p></div>`;
     }).join('')}
     <div class="card"><h3>Settings</h3>
       <label class="tog"><input type="checkbox" data-act="tester" ${h.parent.tester ? 'checked' : ''}> Tester mode — opens every stop and level for a grown-up to look round. Changes nothing about a child.</label>
