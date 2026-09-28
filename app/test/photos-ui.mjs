@@ -1,10 +1,10 @@
 /* photos-ui.mjs — real photos in GeoGuesser, driven in Chromium.
    Builds the app WITH a stand-in Maps key into .build-key/, and answers
    Google's image requests locally (a real key never enters a test). Proves:
-     · with the key built in but the switch off, no request goes to Google;
-     · a grown-up's switch turns real photos on;
-     · a round of photos plays: look around, tap, guess, reveal;
-     · a place with no imagery (404) is swapped for another, uncounted. */
+     · real photos are on by default, and ONE round mixes photos and paintings;
+     · a photo round plays: look around, tap, guess, reveal;
+     · a place with no imagery (404) is swapped for another, uncounted;
+     · a grown-up's switch turns photos off — then nothing is asked of Google. */
 import { createRequire } from 'node:module';
 import { spawn, execSync } from 'node:child_process';
 import { mkdirSync, existsSync, symlinkSync, rmSync, readFileSync } from 'node:fs';
@@ -39,46 +39,50 @@ try {
   await page.goto(`http://127.0.0.1:${port}/Bizzing_Geography/`);
   await page.fill('#kname', 'Ahana'); await page.click('[data-act=draftBand][data-arg="11-14"]'); await page.click('[data-act=createKid]');
   await page.waitForSelector('.home');
+  ok(await page.evaluate(() => window.__bzg.R.h.parent.streetview) === true, 'real photos are on by default');
   await page.evaluate(() => window.__bzg.go('lib', 'geoguess')); await page.waitForSelector('.t-geo-intro');
-  ok(await page.locator('[data-arg="geoguess|start|photo"]').count() === 0, 'real photos are off until a grown-up switches them on');
-  await page.click('[data-arg="geoguess|start|painted"]'); await page.waitForSelector('.t-geo-card');
-  await page.waitForTimeout(300);
-  ok(google.length === 0, 'with the switch off, nothing is asked of Google');
+  await page.screenshot({ path: `${SHOTS}/photo-00-intro.png` });
+  ok(await page.locator('[data-arg="geoguess|start"]').count() === 1, 'one journey: a single Play button');
+  await page.click('[data-arg="geoguess|start"]'); await page.waitForSelector('.t-geo-card');
+  const g = await page.evaluate(() => window.__bzg.R.ui.lib.geoguess.g);
+  ok(g.cards.length === 5 && g.cards.filter((c) => c.k === 'photo').length === 3 && g.cards.filter((c) => c.k === 'painted').length === 2, 'a round mixes three photos and two paintings');
+  /* play all five; on each photo card, look around once */
+  let sawPhoto = false, turned = false;
+  for (let i = 0; i < 5; i++) {
+    await page.waitForSelector('.t-geo-card'); await page.waitForTimeout(700);
+    const k = await page.evaluate(() => { const g = window.__bzg.R.ui.lib.geoguess.g; return g.cards[g.i].k; });
+    if (k === 'photo') {
+      ok(await page.evaluate(() => { const i = document.querySelector('.t-geo-card.photo img'); return i && i.complete && i.naturalWidth > 0; }), 'a photo card shows its photo');
+      ok((await page.locator('.t-geo-card figcaption').innerText()).includes('Imagery © Google'), 'Google is credited on the photo');
+      if (!turned) {
+        const h0 = await page.evaluate(() => window.__bzg.R.ui.lib.geoguess.g.heading);
+        await page.click('[data-arg="geoguess|turn|90"]'); await page.keyboard.press(']');
+        ok(await page.evaluate(() => window.__bzg.R.ui.lib.geoguess.g.heading) === (h0 + 180) % 360, '▶ and ] look around');
+        turned = true;
+      }
+      if (!sawPhoto) { await page.screenshot({ path: `${SHOTS}/photo-01-card.png` }); sawPhoto = true; }
+    } else ok((await page.locator('.t-geo-card figcaption').innerText()).includes('a painting, not a photo'), 'a painted card says it is a painting');
+    const b = await page.locator('.t-geo-map .gmap').boundingBox();
+    await page.mouse.click(b.x + b.width * 0.5, b.y + b.height * 0.4); await page.keyboard.press('g');
+    await page.waitForSelector('.t-geo-res');
+    if (i === 0) await page.screenshot({ path: `${SHOTS}/photo-02-reveal.png` });
+    await page.keyboard.press('Enter'); await page.waitForTimeout(300);
+  }
+  await page.waitForSelector('.end-card');
+  ok(google.length >= 4, 'the first photo had no imagery and others were asked for');
+  ok(await page.evaluate(() => window.__bzg.R.h.kids[0].lib.geoguess.rounds) === 1, 'a finished round is recorded');
 
+  /* a grown-up switches photos off: rounds are all paintings, nothing goes to Google */
   await page.evaluate(() => window.__bzg.go('grownups'));
   await page.fill('#pin', '1234'); await page.click('[data-act=gate]'); await page.waitForSelector('[data-act=streetview]');
-  ok(!(await page.locator('[data-act=streetview]').isDisabled()), 'with a key built in, the switch can be used');
   await page.click('[data-act=streetview]');
-  ok(await page.evaluate(() => window.__bzg.R.h.parent.streetview) === true, 'the switch turns real photos on');
-
-  await page.evaluate(() => window.__bzg.go('lib', 'geoguess')); await page.waitForSelector('[data-arg="geoguess|start|photo"]');
-  await page.screenshot({ path: `${SHOTS}/photo-00-intro.png` });
-  await page.click('[data-arg="geoguess|start|photo"]'); await page.waitForSelector('.t-geo-card.photo img');
-  await page.waitForTimeout(800);
-  const g = await page.evaluate(() => window.__bzg.R.ui.lib.geoguess.g);
-  ok(g.ids.length === 5 && g.spare.length >= 5, 'a photo round is five places with spares');
-  ok(google.length >= 2, 'the first place had no imagery and a second was asked for');
-  ok(await page.evaluate(() => { const i = document.querySelector('.t-geo-card.photo img'); return i.complete && i.naturalWidth > 0; }), 'the swapped-in photo shows');
-  const h0 = g.heading; await page.click('[data-arg="geoguess|turn|90"]');
-  ok(await page.evaluate(() => window.__bzg.R.ui.lib.geoguess.g.heading) === (h0 + 90) % 360, '▶ looks round 90°');
-  await page.keyboard.press(']');
-  ok(await page.evaluate(() => window.__bzg.R.ui.lib.geoguess.g.heading) === (h0 + 180) % 360, '] looks round by keyboard');
-  ok(google.some((u) => u.includes('heading=180')), 'looking round asks for that view');
-  const box = await page.locator('.t-geo-map .gmap').boundingBox();
-  await page.mouse.click(box.x + box.width * 0.55, box.y + box.height * 0.35);
-  await page.keyboard.press('g'); await page.waitForSelector('.t-geo-res');
-  await page.screenshot({ path: `${SHOTS}/photo-01-reveal.png` });
-  ok((await page.locator('.t-geo-res').innerText()).includes('About this place'), 'the reveal names the place and why');
-  ok((await page.locator('.t-geo-card figcaption').innerText()).includes('Imagery © Google'), 'Google is credited on the photo');
-  for (let i = 0; i < 4; i++) {
-    await page.keyboard.press('Enter'); await page.waitForTimeout(400);
-    const b = await page.locator('.t-geo-map .gmap').boundingBox(); if (!b) break;
-    await page.mouse.click(b.x + b.width * 0.4, b.y + b.height * 0.5); await page.keyboard.press('g'); await page.waitForSelector('.t-geo-res');
-  }
-  await page.keyboard.press('Enter'); await page.waitForSelector('.end-card');
-  ok(await page.evaluate(() => window.__bzg.R.h.kids[0].lib.geoguess.rounds) === 1, 'a finished photo round is recorded');
-  await page.screenshot({ path: `${SHOTS}/photo-02-end.png` });
+  ok(await page.evaluate(() => window.__bzg.R.h.parent.streetview) === false, 'the switch turns real photos off');
+  const before = google.length;
+  await page.evaluate(() => window.__bzg.go('lib', 'geoguess')); await page.click('[data-arg="geoguess|start"]'); await page.waitForSelector('.t-geo-card');
+  await page.waitForTimeout(500);
+  ok(await page.evaluate(() => window.__bzg.R.ui.lib.geoguess.g.cards.every((c) => c.k === 'painted')), 'with photos off, a round is all paintings');
+  ok(google.length === before, 'with photos off, nothing is asked of Google');
 } finally { await browser.close(); srv.kill(); rmSync(SITE, { recursive: true, force: true }); }
 for (const e of errors) { fails++; console.error('  ✗ ' + e); }
-console.log(`${fails ? '✗' : '✓'} photos: off by default, switched on by a grown-up, a round with a skipped place${fails ? `, ${fails} failures` : ''}`);
+console.log(`${fails ? '✗' : '✓'} photos: on by default, one mixed round, a skipped place, switched off by a grown-up${fails ? `, ${fails} failures` : ''}`);
 process.exit(fails ? 1 : 0);

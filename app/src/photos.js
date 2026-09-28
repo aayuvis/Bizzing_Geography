@@ -1,10 +1,11 @@
 /* photos.js — real Street View photos for GeoGuesser, and the rules round them.
 
-   The photos come from Google, live, into the child's browser: that is a
-   request to a third party, so it happens ONLY when both are true —
+   The photos come from Google, live, into the child's browser: the one
+   request to a third party in the app. It happens when both are true —
      · a Maps key was built in (VITE_GMAPS_KEY; restricted by HTTP referrer
        to aayuvis.github.io, so a copied key is useless elsewhere), and
-     · a grown-up has switched real photos on (household.parent.streetview).
+     · real photos are on (household.parent.streetview) — the default, by
+       the owner's decision; a grown-up can switch them off.
    Otherwise the app makes no request to anyone, as the privacy page says.
    Google's terms do not allow storing their images, so none is stored. */
 

@@ -91,7 +91,7 @@ export function shell(body) {
     <a href="https://aayuvis.github.io/bizzingindia.com/" rel="noopener">Bizzing India</a>,
     <a href="https://aayuvis.github.io/bizzingfinance/" rel="noopener">Bizzing Finance</a> and
     <a href="https://aayuvis.github.io/Bizzing-Maths/" rel="noopener">Bizzing Maths</a>
-    · No ads, no tracking, nothing leaves this device. Maps: Natural Earth (India’s depiction). <button class="linkish" data-act="nav" data-arg="privacy">Privacy</button></footer>`;
+    · No ads, no tracking, no accounts. ${GKEY && R.h.parent.streetview ? 'GeoGuesser’s real photos load from Google Street View (a grown-up can switch them off); nothing about your child is sent.' : 'Nothing leaves this device.'} Maps: Natural Earth (India’s depiction). <button class="linkish" data-act="nav" data-arg="privacy">Privacy</button></footer>`;
 }
 
 /* ------------------------------------------------------------- welcome */
@@ -382,7 +382,7 @@ export function viewGrownups() {
     }).join('')}
     <div class="card"><h3>Settings</h3>
       <label class="tog"><input type="checkbox" data-act="tester" ${h.parent.tester ? 'checked' : ''}> Tester mode — opens every stop and level for a grown-up to look round. Changes nothing about a child.</label>
-      <label class="tog${GKEY ? '' : ' off'}"><input type="checkbox" data-act="streetview" ${h.parent.streetview ? 'checked' : ''} ${GKEY ? '' : 'disabled'}> Real photos in GeoGuesser — Google Street View of real places. <b>This is the one thing in the app that contacts another company:</b> while it is on, GeoGuesser loads each photo from Google, so Google sees this device’s internet address and which photo was shown. It sends nothing about your child — no name, no age, no answers, no location. Off by default.${GKEY ? '' : ' (Not set up in this copy of the app.)'}</label>
+      <label class="tog${GKEY ? '' : ' off'}"><input type="checkbox" data-act="streetview" ${h.parent.streetview ? 'checked' : ''} ${GKEY ? '' : 'disabled'}> Real photos in GeoGuesser — Google Street View of real places. <b>This is the one thing in the app that contacts another company:</b> while it is on, GeoGuesser loads each photo from Google, so Google sees this device’s internet address and which photo was shown. It sends nothing about your child — no name, no age, no answers, no location. On by default; untick to use paintings only.${GKEY ? '' : ' (Not set up in this copy of the app.)'}</label>
       <div class="row gap wrap">${btn('Back up to a file', 'backup')}${btn('Restore from a file', 'restore')}${btn('Delete everything on this device', 'wipe', '', 'danger')}</div>
       ${R.ui.confirm === 'wipe' ? `<p class="fb bad">This deletes every child’s progress on this device. ${btn('Yes, delete everything', 'wipeYes', '', 'danger small')}</p>` : ''}
     </div>
@@ -398,7 +398,7 @@ export function viewPrivacy() {
   return `<section class="narrow prose">${pageHead('Privacy', '', back('nav', 'Back', 'home'))}
     <div class="card">
       <p><b>Nothing leaves this device.</b> Bizzing Geography has no accounts, no analytics, no ads and no third-party scripts. Maps, pictures and fonts are served from the app’s own address.</p>
-      <p><b>One exception, and only if a grown-up switches it on:</b> real photos in GeoGuesser. Then each photo is loaded from Google Street View, so Google sees this device’s internet address and which photo was requested (Google’s privacy policy applies to that). Nothing about the child is sent — no name, age, answers or location. It is off until a grown-up turns it on in the grown-ups’ page, and off again the moment they untick it.</p>
+      <p><b>One exception: real photos in GeoGuesser.</b> Each photo is loaded from Google Street View, so Google sees this device’s internet address and which photo was requested (Google’s privacy policy applies to that). Nothing about the child is sent — no name, age, answers or location. Real photos are on by default; a grown-up can switch them off in the grown-ups’ page, and then the app contacts no one.</p>
       <p>For each child it keeps a first name or nickname, an age band (never a birthday), a chosen face, and their answers — in this browser’s own storage, on this device only.</p>
       <p>It never asks where anyone lives, and GeoGuesser never uses the device’s location.</p>
       <p>A grown-up can back this up to a file, restore it, or delete it all from the grown-ups’ page.</p>
