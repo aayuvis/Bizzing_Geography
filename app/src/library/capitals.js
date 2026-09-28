@@ -41,7 +41,7 @@ export function view(ctx) {
   if (sel && answered) pins.push({ at: sel.capAt[0], cls: 'red', r: 6, label: capOf(sel) });
   const nk = list.filter((c) => known(d, c.cc)).length;
   return `<div class="seg" role="tablist" aria-label="Continent">${CONTS.map((c) => `<button role="tab" aria-selected="${c === cont}" class="${c === cont ? 'on' : ''}" data-act="lib" data-arg="capitals|cont|${c}">${esc(c)}</button>`).join('')}</div>
-    <div class="t-cap-bar"><span><b class="t-cap-n">${nk}</b> <span class="muted">of ${list.length} capitals known — right on two different days, typed yourself</span></span>
+    <div class="t-cap-bar"><span><b class="t-cap-n">${nk}</b> <span class="muted">of ${list.length} capitals known — right on two different days, typed or picked</span></span>
       <button class="btn primary" data-act="lib" data-arg="capitals|quiz">Quiz me on ${cont === 'All' ? 'the world' : esc(cont)}</button></div>
     <div class="t-cap-wide">
       ${worldSVG({ key: 'cap-' + cont, tap: true, view, pins, fill: sel ? { [sel.cc]: 'hl' } : {}, label: 'Tap a country, then type its capital' })}
@@ -74,7 +74,7 @@ export function act(name, arg, ctx) {
     const c = byCc[ctx.ui.sel], st = ctx.ui.ask || (ctx.ui.ask = {});
     const how = handle(name, arg, askOf(c, QUIZ), st, name === 'check' ? ctx.ui.ans : null);
     if (how === 'typed') { record(ctx.data, c.cc, true); ctx.tick(true, 2); ctx.sfx.good(); ctx.save(); }
-    else if (how === 'picked') { ctx.tick(true, 1); ctx.sfx.good(); }
+    else if (how === 'picked') { record(ctx.data, c.cc, true); ctx.tick(true, 1); ctx.sfx.good(); ctx.save(); }
     else if (how === 'revealed') { record(ctx.data, c.cc, false); ctx.save(); }
     else if (name === 'check' || name === 'pick') ctx.sfx.bad();
     if (how) ctx.ui.ans = '';

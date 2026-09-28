@@ -175,6 +175,14 @@ async function run(vp, tag) {
   ok((await page.locator('.t-ask').innerText()).includes('Brasília'), 'reveal shows the answer');
   ok(await page.evaluate(() => (window.__bzg.R.h.kids[0].lib.capitals.box || {}).BR) === 0, 'a revealed capital is not counted as known');
   await noSideways('capitals ask');
+  // a right pick from the four choices counts toward "known"
+  const ar = await inside(page, '.gmap path[data-cc=AR]');
+  if (phone) await page.touchscreen.tap(ar[0], ar[1]); else await page.mouse.click(ar[0], ar[1]);
+  await page.waitForSelector('#t-capitals-ans');
+  await page.click('[data-arg="capitals|four"]'); await page.waitForSelector('.t-ask-opts');
+  await page.click('.t-ask-opts .opt:has-text("Buenos Aires")'); await page.waitForTimeout(150);
+  ok(await page.evaluate(() => window.__bzg.R.ui.lib.capitals.ask.state) === 'picked', 'picking Buenos Aires is right');
+  ok(await page.evaluate(() => (window.__bzg.R.h.kids[0].lib.capitals.box || {}).AR) === 1, 'a right pick climbs the capital’s box');
 
   // grown-ups
   await page.evaluate(() => window.__bzg.go('grownups'));

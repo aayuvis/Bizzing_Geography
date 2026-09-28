@@ -2,11 +2,11 @@
    country or a state on the map. Shared by Country Capitals and State
    Capitals.
 
-   Three ways to answer, and the record says which was used (the family rule:
-   measure from evidence, never flatter):
-     · TYPE it  — right climbs the capital's box, the only way to "know" it;
-     · 4 CHOICES — a right pick is praised but moves nothing;
-     · REVEAL   — shown at once, and counted as a miss (drops one box).
+   Three ways to answer (the owner's rule: a right answer counts however it
+   was given, as it does in the Quiz; only seeing it given away does not):
+     · TYPE it   — right climbs the capital's box;
+     · 4 CHOICES — a right pick climbs it too;
+     · REVEAL    — shown at once, and counted as a miss (drops one box).
    A wrong typed answer holds, says "not quite", and lets the child try again
    or ask for help — it never shows the answer until they choose to see it.
 
@@ -39,7 +39,7 @@ export function panel(tool, q, st) {
   const opts = st.opts || [];
   return `<div class="card t-ask" aria-live="polite">
     <div class="t-ask-h">${q.flag ? `<img src="flags/${q.flag}.svg" alt="" width="54" height="40">` : ''}<div><p class="kicker">${esc(q.kicker || '')}</p><h3>What is the capital of ${esc(q.name)}?</h3></div></div>
-    ${done ? `<p class="fb ${st.state === 'revealed' ? '' : 'good'}">${st.state === 'right' ? (st.close ? `Right — it’s spelled <b>${esc(q.display)}</b>.` : `Right — <b>${esc(q.display)}</b>.`) : st.state === 'picked' ? `Right — <b>${esc(q.display)}</b>. Next time, try typing it.` : `The capital is <b>${esc(q.display)}</b>.`}</p>${q.note ? `<p class="muted small">${esc(q.note)}</p>` : ''}
+    ${done ? `<p class="fb ${st.state === 'revealed' ? '' : 'good'}">${st.state === 'right' ? (st.close ? `Right — it’s spelled <b>${esc(q.display)}</b>.` : `Right — <b>${esc(q.display)}</b>.`) : st.state === 'picked' ? `Right — <b>${esc(q.display)}</b>.` : `The capital is <b>${esc(q.display)}</b>.`}</p>${q.note ? `<p class="muted small">${esc(q.note)}</p>` : ''}
         <p class="muted small">Tap another ${esc(q.unit || 'place')} on the map to keep going.</p>`
       : `<div class="row gap t-ask-row">
           <input id="t-${tool}-ans" class="inp" data-lib-quiet="ans" value="${esc(st.typed || '')}" placeholder="Type the capital…" aria-label="Type the capital of ${esc(q.name)}" autocomplete="off" autocapitalize="words" spellcheck="false">
