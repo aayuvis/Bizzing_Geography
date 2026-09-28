@@ -255,6 +255,7 @@ root.addEventListener('input', (e) => {
     const b = root.querySelector('[data-act=createKid]'); if (b) b.disabled = !(R.ui.draft.name.trim() && R.ui.draft.band);
     return;
   }
+  if (t.dataset.libQuiet) { libCtx(R.ui.arg).ui[t.dataset.libQuiet] = t.value; return; }   // kept, never re-rendered while typing
   if (t.dataset.libInput) { const ctx = libCtx(R.ui.arg); ctx.ui[t.dataset.libInput] = t.value; clearTimeout(inT); inT = setTimeout(render, 90); }
   if (t.dataset.libRange) { const tool = toolById[t.dataset.libRange]; tool.act('range', t.value, libCtx(t.dataset.libRange)); render(); }
 });

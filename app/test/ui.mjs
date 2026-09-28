@@ -151,8 +151,30 @@ async function run(vp, tag) {
   if (phone) await page.touchscreen.tap(rj[0], rj[1]); else await page.mouse.click(rj[0], rj[1]);
   await page.waitForTimeout(200);
   ok(await page.evaluate(() => window.__bzg.R.ui.lib.states.sel) === 'IN-RJ', 'tapping Rajasthan selects it');
+  await page.waitForSelector('#t-states-ans');
+  ok(!(await page.locator('.t-ask').innerText()).includes('Jaipur'), 'the capital is not shown before the child answers');
+  await page.fill('#t-states-ans', 'jaipur'); await page.press('#t-states-ans', 'Enter');
+  await page.waitForTimeout(150);
+  ok(await page.evaluate(() => window.__bzg.R.ui.lib.states.ask.state) === 'right', 'typing “jaipur” + Enter is right');
   await shot('13-states-india');
   ok(await page.locator('.reg-IN path.ct').count() === 36, 'India draws 36 states and union territories');
+
+  // Country Capitals: tap a country → a typing box; wrong holds; 4 choices; reveal
+  await page.evaluate(() => window.__bzg.go('lib', 'capitals'));
+  await page.click('[data-arg="capitals|cont|South America"]'); await page.waitForTimeout(200);
+  const br = await inside(page, '.gmap path[data-cc=BR]');
+  if (phone) await page.touchscreen.tap(br[0], br[1]); else await page.mouse.click(br[0], br[1]);
+  await page.waitForSelector('#t-capitals-ans');
+  ok(await page.evaluate(() => window.__bzg.R.ui.lib.capitals.sel) === 'BR', 'tapping Brazil asks for its capital');
+  await page.fill('#t-capitals-ans', 'Rio'); await page.press('#t-capitals-ans', 'Enter'); await page.waitForTimeout(150);
+  ok(await page.evaluate(() => window.__bzg.R.ui.lib.capitals.ask.state) === 'wrong' && !(await page.locator('.t-ask').innerText()).includes('Brasília'), 'a wrong answer holds without giving it away');
+  await page.click('[data-arg="capitals|four"]'); await page.waitForSelector('.t-ask-opts');
+  ok(await page.locator('.t-ask-opts .opt').count() === 4, 'four choices appear');
+  await shot('15-capitals-ask');
+  await page.click('[data-arg="capitals|reveal"]'); await page.waitForTimeout(150);
+  ok((await page.locator('.t-ask').innerText()).includes('Brasília'), 'reveal shows the answer');
+  ok(await page.evaluate(() => (window.__bzg.R.h.kids[0].lib.capitals.box || {}).BR) === 0, 'a revealed capital is not counted as known');
+  await noSideways('capitals ask');
 
   // grown-ups
   await page.evaluate(() => window.__bzg.go('grownups'));

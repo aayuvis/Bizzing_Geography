@@ -208,3 +208,18 @@
 .tog.off{opacity:.6}
 .tog{display:block;margin:10px 0}
 @media (max-width:760px){.t-geo-decks{grid-template-columns:1fr}}
+
+/* the capital tools: the map takes the width, the question sits under it */
+.t-cap-bar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:4px 0 12px}
+.t-cap-n{font:800 26px var(--mono)}
+.t-cap-wide{margin-bottom:14px}
+.t-cap-wide .gmap svg{max-height:74vh}
+.t-cap-wide .gmap.reg svg{max-height:78vh;margin:0 auto}
+.t-ask{max-width:760px;margin:0 auto 16px}
+.t-ask-h{display:flex;gap:12px;align-items:center;margin-bottom:10px}
+.t-ask-h img{border-radius:5px;box-shadow:0 0 0 1px var(--line);flex:none}
+.t-ask-h h3{margin:0}
+.t-ask-row .inp{flex:1;font-size:18px;min-width:0}
+.t-ask-opts{margin:12px 0 4px}
+.t-ask-opts .opt{flex:1 1 40%}
+.t-ask-help{margin-top:10px}
