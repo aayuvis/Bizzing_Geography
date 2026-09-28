@@ -155,7 +155,8 @@ const KEEP_AU = new Set(['Western Australia', 'Northern Territory', 'South Austr
 const admin1 = path.join(NE, 'ne_10m_admin_1_states_provinces.geojson');
 const regionsTopo = path.join(TMP, 'regions.json');
 mapshaper('-i', admin1,
-  '-filter', `(iso_a2 == "US") || (iso_a2 == "CA") || (iso_a2 == "AU" && ${JSON.stringify([...KEEP_AU])}.indexOf(name) > -1)`,
+  '-filter', `(iso_a2 == "US") || (iso_a2 == "CA") || (iso_a2 == "AU" && ${JSON.stringify([...KEEP_AU])}.indexOf(name) > -1)` +
+    ` || ((iso_a2 == "BR" || iso_a2 == "MX" || iso_a2 == "DE" || iso_a2 == "NG") && iso_3166_2.indexOf('~') < 0)`,
   '-each', 'id = iso_3166_2, c = iso_a2, n = name', '-filter-fields', 'id,c,n',
   '-simplify', '6%', 'keep-shapes', 'planar',
   '-split', 'c', '-o', 'format=topojson', 'quantization=20000', 'id-field=id', regionsTopo);
@@ -174,8 +175,39 @@ const STATE_CAPS = {
   CA: { BC: 'Victoria', AB: 'Edmonton', SK: 'Regina', MB: 'Winnipeg', ON: 'Toronto', QC: 'Québec', NB: 'Fredericton', NS: 'Halifax',
     PE: 'Charlottetown', NL: "St. John's", YT: 'Whitehorse', NT: 'Yellowknife', NU: 'Iqaluit' },
   AU: { NSW: 'Sydney', VIC: 'Melbourne', QLD: 'Brisbane', WA: 'Perth', SA: 'Adelaide', TAS: 'Hobart', NT: 'Darwin', ACT: 'Canberra' },
+  BR: { AC: 'Rio Branco', AL: 'Maceió', AP: 'Macapá', AM: 'Manaus', BA: 'Salvador', CE: 'Fortaleza', DF: 'Brasília', ES: 'Vitória',
+    GO: 'Goiânia', MA: 'São Luís', MT: 'Cuiabá', MS: 'Campo Grande', MG: 'Belo Horizonte', PA: 'Belém', PB: 'João Pessoa', PR: 'Curitiba',
+    PE: 'Recife', PI: 'Teresina', RJ: 'Rio de Janeiro', RN: 'Natal', RS: 'Porto Alegre', RO: 'Porto Velho', RR: 'Boa Vista',
+    SC: 'Florianópolis', SP: 'São Paulo', SE: 'Aracaju', TO: 'Palmas' },
+  MX: { AGU: 'Aguascalientes', BCN: 'Mexicali', BCS: 'La Paz', CAM: 'Campeche', CHP: 'Tuxtla Gutiérrez', CHH: 'Chihuahua', COA: 'Saltillo',
+    COL: 'Colima', DUR: 'Durango', GUA: 'Guanajuato', GRO: 'Chilpancingo', HID: 'Pachuca', JAL: 'Guadalajara', MEX: 'Toluca',
+    MIC: 'Morelia', MOR: 'Cuernavaca', NAY: 'Tepic', NLE: 'Monterrey', OAX: 'Oaxaca', PUE: 'Puebla', QUE: 'Querétaro', ROO: 'Chetumal',
+    SLP: 'San Luis Potosí', SIN: 'Culiacán', SON: 'Hermosillo', TAB: 'Villahermosa', TAM: 'Ciudad Victoria', TLA: 'Tlaxcala',
+    VER: 'Xalapa', YUC: 'Mérida', ZAC: 'Zacatecas', DIF: 'Mexico City' },
+  DE: { BW: 'Stuttgart', BY: 'Munich', BE: 'Berlin', BB: 'Potsdam', HB: 'Bremen', HH: 'Hamburg', HE: 'Wiesbaden', MV: 'Schwerin',
+    NI: 'Hanover', NW: 'Düsseldorf', RP: 'Mainz', SL: 'Saarbrücken', SN: 'Dresden', ST: 'Magdeburg', SH: 'Kiel', TH: 'Erfurt' },
+  NG: { AB: 'Umuahia', AD: 'Yola', AK: 'Uyo', AN: 'Awka', BA: 'Bauchi', BY: 'Yenagoa', BE: 'Makurdi', BO: 'Maiduguri', CR: 'Calabar',
+    DE: 'Asaba', EB: 'Abakaliki', ED: 'Benin City', EK: 'Ado-Ekiti', EN: 'Enugu', GO: 'Gombe', IM: 'Owerri', JI: 'Dutse', KD: 'Kaduna',
+    KN: 'Kano', KT: 'Katsina', KE: 'Birnin Kebbi', KO: 'Lokoja', KW: 'Ilorin', LA: 'Ikeja', NA: 'Lafia', NI: 'Minna', OG: 'Abeokuta',
+    ON: 'Akure', OS: 'Osogbo', OY: 'Ibadan', PL: 'Jos', RI: 'Port Harcourt', SO: 'Sokoto', TA: 'Jalingo', YO: 'Damaturu', ZA: 'Gusau',
+    FC: 'Abuja' },
+};
+/* Names a child reads in English, and names that have changed since the data
+   was drawn: Mexico's Distrito Federal became Mexico City (CDMX) in 2016;
+   Nasarawa's official spelling. */
+/* Capitals Natural Earth's places do not carry, from each city's own coordinates (checked
+   to lie inside their state below, like every other capital). */
+const CAP_AT = { 'NG-LA': [6.602, 3.351], 'NG-BY': [4.927, 6.267], 'NG-DE': [6.198, 6.733], 'NG-EB': [6.325, 8.113], 'NG-OS': [7.771, 4.557] };
+const STATE_NAME = {
+  'DE-BY': 'Bavaria', 'DE-SN': 'Saxony', 'DE-NI': 'Lower Saxony', 'DE-NW': 'North Rhine-Westphalia', 'DE-RP': 'Rhineland-Palatinate',
+  'DE-HE': 'Hesse', 'DE-TH': 'Thuringia', 'DE-ST': 'Saxony-Anhalt', 'DE-MV': 'Mecklenburg-Western Pomerania',
+  'MX-DIF': 'Mexico City', 'MX-MEX': 'State of Mexico', 'NG-NA': 'Nasarawa', 'NG-FC': 'Federal Capital Territory', 'BR-DF': 'Federal District',
 };
 const rTopo = JSON.parse(fs.readFileSync(regionsTopo));
+const { feature: topoFeature } = require(path.join(ROOT, 'app/node_modules/topojson-client'));
+const { geoContains } = await import(path.join(ROOT, 'app/node_modules/d3-geo/src/index.js'));
+const rFeat = {};
+for (const obj of Object.values(rTopo.objects)) for (const f of topoFeature(rTopo, obj).features) rFeat[f.id] = f;
 const states = [];
 for (const [c, obj] of Object.entries(rTopo.objects)) {
   for (const g of obj.geometries) {
@@ -185,13 +217,17 @@ for (const [c, obj] of Object.entries(rTopo.objects)) {
     /* the capital point Natural Earth files under this state, whose name is the capital's */
     const same = (x) => [norm(x.name), norm(x.nameascii)].some((n) => n === norm(cap) || n.replace(/^st/, 'saint') === norm(cap));
     const inState = (x) => x.iso_a2 === c && (norm(x.adm1name) === norm(g.properties.n) || (code === 'DC' && /district/i.test(x.adm1name)));
+    /* or, when the data spells the state differently: a place of that name that lies inside the state's shape */
+    const f = rFeat[g.id], inShape = (x) => x.iso_a2 === c && geoContains(f, [x.longitude, x.latitude]);
     const p = places.find((x) => inState(x) && same(x) && /capital/i.test(x.featurecla)) || places.find((x) => inState(x) && same(x))
+      || places.find((x) => inShape(x) && same(x))
       || (code === 'DC' && places.find((x) => x.iso_a2 === 'US' && /Admin-0 capital/.test(x.featurecla)));
-    if (!p) { console.error(`no coordinates for ${cap}, ${g.id}`); process.exit(1); }
-    states.push({ id: g.id, c, code, name: g.properties.n, cap, capAt: [+p.latitude.toFixed(3), +p.longitude.toFixed(3)] });
+    const at = p ? [+p.latitude.toFixed(3), +p.longitude.toFixed(3)] : CAP_AT[g.id];
+    if (!at) { console.error(`no coordinates for ${cap}, ${g.id}`); process.exit(1); }
+    states.push({ id: g.id, c, code, name: STATE_NAME[g.id] || g.properties.n, cap, capAt: at });
   }
 }
-const want = { US: 51, CA: 13, AU: 8 };
+const want = { US: 51, CA: 13, AU: 8, BR: 27, MX: 32, DE: 16, NG: 37 };
 for (const [c, n] of Object.entries(want)) {
   const got = states.filter((s) => s.c === c).length;
   if (got !== n) { console.error(`${c}: expected ${n} regions, got ${got}`); process.exit(1); }

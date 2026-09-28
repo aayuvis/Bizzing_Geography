@@ -19,6 +19,10 @@ export const COUNTRY = [
   { c: 'IN', name: 'India', unit: 'state or union territory', note: '28 states and 8 union territories. The map is the Survey of India’s depiction, from Bizzing India.' },
   { c: 'CA', name: 'Canada', unit: 'province or territory', note: '10 provinces and 3 territories.' },
   { c: 'AU', name: 'Australia', unit: 'state or territory', note: '6 states and 2 mainland territories.' },
+  { c: 'BR', name: 'Brazil', unit: 'state', note: '26 states and the Federal District, home of the capital, Brasília.' },
+  { c: 'MX', name: 'Mexico', unit: 'state', note: '31 states and Mexico City, the capital.' },
+  { c: 'DE', name: 'Germany', unit: 'state', note: '16 states. Berlin, Hamburg and Bremen are city-states — each is its own capital.' },
+  { c: 'NG', name: 'Nigeria', unit: 'state', note: '36 states and the Federal Capital Territory, home of the capital, Abuja.' },
 ];
 export function regionsOf(c) {
   if (c === 'IN') return INDIA.states.map((s) => ({ id: s.id, name: s.name, cap: s.cap.replace(/ \(summer\).*/, ''), capFull: s.cap, type: s.type }));
@@ -58,7 +62,7 @@ export function capQuiz(c, r = rnd) {
   return shuffle(regs, r).slice(0, 10).map((s) => ({ ...mc(r, `What is the capital of ${s.name}?`, s.cap, regs.filter((x) => x !== s).map((x) => x.cap).filter((n) => n !== s.cap), `The capital of ${s.name} is ${s.capFull}.`), rid: s.id }));
 }
 export function findQuiz(c, r = rnd) {
-  const regs = regionsOf(c).filter((s) => s.id !== 'US-DC' && !['IN-LD', 'IN-CH', 'IN-DL', 'IN-PY', 'IN-DH', 'AU-ACT'].includes(s.id));
+  const regs = regionsOf(c).filter((s) => s.id !== 'US-DC' && !['IN-LD', 'IN-CH', 'IN-DL', 'IN-PY', 'IN-DH', 'AU-ACT', 'BR-DF', 'MX-DIF', 'DE-BE', 'DE-HB', 'DE-HH'].includes(s.id));
   return shuffle(regs, r).slice(0, 10).map((s) => ({ ...mapQ(`Tap ${s.name} on the map.`, [s.id], null, `That’s ${s.name}. Its capital is ${s.capFull}.`, s.id), region: c, targetName: s.name }));
 }
 
@@ -98,7 +102,8 @@ export function selftest(ok) {
   ok(regionsOf('US').length === 51, 'US: 50 states + DC');
   ok(regionsOf('IN').filter((s) => s.type === 'state').length === 28 && regionsOf('IN').filter((s) => s.type === 'ut').length === 8, 'India: 28 + 8');
   ok(regionsOf('CA').length === 13 && regionsOf('AU').length === 8, 'Canada 13, Australia 8');
-  for (const c of ['US', 'IN', 'CA', 'AU']) {
+  ok(regionsOf('BR').length === 27 && regionsOf('MX').length === 32 && regionsOf('DE').length === 16 && regionsOf('NG').length === 37, 'Brazil 27, Mexico 32, Germany 16, Nigeria 37');
+  for (const c of COUNTRY.map((x) => x.c)) {
     for (const q of capQuiz(c, seeded(c))) ok(q.opts.filter((o) => o === q.ans).length === 1 && !q.text.includes(q.ans), `${c}: ${q.text}`);
     for (const s of regionsOf(c)) ok(regionCap(c, s.id, s.at), `${c}: ${s.name} capital has a place on the map`);
   }

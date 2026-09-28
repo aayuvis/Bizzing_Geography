@@ -161,6 +161,18 @@ async function run(vp, tag) {
   await shot('13-states-india');
   ok(await page.locator('.reg-IN path.ct').count() === 36, 'India draws 36 states and union territories');
 
+  // the four newer countries: each draws every state, and a tap asks for its capital
+  for (const [c, n, id, cap] of [['BR', 27, 'BR-BA', 'Salvador'], ['MX', 32, 'MX-JAL', 'Guadalajara'], ['DE', 16, 'DE-BY', 'Munich'], ['NG', 37, 'NG-KN', 'Kano']]) {
+    await page.click(`[data-arg="states|c|${c}"]`); await page.waitForSelector(`.reg-${c}`);
+    ok(await page.locator(`.reg-${c} path.ct`).count() === n, `${c} draws ${n} states`);
+    const pt = await inside(page, `.reg-${c} path[data-cc="${id}"]`);
+    if (phone) await page.touchscreen.tap(pt[0], pt[1]); else await page.mouse.click(pt[0], pt[1]);
+    await page.waitForSelector('#t-states-ans');
+    await page.fill('#t-states-ans', cap); await page.press('#t-states-ans', 'Enter'); await page.waitForTimeout(120);
+    ok(await page.evaluate(() => window.__bzg.R.ui.lib.states.ask.state) === 'right', `${c}: ${cap} is right for ${id}`);
+    await shot(`16-states-${c}`); await noSideways(`states ${c}`);
+  }
+
   // Country Capitals: tap a country → a typing box; wrong holds; 4 choices; reveal
   await page.evaluate(() => window.__bzg.go('lib', 'capitals'));
   await page.click('[data-arg="capitals|cont|South America"]'); await page.waitForTimeout(200);

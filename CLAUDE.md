@@ -164,8 +164,12 @@ wholesale and refuses to publish if the staged file count differs from the build
 2. **Restrict the Street View key** (in Google Cloud: HTTP referrer `https://aayuvis.github.io/*`,
    API restriction Street View Static API) — it ships in public JavaScript. It lives at
    `/root/.gmapskey` for `deploy.sh` and the verifier; never in the repo.
-3. **More postcards** per continent (Africa and South America are thinnest), and more states
-   (Brazil, China, Germany) — each needs a capital list checked against its government.
+3. **More postcards** per continent (Africa and South America are thinnest). **State Capitals** has
+   US, India, Canada, Australia, Brazil, Mexico, Germany and Nigeria. Ready next in the data: South
+   Africa, Argentina, Malaysia, Egypt, Iran, Saudi Arabia, Chile, Peru, Poland, Austria, Switzerland.
+   Needs merging first: Italy, Spain, France. **Not** China or Pakistan (their state lines contradict
+   the India depiction) nor Nepal, Bangladesh, Kenya, Indonesia, Colombia (Natural Earth's divisions
+   are out of date). Each capital list is checked by the build: every capital inside its own state.
 4. **Wire the Schedule writer** (`Bizzing_Schedule/integration/bizzing-activity.js`).
 
 ## Branch
