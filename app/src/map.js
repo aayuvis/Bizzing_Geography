@@ -150,7 +150,8 @@ export function regionSVG(c, { fill = {}, pins = [], key = 'r', tap = false, lab
    islands are simplified, so a real coastal point can sit just offshore. */
 export function nearCountry(at, cc, kmMax = 25) {
   if (countryAt(at) === cc) return true;
-  for (let a = 0; a < 360; a += 30) for (const km of [8, 16, kmMax]) {
+  const rings = kmMax <= 25 ? [8, 16, kmMax] : Array.from({ length: Math.ceil(kmMax / 10) }, (_, i) => (i + 1) * 10);
+  for (let a = 0; a < 360; a += 30) for (const km of rings) {
     const d = km / 111, p = [at[0] + d * Math.cos((a * Math.PI) / 180), at[1] + (d * Math.sin((a * Math.PI) / 180)) / Math.cos((at[0] * Math.PI) / 180)];
     if (countryAt(p) === cc) return true;
   }

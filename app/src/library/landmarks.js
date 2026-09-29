@@ -1,14 +1,16 @@
-/* Famous Landmarks — forty places the world knows, each a painted plate, a
-   pin on the map, and a few checked sentences. Quiz: which country is it in,
-   or tap it on the map. The shelf says, on screen, that it awaits a second
+/* Famous Landmarks — 130+ places the world knows, each a painted plate, a
+   pin on the map, and a few checked sentences. Browse by continent, natural
+   or built, search, or tap a country on the map to see its landmarks. Quiz:
+   which country is it in, or tap it on the map. The shelf says, on screen, that it awaits a second
    reader — the Maths journeys' rule for anything written about the world. */
 import { LANDMARKS, landmarkById, LANDMARK_NEEDS_REVIEW } from '../data/landmarks.js';
 import { byCc, QUIZ, CONTINENTS } from '../geo.js';
-import { worldSVG, viewOfCountry, nearCountry } from '../map.js';
+import { worldSVG, viewOfCountry, nearCountry, viewFor } from '../map.js';
 import { mc, mapQ } from '../chapters/kit.js';
 import { shuffle, rnd } from '../rand.js';
 
-export const TOOL = { id: 'landmarks', name: 'Famous Landmarks', glyph: '🗿', art: 'lib-landmarks', blurb: 'The Taj Mahal, the Great Wall, Machu Picchu and more — where they are, and why they matter.' };
+export const TOOL = { id: 'landmarks', name: 'Famous Landmarks', glyph: '🗿', art: 'lib-landmarks', blurb: `${LANDMARKS.length} landmarks — the Taj Mahal, the Great Wall, Machu Picchu, the Serengeti… — where they are, and why they matter.` };
+const CONTS = ['All', ...CONTINENTS.filter((c) => c.id !== 'Antarctica').map((c) => c.id)];
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 export function view(ctx) {
@@ -27,9 +29,27 @@ export function view(ctx) {
         ${note}
       </div></div>`;
   }
-  return `${note}<div class="row gap center wrap"><button class="btn primary" data-act="lib" data-arg="landmarks|quiz">Quiz: which country?</button><button class="btn" data-act="lib" data-arg="landmarks|find">Quiz: find it on the map</button></div>
-    <div class="t-lm-grid">${LANDMARKS.map((x) => `<button class="t-lm-tile${seen[x.id] ? ' seen' : ''}" data-act="lib" data-arg="landmarks|sel|${x.id}">
-      <img src="art/lm-${x.id}.webp" alt="" loading="lazy" width="960" height="720"><span><b>${esc(x.name)}</b><i>${esc(byCc[x.cc].name)}</i></span></button>`).join('')}</div>`;
+  const q = (u.q || '').trim().toLowerCase(), cont = u.cont || 'All', kind = u.kind || '', cc = u.cc || '';
+  const list = LANDMARKS.filter((x) => (cont === 'All' || byCc[x.cc].cont === cont) && (!kind || x.kind === kind) && (!cc || x.cc === cc || x.also === cc)
+    && (!q || [x.name, x.where, byCc[x.cc].name, x.fact].some((t) => t.toLowerCase().includes(q))));
+  const pins = list.map((x) => ({ at: x.at, cls: seen[x.id] ? 'known' : 'cap', r: 4 }));
+  const view = cont === 'All' ? null : viewFor(CONTINENTS.find((c) => c.id === cont).view);
+  const nSeen = LANDMARKS.filter((x) => seen[x.id]).length;
+  return `${note}
+    <div class="t-cap-bar"><span><b class="t-cap-n">${nSeen}</b> <span class="muted">of ${LANDMARKS.length} landmarks explored</span></span>
+      <span class="row gap"><button class="btn primary" data-act="lib" data-arg="landmarks|quiz">Quiz: which country?</button><button class="btn" data-act="lib" data-arg="landmarks|find">Quiz: find it on the map</button></span></div>
+    <div class="seg" role="tablist" aria-label="Continent">${CONTS.map((c) => `<button role="tab" aria-selected="${c === cont}" class="${c === cont ? 'on' : ''}" data-act="lib" data-arg="landmarks|cont|${c}">${esc(c)}</button>`).join('')}</div>
+    <div class="row gap wrap t-ex-bar">
+      <input id="t-landmarks-q" class="inp" data-lib-input="q" value="${esc(u.q || '')}" placeholder="Search landmarks…" aria-label="Search landmarks" autocomplete="off">
+      ${[['', 'All'], ['built', '🏗️ Built by people'], ['natural', '🌿 Natural wonders']].map(([k, n]) => `<button class="chip-btn small${kind === k ? ' on' : ''}" aria-pressed="${kind === k}" data-act="lib" data-arg="landmarks|kind|${k}">${n}</button>`).join('')}
+      ${cc ? `<button class="chip-btn small on" data-act="lib" data-arg="landmarks|cc|">${esc(byCc[cc].name)} ✕</button>` : ''}
+    </div>
+    ${worldSVG({ key: 'lm-all-' + cont, tap: true, view, pins, fill: cc ? { [cc]: 'hl' } : {}, label: 'Landmarks on the map: tap a country to see its landmarks' })}
+    <p class="muted small center-t">Each dot is a landmark (green once you have opened it). Tap a country to see only its landmarks.</p>
+    <p class="muted small">${list.length} landmark${list.length === 1 ? '' : 's'}</p>
+    <div class="t-lm-grid">${list.map((x) => `<button class="t-lm-tile${seen[x.id] ? ' seen' : ''}" data-act="lib" data-arg="landmarks|sel|${x.id}">
+      <img src="art/lm-${x.id}.webp" alt="" loading="lazy" width="960" height="720"><span><b>${esc(x.name)}</b><i>${esc(byCc[x.cc].name)} · ${x.kind === 'natural' ? '🌿' : '🏗️'}</i></span></button>`).join('')}
+      ${list.length ? '' : '<p class="muted">No landmarks match — try another filter.</p>'}</div>`;
 }
 
 export function countryQuiz(r = rnd) {
@@ -45,7 +65,11 @@ export function findQuiz(r = rnd) {
   });
 }
 export function act(name, arg, ctx) {
-  if (name === 'sel') { ctx.ui.sel = arg || null; if (arg) { ctx.data.seen = ctx.data.seen || {}; ctx.data.seen[arg] = true; ctx.save(); } }
+  if (name === 'cont') { ctx.ui.cont = arg; ctx.ui.cc = ''; }
+  else if (name === 'kind') ctx.ui.kind = arg;
+  else if (name === 'cc') ctx.ui.cc = arg;
+  else if (name === 'tap') { const t = JSON.parse(arg); if (t.cc && !ctx.ui.sel) ctx.ui.cc = LANDMARKS.some((x) => x.cc === t.cc || x.also === t.cc) ? t.cc : ''; if (t.cc && !ctx.ui.cc) ctx.toast('No landmarks there yet.'); }
+  else if (name === 'sel') { ctx.ui.sel = arg || null; if (arg) { ctx.data.seen = ctx.data.seen || {}; ctx.data.seen[arg] = true; ctx.save(); } }
   else if (name === 'quiz') ctx.startRun('Landmarks: which country?', countryQuiz());
   else if (name === 'find') ctx.startRun('Landmarks: find it', findQuiz());
 }
@@ -57,4 +81,6 @@ export function selftest(ok) {
     ok(l.src && l.src.length, `${l.name} names a source`);
   }
   ok(new Set(LANDMARKS.map((l) => l.id)).size === LANDMARKS.length, 'ids are unique');
+  ok(LANDMARKS.length >= 120, `at least 120 landmarks (${LANDMARKS.length})`);
+  for (const c of ['Africa', 'Asia', 'Europe', 'North America', 'South America', 'Oceania']) ok(LANDMARKS.filter((l) => byCc[l.cc].cont === c).length >= 8, `${c} has at least 8 landmarks`);
 }

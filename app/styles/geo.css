@@ -224,3 +224,12 @@
 .t-ask-opts{margin:12px 0 4px}
 .t-ask-opts .opt{flex:1 1 40%}
 .t-ask-help{margin-top:10px}
+
+/* dictionary: word of the day, topics, examples */
+.t-dict-today{max-width:760px;margin:0 auto 14px;border-left:5px solid var(--action)}
+.t-dict-today h2{margin:2px 0 4px}
+.t-dict-topics{margin:8px 0 6px}
+.t-dict-tag{font-size:14px;opacity:.8;margin-left:4px}
+.t-dict-ex{color:var(--muted);font-style:italic}
+/* landmarks: the map of every landmark sits above the tiles */
+.tool-landmarks .gmap{margin:6px 0 4px}

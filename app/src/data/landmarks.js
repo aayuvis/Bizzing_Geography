@@ -20,7 +20,9 @@
 const UNESCO = (name) => `UNESCO World Heritage Centre — “${name}”`;
 const BRIT = (name) => `Encyclopaedia Britannica — “${name}”`;
 
-export const LANDMARKS = [
+import { MORE } from './landmarks2.js';
+
+const FIRST = [
   { id: 'taj-mahal', name: 'Taj Mahal', cc: 'IN', at: [27.175, 78.042], kind: 'built', where: 'Agra, India',
     when: 'Built about 1632–1653', fact: 'A white marble tomb the Mughal emperor Shah Jahan built in memory of his wife, Mumtaz Mahal. It sits on the bank of the Yamuna river.',
     src: [UNESCO('Taj Mahal'), BRIT('Taj Mahal')],
@@ -183,5 +185,6 @@ export const LANDMARKS = [
     paint: 'The Qutub Minar, a tall fluted red sandstone tower with balconies, among old stone ruins and green lawns, blue sky.' },
 ];
 
+export const LANDMARKS = [...FIRST, ...MORE];
 export const LANDMARK_NEEDS_REVIEW = true;
 export const landmarkById = Object.fromEntries(LANDMARKS.map((l) => [l.id, l]));

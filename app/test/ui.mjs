@@ -133,6 +133,25 @@ async function run(vp, tag) {
     ok(!(await page.locator('.tool-page').innerText()).includes('Something went wrong'), `${id} renders`);
     await shot(`11-lib-${id}`); await noSideways(`library ${id}`);
   }
+  // Landmarks: filter by continent, tap a country to see only its landmarks
+  await page.evaluate(() => window.__bzg.go('lib', 'landmarks')); await page.waitForSelector('.t-lm-grid');
+  ok(await page.locator('.t-lm-tile').count() >= 120, 'the Landmarks shelf shows at least 120 landmarks');
+  await page.click('[data-arg="landmarks|cont|Asia"]'); await page.waitForTimeout(200);
+  const inA = await inside(page, '.tool-landmarks .gmap path[data-cc=IN]');
+  if (phone) await page.touchscreen.tap(inA[0], inA[1]); else await page.mouse.click(inA[0], inA[1]);
+  await page.waitForTimeout(200);
+  const lmNames = await page.locator('.t-lm-tile i').allInnerTexts();
+  ok(lmNames.length >= 10 && lmNames.every((t) => t.startsWith('India')), `tapping India shows only India’s landmarks (${lmNames.length})`);
+  await shot('17-landmarks-india'); await noSideways('landmarks filtered');
+  // Dictionary: a topic, then a quiz
+  await page.evaluate(() => window.__bzg.go('lib', 'dictionary')); await page.waitForSelector('.t-dict');
+  ok(await page.locator('.t-dict dt').count() >= 300, 'the dictionary lists at least 300 words');
+  await page.click('[data-arg="dictionary|topic|water"]'); await page.waitForTimeout(150);
+  await shot('18-dictionary-water');
+  await page.click('[data-arg="dictionary|quiz"]'); await page.waitForSelector('.qcard');
+  ok(await page.evaluate(() => window.__bzg.R.run.items.length) === 10, 'the dictionary quiz asks ten');
+  await page.evaluate(() => { window.__bzg.R.run = null; });
+
   // GeoGuesser: a round, a guess, the reveal
   await page.evaluate(() => window.__bzg.go('lib', 'geoguess'));
   await page.click('[data-arg="geoguess|start"]'); await page.waitForSelector('.t-geo-card');
