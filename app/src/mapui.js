@@ -75,7 +75,7 @@ function tapAt(el, x, y, target) {
   let cc = target && target.dataset && target.dataset.cc ? target.dataset.cc : null;
   let lat = null, lng = null;
   if (!el.classList.contains('reg')) {
-    const ll = invert([x, y]);
+    const ll = invert([x, y], +(el.dataset.rot || 0));
     if (ll) { [lat, lng] = ll; if (!cc) cc = countryAt(ll); }
   } else if (!cc) {
     const r = svg.getBoundingClientRect(), [vx, vy, vw, vh] = vbOf(svg);

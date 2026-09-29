@@ -91,8 +91,10 @@ for k, v in LIB.items(): JOBS[k] = (v + ' ' + STYLE + ' Landscape tile compositi
 for p in data('postcards', 'POSTCARDS'): JOBS[p['id']] = (p['paint'] + ' ' + POSTCARD, '16:9')
 for l in data('landmarks', 'LANDMARKS'): JOBS['lm-' + l['id']] = (l['paint'] + ' ' + POSTCARD, '4:3')
 for e in data('eras', 'EARTH'): JOBS['era-' + e['id'][2:]] = (e['paint'] + ' ' + STYLE, '16:9')
+for c, L in data('history', 'CONTINENT_HISTORY').items():
+    for e in L: JOBS['hist-' + e['id']] = (e['paint'] + ' No people, no figures, no lettering. ' + STYLE, '16:9')
 
-GROUPS = {'postcards': 'pc-', 'landmarks': 'lm-', 'eras': 'era-', 'worlds': 'w-', 'library': 'lib-'}
+GROUPS = {'postcards': 'pc-', 'landmarks': 'lm-', 'eras': 'era-', 'history': 'hist-', 'worlds': 'w-', 'library': 'lib-'}
 
 
 def call(model, prompt, ratio):

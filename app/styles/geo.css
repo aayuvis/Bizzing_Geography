@@ -233,3 +233,17 @@
 .t-dict-ex{color:var(--muted);font-style:italic}
 /* landmarks: the map of every landmark sits above the tiles */
 .tool-landmarks .gmap{margin:6px 0 4px}
+/* Earth Through Time — continent roads: soft zones, never lines */
+.t-time-tabs{flex-wrap:wrap}
+.gmap .zones{pointer-events:none}
+.gmap .zone{opacity:.5}
+.gmap .zone.z0{fill:#d9822b} .gmap .zone.z1{fill:#2f7fb5} .gmap .zone.z2{fill:#8a5cb8} .gmap .zone.z3{fill:#2f9e6e} .gmap .zone.z4{fill:#c0504d} .gmap .zone.z5{fill:#b8a23a}
+.gmap .zone-names{pointer-events:none}
+.gmap .zone-names text{font:800 12px var(--ui);text-anchor:middle;dominant-baseline:middle;fill:var(--ink);paint-order:stroke;stroke:var(--paper);stroke-width:3.5px;stroke-linejoin:round}
+.gmap.noborders .ct{stroke:none}
+.gmap .pin.site circle{fill:var(--paper);stroke:var(--ink);stroke-width:2}
+.t-clock{background:var(--surface2);border-radius:var(--r-md,10px);padding:8px 12px}
+.t-hist h3{margin:16px 0 6px}
+.t-hist-moments{padding-left:20px;margin:0 0 8px} .t-hist-moments li{margin:4px 0}
+.t-hist-site{background:var(--action-tint);border-radius:var(--r-md,10px);padding:8px 12px;margin:6px 0}
+.t-hist-sites{margin:6px 0 4px}

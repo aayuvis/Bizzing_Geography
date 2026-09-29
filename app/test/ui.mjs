@@ -143,6 +143,27 @@ async function run(vp, tag) {
   const lmNames = await page.locator('.t-lm-tile i').allInnerTexts();
   ok(lmNames.length >= 10 && lmNames.every((t) => t.startsWith('India')), `tapping India shows only India’s landmarks (${lmNames.length})`);
   await shot('17-landmarks-india'); await noSideways('landmarks filtered');
+  // Earth Through Time: a continent road draws soft zones (no borders) until "today"; a dot is a place to visit
+  await page.evaluate(() => window.__bzg.go('lib', 'time'));
+  await page.click('[data-arg="time|t|Asia"]'); await page.waitForSelector('.tool-time .gmap .zone');
+  await page.click('[data-arg="time|i|3"]'); await page.waitForTimeout(150);
+  ok(await page.locator('.tool-time .gmap.noborders').count() === 1, 'an ancient age draws no modern borders');
+  ok(await page.locator('.tool-time .gmap .zone').count() >= 3, 'the age of empires shows its soft zones');
+  await page.locator('.tool-time .gmap').scrollIntoViewIfNeeded();
+  const site = await page.locator('.tool-time .gmap .pin.site').first().boundingBox();
+  if (phone) await page.touchscreen.tap(site.x + site.width / 2, site.y + site.height / 2); else await page.mouse.click(site.x + site.width / 2, site.y + site.height / 2);
+  await page.waitForTimeout(150);
+  ok(await page.locator('.t-hist-site').count() === 1, 'tapping a dot opens that place');
+  await shot('19-time-asia'); await noSideways('time asia');
+  await page.click('[data-arg="time|t|Oceania"]'); await page.click('[data-arg="time|i|3"]'); await page.waitForTimeout(150);
+  ok(await page.locator('.tool-time .gmap[data-rot]').count() === 1, 'Oceania’s map is centred on the Pacific');
+  await page.locator('.tool-time .gmap').scrollIntoViewIfNeeded(); await shot('20-time-oceania');
+  const last = await page.locator('.t-time-ticks button').count();
+  await page.click(`[data-arg="time|i|${last - 1}"]`); await page.waitForTimeout(150);
+  ok(await page.locator('.tool-time .gmap.noborders').count() === 0 && await page.locator('.tool-time .gmap .zone').count() === 0, 'today shows real borders and no zones');
+  await page.click('[data-arg="time|where"]'); await page.waitForSelector('.qcard');
+  ok(await page.evaluate(() => window.__bzg.R.run.items.length) === 10, 'the which-continent quiz asks ten');
+  await page.evaluate(() => { window.__bzg.R.run = null; });
   // Dictionary: a topic, then a quiz
   await page.evaluate(() => window.__bzg.go('lib', 'dictionary')); await page.waitForSelector('.t-dict');
   ok(await page.locator('.t-dict dt').count() >= 300, 'the dictionary lists at least 300 words');

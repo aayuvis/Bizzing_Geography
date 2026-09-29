@@ -38,6 +38,14 @@ Inherited from the family, and it holds here:
    rebuild from the wrong file fails, it does not ship.
 2. **Never animate or gamify a boundary.** No border draws itself, pulses, gets captured or
    moves as a reward. Highlight a country by its fill.
+   **History is soft zones, never lines** (Bizzing India's era-map rule). Earth Through
+   Time's continent roads (`data/history.js`) draw each people or empire as a blurred circle
+   (`worldSVG` `zones`) on a map with **no country lines** (`borders: false`); modern borders
+   appear only in each continent's last age, "today". Colonial and war-time ages draw no
+   empire zones at all — the dots are places to visit. Oceania's map is centred on the
+   Pacific (`rot: 170`) so Polynesia is not torn at the edges. Hard moments (`hard: true`:
+   conquest, slavery, colonial cruelty, the Holocaust) show only in the 11–14 band, and the
+   age says there is more; told plainly, never graphically.
 3. **Nothing about a real place is typed from memory.** Capitals, neighbours, areas,
    landlocked, which lines cross which countries — all come from the data
    (`tools/geo/build.mjs`) or are **measured from the map** (`globe.js crossedBy`). Where a
@@ -159,8 +167,10 @@ wholesale and refuses to publish if the staged file count differs from the build
 
 ## Where to pick up
 
-1. **A second reader for Landmarks and Earth Through Time** — then set `LANDMARK_NEEDS_REVIEW`
-   / `ERAS_NEED_REVIEW` false.
+1. **A second reader for Landmarks and Earth Through Time** (18 Earth steps, 8 map steps and
+   50 continent ages, each with sources) — then set `LANDMARK_NEEDS_REVIEW` /
+   `ERAS_NEED_REVIEW` / `HISTORY_NEEDS_REVIEW` false. The continent histories need a
+   historian's eye most: especially the colonial, slavery and war ages.
 2. **Restrict the Street View key** (in Google Cloud: HTTP referrer `https://aayuvis.github.io/*`,
    API restriction Street View Static API) — it ships in public JavaScript. It lives at
    `/root/.gmapskey` for `deploy.sh` and the verifier; never in the repo.

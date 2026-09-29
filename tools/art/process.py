@@ -72,7 +72,7 @@ total = 0
 for f in sorted(os.listdir(RAW)):
     if not f.endswith('.png') or f.startswith('av-'): continue
     n = f[:-4]; im = trim(Image.open(os.path.join(RAW, f)).convert('RGB'))
-    w = 1280 if n.startswith(('pc-', 'era-')) else 960 if n.startswith('lm-') else 640 if n.startswith('lib-') else 1920
+    w = 1280 if n.startswith(('pc-', 'era-', 'hist-')) else 960 if n.startswith('lm-') else 640 if n.startswith('lib-') else 1920
     im = im.resize((w, round(w * im.height / im.width)), Image.LANCZOS)
     p = os.path.join(OUT, n + '.webp'); im.save(p, 'WEBP', quality=78, method=6)
     total += os.path.getsize(p); print(f'{n}: {im.width}x{im.height} {os.path.getsize(p)//1024} KB')
