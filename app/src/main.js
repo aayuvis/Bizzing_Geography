@@ -14,6 +14,7 @@ import { bindMaps, restoreMaps, zoomMap, resetMap } from './mapui.js';
 import { shapeName } from './map.js';
 import { regionsOf } from './library/states.js';
 import { GKEY, photosOn } from './photos.js';
+import { THEMES, themeOf, isTheme, applyTheme, syncThemeColor } from './themes.js';
 
 const root = document.getElementById('app');
 
@@ -100,6 +101,7 @@ function render() {
   const a = document.activeElement;
   focusId = a && a.id ? a.id : null;
   const caret = a && a.selectionStart != null ? a.selectionStart : null;
+  applyTheme(themeOf(kid(R.h)));   // the active child's theme; switching child switches it
   root.innerHTML = V.shell(screen());
   restoreMaps(root);
   if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); if (caret != null && el.setSelectionRange) try { el.setSelectionRange(caret, caret); } catch (_) {} } }
@@ -205,12 +207,23 @@ on('createKid', () => {
 });
 on('switchKid', (id) => { R.h.active = id; R.ui.lib = {}; save(); go('home'); });
 on('setAv', (a) => { if (AVATARS.includes(a)) { kid(R.h).avatar = a; save(); render(); } });
+/* themes belong to the child: chosen on their page, applied at once */
+on('theme', (id) => {
+  const k = kid(R.h); if (!k || !isTheme(id)) return;
+  k.prefs = k.prefs || {}; k.prefs.theme = id; save(); render();
+  const el = document.getElementById('theme-' + id); if (el) el.focus();
+});
+on('themes', () => {
+  go('me');
+  const el = document.getElementById('themes'); if (el) el.scrollIntoView({ block: 'start' });
+  const on1 = document.querySelector('.theme-card[aria-checked="true"]'); if (on1) on1.focus({ preventScroll: true });
+});
 
 /* chrome */
 on('sound', () => { R.sound = !R.sound; setSound(R.sound); Store.saveDevice('sound', R.sound); render(); });
 on('mode', () => {
   const m = document.documentElement.getAttribute('data-mode') === 'dark' ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-mode', m); Store.saveDevice('mode', m);
+  document.documentElement.setAttribute('data-mode', m); Store.saveDevice('mode', m); syncThemeColor();
 });
 
 /* grown-ups */
@@ -280,10 +293,18 @@ addEventListener('keydown', (e) => {
   }
 });
 /* avatar grid: arrow keys move through the faces */
+/* the theme picker is a radio group: arrows move the choice and apply it */
+root.addEventListener('keydown', (e) => {
+  const t = e.target;
+  if (!(t && t.classList && t.classList.contains('theme-card') && /^Arrow(Left|Right|Up|Down)$/.test(e.key))) return;
+  e.preventDefault(); e.stopPropagation();
+  const i = THEMES.findIndex((x) => x.id === t.dataset.arg), d = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : -1;
+  fire('theme', THEMES[(i + d + THEMES.length) % THEMES.length].id);
+});
 root.addEventListener('keydown', (e) => {
   const b = e.target.closest && e.target.closest('.av-pick'); if (!b) return;
   const all = [...root.querySelectorAll('[data-avgrid] .av-pick')], i = all.indexOf(b);
-  const d = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 6, ArrowUp: -6 }[e.key];
+  const d = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 8, ArrowUp: -8 }[e.key];
   if (d == null) return;
   e.preventDefault(); const n = all[Math.max(0, Math.min(all.length - 1, i + d))]; n.focus();
 });

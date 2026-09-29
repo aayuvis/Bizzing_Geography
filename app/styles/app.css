@@ -137,7 +137,8 @@ button.card:hover{transform:translateY(-2px)}
 .av-packs{display:grid;gap:14px}
 .av-pack-h{margin:0 0 6px;font-size:var(--fs-label)}
 .av-pack-h span{color:var(--muted)}
-.av-packs .avs{grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.av-packs .avs{grid-template-columns:repeat(8,minmax(0,1fr));gap:6px}
+@media (max-width:560px){.av-packs .avs{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .av-packs .av-pick{padding:4px;min-width:0}
 .av-packs .av-pick .av{width:100%;height:auto;max-width:64px;aspect-ratio:1}
 .av-pick:focus-visible{outline:3px solid var(--action);outline-offset:2px}
@@ -813,3 +814,4 @@ div.jcard{cursor:default}
 .lvb.later{opacity:.75}
 .bpin .lvb{position:absolute;top:-12px;left:50%;transform:translateX(-50%);margin:0;box-shadow:var(--sh)}
 .mp-road{color:var(--action);font-weight:700}
+.ladder-card .ladder li b{min-width:9em;flex:none}

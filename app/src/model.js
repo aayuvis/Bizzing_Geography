@@ -18,23 +18,33 @@ export const BANDS = [
 ];
 export const bandRank = (b) => BANDS.findIndex((x) => x.id === b);
 
-/* The avatars are the family's: Bizzing Bee's painted set, as Maths and
-   Schedule use it — one collection across the house. All free, all at once:
-   no unlocking, no drops, no price. */
+/* Forty explorers in five packs of eight, painted for this app in the
+   family's sticker style (tools/art/gen.py AVATAR). Every one is a creature,
+   never a person or a deity, and every one carries a piece of geography: a
+   geographer's tool, an animal from each continent, the ocean, a landform or
+   the weather, a forest or a river. All free, all at once: no unlocking, no
+   drops, no price — the family's no-loot rule. */
 export const AVATAR_PACKS = [
-  { id: 'lab', name: 'Lab Friends', blurb: 'Borrowed from Bizzing Bee’s lab.', avatars: ['beaker', 'atom', 'robo', 'magnet', 'scopey', 'brainiac'] },
-  { id: 'stars', name: 'Star Crew', blurb: 'Borrowed from Bizzing Bee’s cosmos.', avatars: ['rocket', 'astro', 'comet', 'saturn', 'luna', 'supernova'] },
-  { id: 'animals', name: 'Wild Friends', blurb: 'Creatures from every continent.', avatars: ['panda', 'redpanda', 'pengu', 'froggy', 'capy', 'ottie', 'snowfox', 'koi', 'neko'] },
-  { id: 'patterns', name: 'Pattern Pets', blurb: 'Spirals and symmetry from nature.', avatars: ['nautilus', 'hexbee', 'tessgecko', 'flakefox', 'peacock', 'sunlion'] },
+  { id: 'kit', name: 'Explorer’s Kit', blurb: 'Built from a geographer’s tools.', avatars: ['compowl', 'globetortle', 'scrollfox', 'telescrane', 'backpackbear', 'lanternbug', 'binobat', 'pinguin'] },
+  { id: 'continents', name: 'Seven Continents', blurb: 'A friend from every continent — and the desert.', avatars: ['savannalion', 'snowleopard', 'hedgehog', 'bison', 'llama', 'kangaroo', 'emperor', 'camel'] },
+  { id: 'ocean', name: 'Ocean Crew', blurb: 'From the reef to the Arctic Ocean.', avatars: ['whale', 'seaturtle', 'dolphin', 'octopus', 'clownfish', 'seahorse', 'manta', 'walrus'] },
+  { id: 'earth', name: 'Wild Earth', blurb: 'Volcanoes, clouds, glaciers, dunes and storms.', avatars: ['volcadrake', 'cloudlamb', 'rainbowleon', 'glacieryak', 'fennec', 'mountaingoat', 'stormcat', 'coralcrab'] },
+  { id: 'forest', name: 'Forest & River', blurb: 'Rainforests, woodlands and rivers.', avatars: ['toucan', 'sloth', 'koala', 'beaver', 'jaguar', 'hippo', 'treefrog', 'riverotter'] },
 ];
 export const AVATARS = AVATAR_PACKS.flatMap((p) => p.avatars);
 export const AVATAR_NAME = {
-  beaker: 'Bubbly Beaker', atom: 'Atom', robo: 'Robo Helper', magnet: 'Magneto Max', scopey: 'Scopey', brainiac: 'Brainiac',
-  rocket: 'Rocket Rae', astro: 'Astro', comet: 'Comet', saturn: 'Saturn', luna: 'Luna', supernova: 'Supernova',
-  panda: 'Panda', redpanda: 'Red Panda', pengu: 'Penguin', froggy: 'Froggy', capy: 'Capybara', ottie: 'Otter', snowfox: 'Snow Fox', koi: 'Koi', neko: 'Neko',
-  nautilus: 'Spiral Snail', hexbee: 'Honeycomb Bee', tessgecko: 'Tiling Gecko', flakefox: 'Snowflake Fox', peacock: 'Spiral Peacock', sunlion: 'Sunflower Lion',
+  compowl: 'Compass Owl', globetortle: 'Globe Turtle', scrollfox: 'Map-scroll Fox', telescrane: 'Spyglass Crane', backpackbear: 'Backpack Bear', lanternbug: 'Lantern Firefly', binobat: 'Binocular Bat', pinguin: 'Map-pin Penguin',
+  savannalion: 'Savanna Lion (Africa)', snowleopard: 'Snow Leopard (Asia)', hedgehog: 'Hedgehog (Europe)', bison: 'Bison (North America)', llama: 'Llama (South America)', kangaroo: 'Kangaroo (Oceania)', emperor: 'Emperor Penguin (Antarctica)', camel: 'Bactrian Camel (the desert)',
+  whale: 'Blue Whale', seaturtle: 'Sea Turtle', dolphin: 'Dolphin', octopus: 'Octopus', clownfish: 'Clownfish', seahorse: 'Seahorse', manta: 'Manta Ray', walrus: 'Walrus',
+  volcadrake: 'Volcano Dragon', cloudlamb: 'Cloud Lamb', rainbowleon: 'Rainbow Chameleon', glacieryak: 'Glacier Yak', fennec: 'Dune Fennec', mountaingoat: 'Mountain Goat', stormcat: 'Storm Cat', coralcrab: 'Coral Crab',
+  toucan: 'Toucan', sloth: 'Sloth', koala: 'Koala', beaver: 'Beaver', jaguar: 'Jaguar', hippo: 'Pygmy Hippo', treefrog: 'Tree Frog', riverotter: 'River Otter',
 };
-export const avatarFile = (id) => (AVATARS.includes(id) || id === 'bizzy' ? id : AVATARS[0]);
+/* The family faces this picker offered before it had its own: a child who
+   chose one keeps it, drawn as itself — never silently swapped. */
+export const AVATAR_KEPT = ['beaker', 'atom', 'robo', 'magnet', 'scopey', 'brainiac', 'rocket', 'astro', 'comet', 'saturn', 'luna', 'supernova',
+  'panda', 'redpanda', 'pengu', 'froggy', 'capy', 'ottie', 'snowfox', 'koi', 'neko', 'nautilus', 'hexbee', 'tessgecko', 'flakefox', 'peacock', 'sunlion', 'bizzy'];
+const AVATAR_FILES = new Set([...AVATARS, ...AVATAR_KEPT]);
+export const avatarFile = (id) => (AVATAR_FILES.has(id) ? id : AVATARS[0]);
 
 /* Nine ranks, each a step in how people came to know the world. Every "why"
    is a checked fact, with its source in RANK_SRC. XP comes only from right

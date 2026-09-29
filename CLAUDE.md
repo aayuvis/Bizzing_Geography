@@ -81,6 +81,14 @@ Inherited from the family, and it holds here:
   gitignored) before `tools/art/process.py` (which also trims painted paper borders).
 - Places of worship are painted from outside, still, never as a prize. Sites a community has
   asked the world not to treat as an attraction (Uluru) are not on the shelf.
+- **Forty avatars, five packs of eight** (`model.js` `AVATAR_PACKS`: Explorer's Kit, Seven
+  Continents, Ocean Crew, Wild Earth, Forest & River), painted for this app in the family's
+  sticker style (`gen.py` `AVATAR`, `--group avatars`). Creatures only — never a person or a
+  deity (`test/avatars.mjs` holds the Bee's denylist) — and no real map on any of them (the
+  globe turtle was repainted for drawing continents). All free, none locked. Faces the picker
+  offered before (`AVATAR_KEPT`) still draw for a child who chose one.
+  `process.py --avatars` **fails on a ghost**: a ground that was not pure magenta keys the
+  creature half away; repaint anything it names (seven were, first time round).
 - The Gemini key lives at `/root/.gkey` (mode 600, `GKEY_FILE` overrides). **Never in the repo.**
 
 ### Product & code (inherited from the family, non-negotiable)
@@ -99,6 +107,13 @@ Inherited from the family, and it holds here:
   step, never edit an old one.
 - **State is a household.** A second child never inherits the first's anything.
 - **Tester mode opens gates; it never rewrites the child.**
+- **Six themes, the child's own** (`src/themes.js`, `styles/themes.css` — Bizzing Maths'
+  system): Old Atlas (default), Ocean Deep, Rainforest, Desert Dunes, Polar Aurora, Satellite.
+  A theme sets every colour token in both modes **including the map's own** (`--sea`, `--land`,
+  `--land-hl`…), three self-hosted faces, and a moving motif behind the page (shapes only, ≤ 60s
+  loops, still under reduced motion). `test/themes.mjs` holds each theme × mode to WCAG and
+  to a visible coast: land and sea ≥ 55 apart in colour and the sea the bluer — proven by
+  breaking it. Light/dark stays the device's; the theme lives on `k.prefs.theme`.
 - **Never** put a real model identifier in commits, PRs, code, or any pushed artefact.
 
 ## Real photos — Google Street View, on by default (the owner's decision)

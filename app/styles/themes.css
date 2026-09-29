@@ -1,0 +1,320 @@
+/* themes.css — the six looks a child can choose (src/themes.js lists them).
+   Bizzing Maths' theme system, with geography's own looks.
+
+   A theme belongs to the CHILD (k.prefs.theme) and is applied as data-theme on
+   <html>; light/dark stays a device setting (data-mode, always resolved by
+   main.js at boot).
+
+   Every theme sets every colour token tokens.css defines, in both modes —
+   including the MAP's own: --sea, --sea-line, --land, --land-edge, --land-hl,
+   --land-dim. Water is always a blue and land always warmer or greener than
+   the sea, in every theme: a map that swaps them teaches nothing. Plus three
+   faces: --display (headings), --ui (reading), --mono (coordinates, scores).
+   The answer-state colours (mastered/fix/medium/quick) and treasure gold are
+   the family's semantics and are NOT themed.
+
+   test/themes.mjs parses this file and holds every theme × mode to WCAG:
+   ink on tint/paper/surface/surface2 and action-ink on action ≥ 4.5:1,
+   muted on paper/surface/tint ≥ 3:1, and land against sea ≥ 1.25:1 so a
+   coast is always visible. Keep the tested tokens as #hex.
+
+   The motif is a fixed layer behind everything (<div class="motif"> in
+   index.html, outside #app so a re-render never restarts it). It draws
+   shapes only — never a letter, a digit or a real coastline — animates only
+   transform and opacity, loops in ≤ 60s, and stops under
+   prefers-reduced-motion.
+
+   Rules are written ":root[data-theme=x], [data-theme=x]" so a card on the
+   picker can carry data-theme="x" and preview that theme inside another. */
+
+/* ================================================================ 1 · Old Atlas (default) */
+:root[data-theme="atlas"],[data-theme="atlas"]{
+  --sw2:#2E7F8F;
+  --display:"Baloo 2","Nunito",system-ui,sans-serif;
+  --ui:"Nunito",system-ui,-apple-system,sans-serif;
+  --mono:"Sono",ui-monospace,monospace;
+  --tint:#FBF6EE; --tint-deep:#F2E9DB; --paper:#FFFDF8; --surface:#FFFFFF; --surface2:#F7F2EA;
+  --line:#E6DACA; --line-soft:#F0E7DA;
+  --ink:#2A2118; --muted:#6E6153;
+  --action:#A94A1C; --action-ink:#FFFFFF; --action-tint:#F8E6DA; --action-deep:#833813;
+  --sea:#BFDDEB; --sea-line:#A7CFE2; --land:#EDE0C2; --land-edge:#FFFDF6; --land-hl:#E9A82A; --land-dim:#E2D8C4;
+  --dot:rgb(168 80 36 / .10); --grid:rgb(168 80 36 / .06);
+  --ground:linear-gradient(var(--grid) 1px,transparent 1px) 0 0/90px 90px,
+    linear-gradient(90deg,var(--grid) 1px,transparent 1px) 0 0/90px 90px;
+  --motif-a:#A94A1C; --motif-b:#2E7F8F; --motif-c:#8A5B00; --motif-o:.16;
+}
+:root[data-mode="dark"][data-theme="atlas"],[data-mode="dark"] [data-theme="atlas"]{
+  --sw2:#6EC3D1;
+  --tint:#12100C; --tint-deep:#0E0C09; --paper:#16130F; --surface:#1F1B16; --surface2:#27221B;
+  --line:#3A3228; --line-soft:#2E281F;
+  --ink:#F2EBE1; --muted:#B5A898;
+  --action:#F0915E; --action-ink:#241208; --action-tint:#3B2417; --action-deep:#F7B48E;
+  --sea:#17313F; --sea-line:#24495C; --land:#554A36; --land-edge:#1F1B16; --land-hl:#D9A12A; --land-dim:#3A342A;
+  --dot:rgb(240 145 94 / .08); --grid:rgb(240 145 94 / .05);
+  --motif-a:#F0915E; --motif-b:#6EC3D1; --motif-c:#F0C25A; --motif-o:.14;
+}
+
+/* ================================================================ 2 · Ocean Deep */
+:root[data-theme="ocean"],[data-theme="ocean"]{
+  --sw2:#F2785C;
+  --display:"Space Grotesk","Lexend",system-ui,sans-serif;
+  --ui:"Lexend",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+  --tint:#E6F4F8; --tint-deep:#D4EBF2; --paper:#F6FCFD; --surface:#FFFFFF; --surface2:#EBF6F9;
+  --line:#C8E1E9; --line-soft:#DCEDF2;
+  --ink:#0C2833; --muted:#476573;
+  --action:#0A7488; --action-ink:#FFFFFF; --action-tint:#D8EFF4; --action-deep:#065566;
+  --sea:#8CCBE3; --sea-line:#6FBBD8; --land:#F3E3B5; --land-edge:#FFFFFF; --land-hl:#F28A3A; --land-dim:#E8DDBF;
+  --dot:rgb(10 116 136 / .12);
+  --ground:radial-gradient(var(--dot) 1.2px,transparent 1.4px) 0 0/28px 28px;
+  --motif-a:#0A7488; --motif-b:#38B2D4; --motif-c:#F2785C; --motif-o:.2;
+}
+:root[data-mode="dark"][data-theme="ocean"],[data-mode="dark"] [data-theme="ocean"]{
+  --sw2:#FF9C82;
+  --tint:#05131A; --tint-deep:#030D12; --paper:#081B24; --surface:#0D2430; --surface2:#122F3D;
+  --line:#1D4455; --line-soft:#173948;
+  --ink:#E2F4F8; --muted:#91B6C3;
+  --action:#4FD1E6; --action-ink:#03222A; --action-tint:#113D4A; --action-deep:#8FE3F0;
+  --sea:#0E3A52; --sea-line:#1A5270; --land:#5A553C; --land-edge:#0D2430; --land-hl:#F0A040; --land-dim:#3C3D2E;
+  --dot:rgb(79 209 230 / .08);
+  --motif-a:#4FD1E6; --motif-b:#2A8FB0; --motif-c:#FF9C82; --motif-o:.2;
+}
+
+/* ================================================================ 3 · Rainforest */
+:root[data-theme="jungle"],[data-theme="jungle"]{
+  --sw2:#E8742E;
+  --display:"Kalam","Atkinson Hyperlegible Next",cursive;
+  --ui:"Atkinson Hyperlegible Next",system-ui,sans-serif;
+  --mono:"Atkinson Hyperlegible Mono",ui-monospace,monospace;
+  --tint:#ECF5E3; --tint-deep:#DDEBCF; --paper:#F9FDF5; --surface:#FFFFFF; --surface2:#EEF6E6;
+  --line:#CFE1BE; --line-soft:#E1EDD5;
+  --ink:#15280E; --muted:#4A6140;
+  --action:#2A7430; --action-ink:#FFFFFF; --action-tint:#DDEFD8; --action-deep:#1C5520;
+  --sea:#A3D5E0; --sea-line:#86C6D3; --land:#C5E09E; --land-edge:#F9FDF5; --land-hl:#F2A93A; --land-dim:#D3E2C0;
+  --dot:rgb(42 116 48 / .10);
+  --ground:radial-gradient(ellipse 50% 40% at 0% 0%,rgb(42 116 48 / .10),transparent 70%) fixed,
+    radial-gradient(ellipse 45% 35% at 100% 100%,rgb(232 116 46 / .08),transparent 70%) fixed,
+    radial-gradient(var(--dot) 1px,transparent 1.3px) 0 0/24px 24px;
+  --motif-a:#2A7430; --motif-b:#6FAF3A; --motif-c:#E8742E; --motif-o:.2;
+}
+:root[data-mode="dark"][data-theme="jungle"],[data-mode="dark"] [data-theme="jungle"]{
+  --sw2:#FF9D5C;
+  --tint:#0A1509; --tint-deep:#070F06; --paper:#0F1F0F; --surface:#142814; --surface2:#1A321B;
+  --line:#294A2A; --line-soft:#203D21;
+  --ink:#E7F3E0; --muted:#A1BC96;
+  --action:#7FD47F; --action-ink:#0A220B; --action-tint:#1E3F1F; --action-deep:#AEE8AE;
+  --sea:#12343A; --sea-line:#1C4A52; --land:#3D5630; --land-edge:#142814; --land-hl:#E0AA2E; --land-dim:#2C3C25;
+  --dot:rgb(127 212 127 / .07);
+  --ground:radial-gradient(ellipse 50% 40% at 0% 0%,rgb(127 212 127 / .07),transparent 70%) fixed,
+    radial-gradient(var(--dot) 1px,transparent 1.3px) 0 0/24px 24px;
+  --motif-a:#5FBF5F; --motif-b:#A6D86A; --motif-c:#FF9D5C; --motif-o:.18;
+}
+
+/* ================================================================ 4 · Desert Dunes */
+:root[data-theme="desert"],[data-theme="desert"]{
+  --sw2:#E07A1F;
+  --display:"Yatra One","Mukta",system-ui,sans-serif;
+  --ui:"Mukta",system-ui,sans-serif;
+  --mono:"Red Hat Mono",ui-monospace,monospace;
+  --tint:#FBF0DC; --tint-deep:#F4E0BE; --paper:#FFFBF2; --surface:#FFFFFF; --surface2:#FAF0DD;
+  --line:#EAD3AD; --line-soft:#F2E3C8;
+  --ink:#30200E; --muted:#6F5638;
+  --action:#4B3BA8; --action-ink:#FFFFFF; --action-tint:#E8E4FA; --action-deep:#362A85;
+  --sea:#9CCCE0; --sea-line:#80BBD3; --land:#F0CF92; --land-edge:#FFFBF2; --land-hl:#D95B2B; --land-dim:#E9DABC;
+  --dot:rgb(224 122 31 / .12);
+  --ground:linear-gradient(170deg,rgb(224 122 31 / .06),transparent 40%) fixed,
+    radial-gradient(var(--dot) 1px,transparent 1.3px) 0 0/20px 20px;
+  --motif-a:#E8A13A; --motif-b:#D9742B; --motif-c:#4B3BA8; --motif-o:.2;
+}
+:root[data-mode="dark"][data-theme="desert"],[data-mode="dark"] [data-theme="desert"]{
+  --sw2:#F2A04A;
+  --tint:#171022; --tint-deep:#110B1A; --paper:#1D1529; --surface:#251B33; --surface2:#2D223D;
+  --line:#44345A; --line-soft:#382A4B;
+  --ink:#FBEBD3; --muted:#C2A98C;
+  --action:#F2A04A; --action-ink:#2A1603; --action-tint:#3E2A1E; --action-deep:#F8C78C;
+  --sea:#1C2F55; --sea-line:#28406E; --land:#6A5230; --land-edge:#251B33; --land-hl:#F07A45; --land-dim:#4A3B2A;
+  --dot:rgb(242 160 74 / .08);
+  --ground:radial-gradient(var(--dot) 1px,transparent 1.3px) 0 0/20px 20px;
+  --motif-a:#F2A04A; --motif-b:#C8612A; --motif-c:#A99BFF; --motif-o:.2;
+}
+
+/* ================================================================ 5 · Polar Aurora */
+:root[data-theme="aurora"],[data-theme="aurora"]{
+  --sw2:#1FA67A;
+  --display:"Exo 2","Archivo",system-ui,sans-serif;
+  --ui:"Archivo",system-ui,sans-serif;
+  --mono:"Azeret Mono",ui-monospace,monospace;
+  --tint:#ECF2FA; --tint-deep:#DDE7F4; --paper:#F9FBFF; --surface:#FFFFFF; --surface2:#EDF3FA;
+  --line:#CFDCEB; --line-soft:#E0E8F3;
+  --ink:#0F1F33; --muted:#4A5D74;
+  --action:#6436B5; --action-ink:#FFFFFF; --action-tint:#ECE4FA; --action-deep:#4A258C;
+  --sea:#AFCFEC; --sea-line:#93BDE3; --land:#E9EFE6; --land-edge:#FFFFFF; --land-hl:#1FA67A; --land-dim:#DCE3E2;
+  --dot:rgb(100 54 181 / .10);
+  --ground:radial-gradient(var(--dot) 1px,transparent 1.4px) 0 0/34px 34px;
+  --motif-a:#1FC98E; --motif-b:#8A5CF0; --motif-c:#3FA7F5; --motif-o:.2;
+}
+:root[data-mode="dark"][data-theme="aurora"],[data-mode="dark"] [data-theme="aurora"]{
+  --sw2:#7EF0C4;
+  --tint:#060A1A; --tint-deep:#040712; --paper:#0A1024; --surface:#0F172E; --surface2:#151F3A;
+  --line:#253159; --line-soft:#1D294B;
+  --ink:#EAF0FF; --muted:#9CA8CC;
+  --action:#7EF0C4; --action-ink:#05241A; --action-tint:#153A38; --action-deep:#B0F7DC;
+  --sea:#10254A; --sea-line:#1B3866; --land:#394A5C; --land-edge:#0F172E; --land-hl:#4FD9A6; --land-dim:#28333F;
+  --dot:rgb(234 240 255 / .10);
+  --ground:radial-gradient(var(--dot) 1px,transparent 1.4px) 0 0/34px 34px,
+    radial-gradient(var(--dot) 1px,transparent 1.6px) 13px 21px/71px 71px;
+  --motif-a:#3CF0A8; --motif-b:#9B6BFF; --motif-c:#45B6FF; --motif-o:.3;
+}
+
+/* ================================================================ 6 · Satellite */
+:root[data-theme="orbit"],[data-theme="orbit"]{
+  --sw2:#3F51D8;
+  --display:"Orbitron","Exo 2",system-ui,sans-serif;
+  --ui:"Exo 2",system-ui,sans-serif;
+  --mono:"Kode Mono",ui-monospace,monospace;
+  --tint:#EEEFFA; --tint-deep:#E0E1F3; --paper:#FAFAFF; --surface:#FFFFFF; --surface2:#F0F1FB;
+  --line:#D6D8EC; --line-soft:#E5E6F4;
+  --ink:#16162E; --muted:#555677;
+  --action:#C0341C; --action-ink:#FFFFFF; --action-tint:#FAE3DE; --action-deep:#962713;
+  --sea:#9FBDEE; --sea-line:#86AAE6; --land:#B9D7A0; --land-edge:#FAFAFF; --land-hl:#F0A430; --land-dim:#D0DCC4;
+  --dot:rgb(63 81 216 / .14);
+  --ground:radial-gradient(var(--dot) 1px,transparent 1.6px) 0 0/53px 53px,
+    radial-gradient(var(--dot) 1px,transparent 1.6px) 19px 31px/89px 89px;
+  --motif-a:#3F51D8; --motif-b:#C0341C; --motif-c:#1FA3A3; --motif-o:.2;
+}
+:root[data-mode="dark"][data-theme="orbit"],[data-mode="dark"] [data-theme="orbit"]{
+  --sw2:#8C9BFF;
+  --tint:#04050E; --tint-deep:#020309; --paper:#090B1B; --surface:#0E1125; --surface2:#141831;
+  --line:#252A4E; --line-soft:#1C2141;
+  --ink:#ECEEFF; --muted:#9DA1C8;
+  --action:#FF8A6B; --action-ink:#2A0A03; --action-tint:#3A1E26; --action-deep:#FFB8A4;
+  --sea:#0D1F4A; --sea-line:#183066; --land:#2F5A3A; --land-edge:#0E1125; --land-hl:#F0A430; --land-dim:#24392C;
+  --dot:rgb(236 238 255 / .14);
+  --ground:radial-gradient(var(--dot) 1px,transparent 1.6px) 0 0/53px 53px,
+    radial-gradient(var(--dot) 1px,transparent 1.6px) 19px 31px/89px 89px,
+    radial-gradient(var(--dot) 1.4px,transparent 2px) 41px 7px/137px 137px;
+  --motif-a:#5B6CFF; --motif-b:#FF8A6B; --motif-c:#5FE0D0; --motif-o:.3;
+}
+
+/* ================================================================ the motif layer */
+.motif{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;opacity:var(--motif-o,.2);contain:strict}
+.motif i{position:absolute;display:none;will-change:transform}
+.motif i::before,.motif i::after{content:"";position:absolute;inset:0}
+.motif i::before{background:var(--c,var(--motif-a));-webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat}
+.motif i::after{display:none}
+
+/* --- Old Atlas: a compass rose turns; a smaller one answers; a dotted route */
+:root[data-theme="atlas"] .motif i:nth-child(-n+3){display:block}
+:root[data-theme="atlas"] .motif i:nth-child(1),:root[data-theme="atlas"] .motif i:nth-child(2){
+  --m:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 2l6 42 42 6-42 6-6 42-6-42-42-6 42-6z'/><path d='M50 22l4 24 24 4-24 4-4 24-4-24-24-4 24-4z' transform='rotate(45 50 50)' opacity='.7'/><circle cx='50' cy='50' r='30' fill='none' stroke='black' stroke-width='1.5'/><circle cx='50' cy='50' r='46' fill='none' stroke='black' stroke-width='1' stroke-dasharray='2 3'/></svg>")}
+:root[data-theme="atlas"] .motif i:nth-child(1){right:-4vmin;top:10%;width:min(52vmin,460px);aspect-ratio:1;animation:bzSpin 60s linear infinite}
+:root[data-theme="atlas"] .motif i:nth-child(2){left:3%;bottom:6%;width:min(24vmin,200px);aspect-ratio:1;--c:var(--motif-b);animation:bzSpin 45s linear infinite reverse}
+:root[data-theme="atlas"] .motif i:nth-child(3){left:10%;top:18%;width:min(60vw,640px);height:min(24vw,260px);--c:var(--motif-c);animation:bzDrift 40s ease-in-out infinite alternate;
+  --m:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 120'><path d='M4 110C60 20 160 0 296 40' fill='none' stroke='black' stroke-width='3' stroke-dasharray='8 8'/><circle cx='4' cy='110' r='6'/><path d='M288 30l10 10-14 4z'/></svg>")}
+
+/* --- Ocean Deep: three waves roll; bubbles rise */
+:root[data-theme="ocean"] .motif i:nth-child(-n+7){display:block}
+:root[data-theme="ocean"] .motif i:nth-child(-n+3){left:0;width:200vw;height:16vh;
+  --m:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 40' preserveAspectRatio='none'><path d='M0 20Q25 0 50 20T100 20T150 20T200 20V40H0z'/></svg>")}
+:root[data-theme="ocean"] .motif i:nth-child(-n+3)::before{-webkit-mask-size:50% 100%;mask-size:50% 100%;-webkit-mask-repeat:repeat-x;mask-repeat:repeat-x}
+:root[data-theme="ocean"] .motif i:nth-child(1){bottom:0;animation:bzRoll 24s linear infinite}
+:root[data-theme="ocean"] .motif i:nth-child(2){bottom:5vh;--c:var(--motif-b);opacity:.7;animation:bzRoll 34s linear infinite reverse}
+:root[data-theme="ocean"] .motif i:nth-child(3){bottom:10vh;--c:var(--motif-c);opacity:.45;animation:bzRoll 46s linear infinite}
+:root[data-theme="ocean"] .motif i:nth-child(n+4){bottom:-8vh;width:clamp(14px,3vmin,30px);aspect-ratio:1;animation:bzRise 22s linear infinite;
+  --m:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><circle cx='10' cy='10' r='8.5' fill='none' stroke='black' stroke-width='2'/><circle cx='7' cy='7' r='2'/></svg>")}
+:root[data-theme="ocean"] .motif i:nth-child(4){left:12%}
+:root[data-theme="ocean"] .motif i:nth-child(5){left:38%;animation-duration:28s;animation-delay:-9s;--c:var(--motif-b)}
+:root[data-theme="ocean"] .motif i:nth-child(6){left:67%;animation-duration:19s;animation-delay:-14s}
+:root[data-theme="ocean"] .motif i:nth-child(7){left:88%;animation-duration:31s;animation-delay:-4s;--c:var(--motif-b)}
+
+/* --- Rainforest: six leaves sway */
+:root[data-theme="jungle"] .motif i:nth-child(-n+6){display:block;width:clamp(90px,18vmin,200px);aspect-ratio:1;animation:bzSway 16s ease-in-out infinite alternate;
+  --m:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 96C20 80 8 50 20 20 34 6 60 4 80 12c10 30 2 62-30 84z'/><path d='M50 96C48 60 56 36 78 14' fill='none' stroke='white' stroke-width='3'/></svg>")}
+:root[data-theme="jungle"] .motif i:nth-child(1){left:-2%;top:6%;transform-origin:0 0}
+:root[data-theme="jungle"] .motif i:nth-child(2){right:-1%;top:14%;--c:var(--motif-b);animation-duration:21s;animation-delay:-7s}
+:root[data-theme="jungle"] .motif i:nth-child(3){left:6%;bottom:4%;--c:var(--motif-b);animation-duration:19s;animation-delay:-3s}
+:root[data-theme="jungle"] .motif i:nth-child(4){right:5%;bottom:8%;animation-duration:24s;animation-delay:-12s}
+:root[data-theme="jungle"] .motif i:nth-child(5){left:46%;top:-3%;width:clamp(70px,13vmin,150px);--c:var(--motif-c);animation-duration:18s;animation-delay:-5s}
+:root[data-theme="jungle"] .motif i:nth-child(6){left:30%;bottom:-4%;width:clamp(70px,12vmin,140px);animation-duration:26s;animation-delay:-16s}
+
+/* --- Desert Dunes: a sun breathes; two dune lines drift; sand skims */
+:root[data-theme="desert"] .motif i:nth-child(-n+5){display:block}
+:root[data-theme="desert"] .motif i:nth-child(1){right:6%;top:8%;width:min(26vmin,240px);aspect-ratio:1;animation:bzBreathe 20s ease-in-out infinite alternate;
+  --m:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='26'/><circle cx='50' cy='50' r='38' fill='none' stroke='black' stroke-width='2' stroke-dasharray='4 6'/></svg>")}
+:root[data-theme="desert"] .motif i:nth-child(2),:root[data-theme="desert"] .motif i:nth-child(3){left:0;width:200vw;height:22vh;
+  --m:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 60' preserveAspectRatio='none'><path d='M0 60V40C40 10 80 10 120 34S200 50 240 22 330 8 400 40V60z'/></svg>")}
+:root[data-theme="desert"] .motif i:nth-child(2)::before,:root[data-theme="desert"] .motif i:nth-child(3)::before{-webkit-mask-size:50% 100%;mask-size:50% 100%;-webkit-mask-repeat:repeat-x;mask-repeat:repeat-x}
+:root[data-theme="desert"] .motif i:nth-child(2){bottom:0;--c:var(--motif-b);animation:bzRoll 60s linear infinite}
+:root[data-theme="desert"] .motif i:nth-child(3){bottom:7vh;opacity:.6;animation:bzRoll 44s linear infinite reverse}
+:root[data-theme="desert"] .motif i:nth-child(4),:root[data-theme="desert"] .motif i:nth-child(5){left:-20vw;width:18vw;height:1.2vh;--c:var(--motif-c);animation:bzSkim 26s linear infinite;
+  --m:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 6' preserveAspectRatio='none'><path d='M0 3Q50 -2 100 3Q50 8 0 3z'/></svg>")}
+:root[data-theme="desert"] .motif i:nth-child(4){top:34%}
+:root[data-theme="desert"] .motif i:nth-child(5){top:58%;animation-duration:34s;animation-delay:-15s}
+
+/* --- Polar Aurora: three curtains ripple; stars twinkle */
+:root[data-theme="aurora"] .motif i:nth-child(-n+7){display:block}
+:root[data-theme="aurora"] .motif i:nth-child(-n+3){top:-6vh;width:70vw;height:60vh;border-radius:50%;filter:blur(28px);animation:bzCurtain 22s ease-in-out infinite alternate}
+:root[data-theme="aurora"] .motif i:nth-child(-n+3)::before{background:linear-gradient(180deg,transparent,var(--c,var(--motif-a)) 45%,transparent);-webkit-mask:none;mask:none;border-radius:50%}
+:root[data-theme="aurora"] .motif i:nth-child(1){left:-10vw}
+:root[data-theme="aurora"] .motif i:nth-child(2){left:22vw;--c:var(--motif-b);animation-duration:28s;animation-delay:-9s}
+:root[data-theme="aurora"] .motif i:nth-child(3){left:50vw;--c:var(--motif-c);animation-duration:25s;animation-delay:-16s}
+:root[data-theme="aurora"] .motif i:nth-child(n+4){width:clamp(10px,2vmin,18px);aspect-ratio:1;animation:bzTwinkle 6s ease-in-out infinite alternate;--c:var(--ink);
+  --m:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path d='M10 0l2 8 8 2-8 2-2 8-2-8-8-2 8-2z'/></svg>")}
+:root[data-theme="aurora"] .motif i:nth-child(4){left:14%;top:62%}
+:root[data-theme="aurora"] .motif i:nth-child(5){left:44%;top:74%;animation-delay:-2s}
+:root[data-theme="aurora"] .motif i:nth-child(6){left:72%;top:66%;animation-delay:-4s}
+:root[data-theme="aurora"] .motif i:nth-child(7){left:90%;top:82%;animation-delay:-1s}
+
+/* --- Satellite: a globe; a satellite circles it; the moon goes round further out; stars */
+:root[data-theme="orbit"] .motif i:nth-child(-n+6){display:block}
+:root[data-theme="orbit"] .motif i:nth-child(1){left:-8vmin;bottom:-10vmin;width:min(56vmin,520px);aspect-ratio:1;--c:var(--motif-a);
+  --m:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40'/><g fill='none' stroke='white' stroke-width='1.2' opacity='.7'><ellipse cx='50' cy='50' rx='40' ry='14'/><ellipse cx='50' cy='50' rx='14' ry='40'/><path d='M10 50h80M50 10v80'/></g></svg>")}
+:root[data-theme="orbit"] .motif i:nth-child(2),:root[data-theme="orbit"] .motif i:nth-child(3){left:calc(-8vmin + min(56vmin,520px) / 2);bottom:calc(-10vmin + min(56vmin,520px) / 2);width:0;height:0;animation:bzSpin 40s linear infinite}
+:root[data-theme="orbit"] .motif i:nth-child(2)::before{inset:auto;left:calc(min(56vmin,520px) * .62);top:-14px;width:40px;height:28px;--c:var(--motif-b);
+  --m:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 28'><rect x='15' y='8' width='10' height='12' rx='2'/><rect x='0' y='10' width='13' height='8'/><rect x='27' y='10' width='13' height='8'/><path d='M20 8V2' stroke='black' stroke-width='2'/></svg>")}
+:root[data-theme="orbit"] .motif i:nth-child(3){animation-duration:60s;animation-direction:reverse}
+:root[data-theme="orbit"] .motif i:nth-child(3)::before{inset:auto;left:calc(min(56vmin,520px) * .95);top:-18px;width:36px;height:36px;--c:var(--motif-c);
+  --m:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><circle cx='10' cy='10' r='9'/></svg>")}
+:root[data-theme="orbit"] .motif i:nth-child(n+4){width:clamp(10px,2vmin,18px);aspect-ratio:1;animation:bzTwinkle 5s ease-in-out infinite alternate;--c:var(--motif-a);
+  --m:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path d='M10 0l2 8 8 2-8 2-2 8-2-8-8-2 8-2z'/></svg>")}
+:root[data-theme="orbit"] .motif i:nth-child(4){right:12%;top:14%}
+:root[data-theme="orbit"] .motif i:nth-child(5){right:30%;top:8%;animation-delay:-2s;--c:var(--motif-c)}
+:root[data-theme="orbit"] .motif i:nth-child(6){right:6%;top:44%;animation-delay:-3.5s}
+
+@keyframes bzSpin{to{transform:rotate(360deg)}}
+@keyframes bzDrift{0%{transform:translate(0,0) rotate(-2deg)}100%{transform:translate(3vw,-2vh) rotate(3deg)}}
+@keyframes bzRoll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes bzRise{0%{transform:translate(0,0);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translate(2vw,-115vh);opacity:0}}
+@keyframes bzSway{0%{transform:rotate(-7deg) translateY(0)}100%{transform:rotate(9deg) translateY(1.5vh)}}
+@keyframes bzBreathe{from{transform:scale(1)}to{transform:scale(1.1)}}
+@keyframes bzSkim{from{transform:translateX(0)}to{transform:translateX(140vw)}}
+@keyframes bzCurtain{0%{transform:translateX(0) scaleY(1) skewX(-6deg);opacity:.55}50%{opacity:1}100%{transform:translateX(12vw) scaleY(1.25) skewX(8deg);opacity:.7}}
+@keyframes bzTwinkle{from{opacity:.25;transform:scale(.8)}to{opacity:1;transform:scale(1.1)}}
+
+/* a child who has asked the device for less motion gets a still picture */
+@media (prefers-reduced-motion:reduce){
+  .motif i,.motif i::before,.motif i::after{animation:none!important}
+}
+
+/* ================================================================ the picker */
+.themes{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media (max-width:760px){.themes{grid-template-columns:1fr 1fr}}
+@media (max-width:400px){.themes{grid-template-columns:1fr}}
+.theme-card{position:relative;display:flex;flex-direction:column;gap:0;padding:0;overflow:hidden;text-align:left;cursor:pointer;
+  border:2px solid var(--line);border-radius:var(--r-lg);background:var(--paper);color:var(--ink);font-family:var(--ui);
+  box-shadow:var(--sh);transition:transform .15s,border-color .15s}
+.theme-card:hover{transform:translateY(-2px);border-color:var(--action)}
+.theme-card[aria-checked="true"]{border-color:var(--action);box-shadow:0 0 0 3px color-mix(in srgb,var(--action) 30%,transparent),var(--sh)}
+.theme-card .tc-sw{position:relative;height:84px;background:var(--ground,none),var(--tint);display:flex;align-items:flex-end;gap:6px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.theme-card .tc-map{position:absolute;right:12px;bottom:10px;width:96px;height:48px;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+.theme-card .tc-sea{fill:var(--sea)} .theme-card .tc-land{fill:var(--land)} .theme-card .tc-hl{fill:var(--land-hl)}
+.theme-card .tc-sw i{width:22px;height:22px;border-radius:7px;background:var(--c);box-shadow:inset 0 -2px 0 rgb(0 0 0 / .15)}
+.theme-card .tc-aa{position:absolute;left:12px;top:4px;font:400 34px/1 var(--display);color:var(--action)}
+.theme-card .tc-t{display:flex;flex-direction:column;gap:2px;padding:10px 12px 12px}
+.theme-card .tc-t b{font:700 19px/1.15 var(--display)}
+.theme-card .tc-t span{font-size:13px;color:var(--muted);line-height:1.35}
+.theme-card .tc-n{font:600 14px var(--mono);font-variant-numeric:tabular-nums;color:var(--ink);letter-spacing:.02em}
+.theme-card .tc-on{position:absolute;left:62px;top:10px;padding:2px 9px;border-radius:999px;background:var(--action);color:var(--action-ink);font:700 11px var(--ui)}
+.theme-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:var(--r-pill);border:1px solid var(--line);background:var(--surface2);color:var(--ink);font:650 13px var(--ui);cursor:pointer}
+.theme-chip:hover{border-color:var(--action)}
+.theme-chip i{width:12px;height:12px;border-radius:4px;background:var(--action);box-shadow:5px 0 0 -1px var(--sw2)}

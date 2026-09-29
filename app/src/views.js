@@ -5,6 +5,7 @@ import { R } from './runtime.js';
 import { esc, cls } from './ui.js';
 import { WORLDS, STOPS, byId, worldOf, stopsIn } from './stops.js';
 import { LEVELS, ageOf, firstLevel } from './levels.js';
+import { THEMES, themeOf, themePicker } from './themes.js';
 import { BANDS, AVATARS, AVATAR_PACKS, AVATAR_NAME, avatarFile, RANKS, RANK_SRC, rankOf, kid, stopRec, road, stopOpen, lvFor, starsTotal, maxStars, levelOf } from './model.js';
 import { worldSVG, regionSVG, viewFor } from './map.js';
 import { POSTCARDS } from './data/postcards.js';
@@ -138,7 +139,8 @@ export function viewHome() {
   return `<section class="home">
     <div class="hello">
       ${av(k.avatar, 64, '')}
-      <div><p class="kicker">${greet()}, ${esc(k.name)}</p><h1>Where shall we explore today?</h1></div>
+      <div><p class="kicker">${greet()}, ${esc(k.name)}</p><h1>Where shall we explore today?</h1>
+        <button class="theme-chip" data-act="themes" aria-label="Choose a theme"><i aria-hidden="true"></i>Theme: ${esc(THEMES.find((t) => t.id === themeOf(k)).name)}</button></div>
     </div>
     <div class="home-grid">
       <button class="card next-card" data-act="${nx ? 'openStop' : 'nav'}" data-arg="${nx ? nx.id : 'road'}">
@@ -345,11 +347,12 @@ export function viewMe() {
   const k = kid(R.h), rk = rankOf(k.xp);
   return `<section class="narrow">
     ${pageHead(esc(k.name), `${BANDS.find((b) => b.id === k.band).label} · Level ${k.road.level}`)}
-    <div class="card rank-card">
+    <div class="card ladder-card">
       <h3>Explorer ranks</h3>
       <ol class="ladder">${RANKS.map((r, i) => `<li class="${i <= rk.i ? 'got' : ''}${i === rk.i ? ' now' : ''}"><b>${i + 1}. ${esc(r.n)}</b> <span class="muted small">${r.xp} right answers — ${esc(r.why)}</span></li>`).join('')}</ol>
       ${srcList(RANK_SRC)}
     </div>
+    ${themePicker(k)}
     <div class="card"><h3>Change your face</h3>${avatarPicker(k.avatar, 'setAv', 'me')}</div>
     <div class="card">
       <h3>Explorers on this device</h3>

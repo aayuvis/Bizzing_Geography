@@ -36,16 +36,24 @@ def avatar(src, dst, size=384):
     pad = Image.new('RGBA', (side, side), (0, 0, 0, 0))
     pad.paste(im, ((side - im.width) // 2, (side - im.height) // 2), im)
     pad.resize((size, size), Image.LANCZOS).save(dst, 'WEBP', quality=90, method=6)
+    # a ground that was not pure magenta keys the creature half away: a ghost.
+    # A clean sticker has only its anti-aliased rim partly transparent (~1%).
+    A = np.asarray(Image.open(dst).convert('RGBA'))[:, :, 3]
+    ghost = float(((A > 10) & (A < 245)).mean())
+    if ghost > 0.05: GHOSTS.append(f'{os.path.basename(dst)} ({ghost:.0%} half-transparent)')
     return os.path.getsize(dst)
 
 
+GHOSTS = []
 if '--avatars' in sys.argv:
     total = 0
     for f in sorted(os.listdir(RAW)):
         if not (f.startswith('av-') and f.endswith('.png')): continue
         n = f[3:-4]; b = avatar(os.path.join(RAW, f), os.path.join(AVOUT, n + '.webp'))
         total += b; print(f'avatar {n}: 384x384 {b // 1024} KB')
-    print(f'total {total // 1024} KB'); sys.exit(0)
+    print(f'total {total // 1024} KB')
+    if GHOSTS: print('GHOSTS — repaint these (their ground was not pure magenta):', ', '.join(GHOSTS)); sys.exit(1)
+    sys.exit(0)
 
 def trim(im):
     """Cut off a painted paper border: a model sometimes frames a scene with a

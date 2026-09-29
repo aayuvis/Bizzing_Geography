@@ -20,4 +20,4 @@ topojson-client draw the maps; nothing else is a dependency.
 | `src/views.js` · `main.js` | Every screen; routing, the runner, actions, keys. |
 | `src/library/*.js` | The Library, one tool per file, to [../docs/LIBRARY-CONTRACT.md](../docs/LIBRARY-CONTRACT.md). |
 | `src/store.js` | The seam (schema v1). |
-| `public/art/` | Painted plates (110). `public/flags/` flag SVGs. `public/avatars/` the Bee's faces. |
+| `public/art/` | Painted plates (110). `public/flags/` flag SVGs. `public/avatars/` 40 geography avatars (+ the family faces kept for children who chose them). |

@@ -94,7 +94,76 @@ for e in data('eras', 'EARTH'): JOBS['era-' + e['id'][2:]] = (e['paint'] + ' ' +
 for c, L in data('history', 'CONTINENT_HISTORY').items():
     for e in L: JOBS['hist-' + e['id']] = (e['paint'] + ' No people, no figures, no lettering. ' + STYLE, '16:9')
 
-GROUPS = {'postcards': 'pc-', 'landmarks': 'lm-', 'eras': 'era-', 'history': 'hist-', 'worlds': 'w-', 'library': 'lib-'}
+# The avatar picker (model.js AVATAR_PACKS): five packs of eight, all painted for
+# this app in the family's sticker style (Bizzing Maths' AV_STYLE, which was
+# written from looking at Bizzing Bee's set). Every one is a CREATURE, never a
+# person; every body carries a piece of geography — a tool, a continent's animal,
+# an ocean, a landform or weather, a forest or a river. Flat magenta ground so
+# process.py --avatars keys it to alpha; so no pink or magenta on the creature.
+AV_STYLE = (
+    "A cute chibi kawaii collectible sticker character for a children's geography app, in exactly the style of a "
+    "premium mobile-game avatar set: ONE single character, full body, centred, facing the viewer, the whole "
+    "character inside the frame with a comfortable margin all round. A smooth, even, medium-thick dark navy-brown "
+    "outline around every shape. Glossy soft cel shading with gentle gradients and a small white specular "
+    "highlight. Huge glossy dark eyes with two bright white star-shaped glints, soft peach blush ovals on the "
+    "cheeks, a small happy smile. Stubby rounded little limbs, exactly the right number of them. Bright, friendly, "
+    "saturated colours. A few tiny sparkles near the character. "
+    "THE ENTIRE BACKGROUND IS FLAT PURE MAGENTA (hex FF00FF), one solid uniform field with nothing in it: no "
+    "ground, no shadow, no scenery, no glow, no border, no vignette, and no magenta or hot pink on the character "
+    "itself. ABSOLUTELY NO TEXT: no letters, no words, no numbers, no digits, no compass letters, no map labels, "
+    "no writing of any kind anywhere in the image. No real map, no real coastline. Not a person, no human features "
+    "beyond the cute face."
+)
+AVATAR = {
+    # Explorer's Kit — bodies built from a geographer's tools
+    'compowl':    "An owl whose round body IS a brass magnetic compass: a round glass face on its tummy with a plain red-and-white needle and plain tick marks only (no letters), brass rim, small brown wings, tufted ears.",
+    'globetortle':"A turtle whose domed shell is a toy globe: a smooth blue shell with a few ROUND polka-dot spots of green (simple circles, NOT continents, NOT any map of Earth), a thin brass ring round the shell like a globe's meridian, green head and four stubby legs.",
+    'scrollfox':  "A fox whose big fluffy tail is a rolled-up parchment map scroll with faint dotted paths and tiny tree doodles (no words), orange and cream fur.",
+    'telescrane': "A small crane bird holding a brass spyglass telescope to one eye with its wing, white and slate-grey feathers, long legs, a red crown patch.",
+    'backpackbear':"A little brown bear wearing a green explorer's backpack with a rolled sleeping mat on top and a canteen at its side, a khaki sun hat on its head.",
+    'lanternbug': "A glowing firefly whose round tail is a warm golden camping lantern, tiny clear wings, a dark green body, holding a tiny walking stick.",
+    'binobat':    "A tiny fruit bat with soft brown fur and wide wings, wearing a pair of black binoculars on a strap round its neck, big pointed ears.",
+    'pinguin':    "A penguin whose body is shaped like a round red map-pin marker (the teardrop pin shape, with a white circle on its tummy), black flippers, orange feet.",
+    # Seven Continents — one creature from every continent
+    'savannalion':"A young lion cub from the African savanna with a small fluffy golden mane, sitting beside a tiny acacia tree sprout.",
+    'snowleopard':"A snow leopard cub from the mountains of Asia, pale grey fur with dark rosettes, a very long thick fluffy tail curled round, a sprinkle of snowflakes.",
+    'hedgehog':   "A European hedgehog with brown spines and a cream face, carrying a small red-capped mushroom and an acorn.",
+    'bison':      "A North American bison calf, shaggy dark brown woolly shoulders, small curved horns, a sprig of prairie grass in its mouth.",
+    'llama':      "A llama from the Andes of South America with fluffy cream wool, wearing a woven wool blanket in bright orange, yellow and teal stripes.",
+    'kangaroo':   "A kangaroo from Australia in Oceania, sandy orange-brown fur, a tiny joey peeking out of its pouch, big feet.",
+    'emperor':    "An emperor penguin chick from Antarctica, fluffy silver-grey down, black cap with white cheeks, standing on a tiny ice floe.",
+    'camel':      "A two-humped Bactrian camel of the desert, fluffy sandy-brown coat, a small woven saddle blanket, long eyelashes.",
+    # Ocean Crew — the five oceans' friends
+    'whale':      "A blue whale calf, smooth blue-grey body with a pale grooved throat, a little water spout above its head making a tiny rainbow.",
+    'seaturtle':  "A green sea turtle swimming, a patterned olive-green shell, flipper legs, a few bubbles.",
+    'dolphin':    "A bottlenose dolphin leaping in a small arc, grey with a pale belly, a splash of water drops.",
+    'octopus':    "A friendly orange octopus with exactly eight curly arms, round head, holding a small seashell.",
+    'clownfish':  "A clownfish, bright orange with three white stripes edged in black, peeking out of a green sea anemone.",
+    'seahorse':   "A golden-yellow seahorse with a curled tail, a little crown-like crest, a few bubbles.",
+    'manta':      "A manta ray gliding, dark navy top with white underside visible at the wing tips, wide wing fins, two small head fins.",
+    'walrus':     "A walrus pup from the Arctic Ocean, plump cinnamon-brown body, short white tusks, bristly whiskers, flippers.",
+    # Wild Earth — landforms and weather as creatures
+    'volcadrake': "A small friendly dragon whose body is a little volcano mountain of dark grey rock, a gentle puff of white steam from the top, warm orange glow in the cracks, stubby legs, tiny wings, no teeth showing.",
+    'cloudlamb':  "A lamb made of a soft white fluffy cumulus cloud, a few tiny raindrops falling below it, small grey hooves and face.",
+    'rainbowleon':"A chameleon whose body has bands of rainbow colours (red, orange, yellow, green, blue, violet), a curled tail, standing on a small twig.",
+    'glacieryak': "A yak whose shaggy coat is pale icy blue and white like a glacier, with a little snow cap on its horns, icicle fringe.",
+    'fennec':     "A fennec fox of the Sahara, pale sandy fur, huge ears, sitting on a small sand dune ripple.",
+    'mountaingoat':"A white mountain goat with small black horns and a beard, standing on a tiny rocky peak with a patch of snow.",
+    'stormcat':   "A calm, friendly cat whose fur is a soft grey rain cloud, with a small yellow lightning-bolt shaped tail tip, sitting neatly.",
+    'coralcrab':  "A little crab whose shell is a piece of colourful coral reef in orange, yellow and teal, two small claws, six legs.",
+    # Forest & River — rainforests, woodlands and rivers
+    'toucan':     "A toucan with a huge bright orange-yellow beak, black body, white throat, perched on a short branch.",
+    'sloth':      "A three-toed sloth hanging from a short green vine by its arms, shaggy tan fur, a sleepy smile, a tiny leaf on its head.",
+    'koala':      "A koala hugging a eucalyptus branch with blue-green leaves, fluffy grey fur, big round ears, a large dark nose.",
+    'beaver':     "A beaver with brown fur and a flat paddle tail, holding a small stick, two front teeth showing in a friendly grin.",
+    'jaguar':     "A jaguar cub with golden fur and black rosettes, round ears, a long spotted tail.",
+    'hippo':      "A pygmy hippo, smooth purple-grey skin (not pink), sitting in a small puddle of river water with a lily pad on its head.",
+    'treefrog':   "A red-eyed tree frog, bright green body with blue and orange sides, big red eyes, clinging to a leaf.",
+    'riverotter': "A river otter floating on its back holding a smooth pebble, glossy brown fur, cream chin, a few water ripples.",
+}
+for k, v in AVATAR.items(): JOBS['av-' + k] = (v + ' ' + AV_STYLE, '1:1')
+
+GROUPS = {'postcards': 'pc-', 'landmarks': 'lm-', 'eras': 'era-', 'history': 'hist-', 'avatars': 'av-', 'worlds': 'w-', 'library': 'lib-'}
 
 
 def call(model, prompt, ratio):

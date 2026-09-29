@@ -59,7 +59,7 @@ async function run(vp, tag) {
   ok(await page.locator('[data-act=createKid]').isDisabled(), 'create is disabled until name and age');
   await page.fill('#kname', 'Ahana');
   await page.click('[data-act=draftBand][data-arg="8-10"]');
-  await page.click('[data-act=draftAv][data-arg="panda"]');
+  await page.click('[data-act=draftAv][data-arg="fennec"]');
   await page.click('[data-act=createKid]');
   await page.waitForSelector('.home');
   await page.waitForTimeout(300); await shot('02-home'); await noSideways('home');
@@ -238,6 +238,22 @@ async function run(vp, tag) {
   ok(await page.evaluate(() => window.__bzg.R.ui.lib.capitals.ask.state) === 'picked', 'picking Buenos Aires is right');
   ok(await page.evaluate(() => (window.__bzg.R.h.kids[0].lib.capitals.box || {}).AR) === 1, 'a right pick climbs the capital’s box');
 
+  // themes: the chip on home opens the picker; a choice restyles the page AND the map, and belongs to the child
+  await page.evaluate(() => window.__bzg.go('home')); await page.waitForSelector('.theme-chip');
+  ok(await page.evaluate(() => document.documentElement.dataset.theme) === 'atlas', 'a new child starts in Old Atlas');
+  await page.click('.theme-chip'); await page.waitForSelector('.theme-card[aria-checked="true"]');
+  ok(await page.locator('.theme-card').count() === 6, 'the picker offers six themes');
+  const seaBefore = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--sea').trim());
+  await page.click('#theme-ocean'); await page.waitForTimeout(150);
+  ok(await page.evaluate(() => document.documentElement.dataset.theme) === 'ocean' && await page.evaluate(() => window.__bzg.R.h.kids[0].prefs.theme) === 'ocean', 'tapping Ocean Deep applies it and saves it on the child');
+  ok(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--sea').trim()) !== seaBefore, 'the map’s sea takes the theme’s colour');
+  await page.focus('#theme-ocean'); await page.keyboard.press('ArrowRight'); await page.waitForTimeout(150);
+  ok(await page.evaluate(() => document.documentElement.dataset.theme) === 'jungle', 'the arrow keys move the choice (keyboard)');
+  for (const t of ['desert', 'aurora', 'orbit']) { await page.click(`#theme-${t}`); await page.waitForTimeout(250); await page.evaluate(() => scrollTo(0, 0)); await shot(`21-theme-${t}`); }
+  await page.evaluate(() => window.__bzg.go('lib', 'capitals')); await page.waitForSelector('.gmap'); await page.waitForTimeout(200); await shot('22-orbit-map');
+  await page.evaluate(() => window.__bzg.go('me')); await page.waitForSelector('.av-packs');
+  ok(await page.locator('.av-packs .av-pick').count() === 40, 'the avatar picker offers 40 faces');
+  await page.click('#theme-atlas'); await page.waitForTimeout(100);
   // grown-ups
   await page.evaluate(() => window.__bzg.go('grownups'));
   await page.fill('#pin', '1234'); await page.click('[data-act=gate]'); await page.waitForSelector('.report');
