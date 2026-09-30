@@ -110,8 +110,7 @@ Inherited from the family, and it holds here:
 - **Six themes, the child's own** (`src/themes.js`, `styles/themes.css` — Bizzing Maths'
   system): Old Atlas (default), Ocean Deep, Rainforest, Desert Dunes, Polar Aurora, Satellite.
   A theme sets every colour token in both modes **including the map's own** (`--sea`, `--land`,
-  `--land-hl`…), three self-hosted faces, and a moving motif behind the page (shapes only, ≤ 60s
-  loops, still under reduced motion). `test/themes.mjs` holds each theme × mode to WCAG and
+  `--land-hl`…) and three self-hosted faces; its living scene is below. `test/themes.mjs` holds each theme × mode to WCAG and
   to a visible coast: land and sea ≥ 55 apart in colour and the sea the bluer — proven by
   breaking it. Light/dark stays the device's; the theme lives on `k.prefs.theme`.
 - **Never** put a real model identifier in commits, PRs, code, or any pushed artefact.
