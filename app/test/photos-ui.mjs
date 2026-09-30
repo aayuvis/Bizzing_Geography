@@ -37,7 +37,7 @@ try {
   });
   page.on('request', (r) => { const u = r.url(); if (!u.startsWith(`http://127.0.0.1:${port}/`) && !u.startsWith('https://maps.googleapis.com/') && !u.startsWith('data:')) errors.push('third-party request: ' + u); });
   await page.goto(`http://127.0.0.1:${port}/Bizzing_Geography/`);
-  await page.fill('#kname', 'Ahana'); await page.click('[data-act=draftBand][data-arg="11-14"]'); await page.click('[data-act=createKid]');
+  await page.click('[data-act=obStart]'); await page.fill('#kname', 'Ahana'); await page.click('[data-act=obNext]'); await page.click('[data-act=draftBand][data-arg="11-14"]'); await page.click('[data-act=obNext]'); await page.click('[data-act=createKid]');
   await page.waitForSelector('.home');
   ok(await page.evaluate(() => window.__bzg.R.h.parent.streetview) === true, 'real photos are on by default');
   await page.evaluate(() => window.__bzg.go('lib', 'geoguess')); await page.waitForSelector('.t-geo-intro');

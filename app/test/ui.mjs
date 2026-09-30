@@ -55,11 +55,19 @@ async function run(vp, tag) {
 
   await page.goto(`http://127.0.0.1:${port}/Bizzing_Geography/`);
   await page.waitForSelector('.welcome');
-  await shot('01-welcome');
-  ok(await page.locator('[data-act=createKid]').isDisabled(), 'create is disabled until name and age');
-  await page.fill('#kname', 'Ahana');
+  await shot('01-welcome'); await noSideways('landing');
+  await page.click('[data-act=obStart]');
+  ok(await page.locator('[data-act=obNext]').isDisabled(), 'Next waits for a name');
+  await page.fill('#kname', 'Ahana'); await page.press('#kname', 'Enter');
+  await page.waitForSelector('[data-act=draftBand]'); await shot('01b-age');
   await page.click('[data-act=draftBand][data-arg="8-10"]');
-  await page.click('[data-act=draftAv][data-arg="fennec"]');
+  ok(await page.locator('.ob-avs .av-pick').count() === 5, 'the welcome offers five companions, not forty');
+  await page.click('[data-act=draftAv][data-arg="dolphin"]'); await page.click('[data-act=obNext]');
+  ok(await page.locator('.ob-themes .theme-card').count() === 2, 'and two worlds');
+  await page.click('[data-act=draftTheme][data-arg="ocean"]');
+  ok(await page.evaluate(() => document.documentElement.dataset.theme) === 'ocean', 'choosing a world shows it straight away');
+  await shot('01c-world'); await noSideways('welcome');
+  await page.click('[data-act=draftTheme][data-arg="atlas"]');
   await page.click('[data-act=createKid]');
   await page.waitForSelector('.home');
   await page.waitForTimeout(300); await shot('02-home'); await noSideways('home');

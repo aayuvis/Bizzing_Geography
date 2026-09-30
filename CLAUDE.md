@@ -116,6 +116,32 @@ Inherited from the family, and it holds here:
   breaking it. Light/dark stays the device's; the theme lives on `k.prefs.theme`.
 - **Never** put a real model identifier in commits, PRs, code, or any pushed artefact.
 
+## The shape of the app (the family's, harmonised)
+
+- **Tabs: Home · Atlas · Expeditions · Library.** "My road" is the Atlas's second tab,
+  **Your journey** (the ten levels as a strip, then the level's stations) — the road only ever
+  explained the map.
+- **Home is Bizzing Bee's and India's shape**: greeting card (avatar + speech bubble), **Today's
+  ring** (sessions today against a 2/3/5 goal — `model.js session()`; today only, nothing carries
+  over, so it is not a streak), word of the day; two picture journey cards (next station, your
+  expedition); today's place and landmark of the day. Rank lives in the header pill and on Me.
+- **Expeditions** (`data/expeditions.js`, `src/expeditions.js`) are Bizzing India's
+  **Paathshala**: ten sprints of 20–30 days, each part = learn, learn, practise, check + a project
+  made at home. Every lesson is an existing stop or tool; every quiz comes from the stops' own
+  generators (thin banks top up with review from earlier parts, never a repeat). **The day rule**:
+  a check counts as learned only at 8/10 on a LATER day than its teaching — `ledger` is the only
+  door, `test/expeditions.mjs` proves it both ways. Grown-ups see objectives learned, never minutes.
+- **The welcome is Bizzing Finance's**: a landing page, then one question a screen with Compass
+  Owl as guide — name, age, **five** companions, **two** worlds. The other 35 faces and four worlds
+  are on the child's page from minute one, all free.
+- **Above the fold is for doing.** Page heads are one row (no subtitle on a phone); tool pages
+  lead with their controls; filter rows scroll in one line. `test/ui.mjs` asserts each key
+  screen's core content starts above the fold, desktop and phone.
+- **Living scenes** (`src/scenes.js`, `styles/scenes.css`): Bizzing Bee's worlds4 model, 40–100
+  props per theme, calm (paused) during a quiz run and on the device's "Still background" switch;
+  the Satellite globe is painted from the app's own map data. Scene classes are prefixed `s-`/`scn`
+  because the app already owns `.sky`, `.bubble` and `.sc`.
+
 ## Real photos — Google Street View, on by default (the owner's decision)
 
 GeoGuesser is **one journey**: every round mixes 3 real photos and 2 painted postcards, five

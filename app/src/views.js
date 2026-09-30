@@ -4,7 +4,7 @@
 import { R } from './runtime.js';
 import { esc, cls } from './ui.js';
 import { WORLDS, STOPS, byId, worldOf, stopsIn } from './stops.js';
-import { LEVELS, ageOf, firstLevel } from './levels.js';
+import { LEVELS, ageOf, firstLevel, START } from './levels.js';
 import { THEMES, themeOf, themePicker } from './themes.js';
 import { Store } from './store.js';
 import { EXPEDITIONS, EXPEDITIONS_PARENT } from './data/expeditions.js';
@@ -104,33 +104,44 @@ export function shell(body) {
 
 /* ------------------------------------------------------------- welcome */
 
+/* The welcome, one question at a time (Bizzing Finance's onboarding): a first visit
+   gets a landing page, then a guide asks for a name, an age, a face and a world.
+   Five faces and two worlds to START — one from each pack, the two calmest worlds —
+   so a six-year-old is not choosing from forty. The rest are on the child's own
+   page from the first minute, all free: nothing here is locked or earned. */
+export const STARTER_AVATARS = ['compowl', 'savannalion', 'dolphin', 'volcadrake', 'toucan'];
+export const STARTER_THEMES = ['atlas', 'ocean'];
+const guide = (text) => `<div class="ob-say">${av('compowl', 84, '')}<p>${text}</p></div>`;
 export function viewWelcome() {
-  const d = R.ui.draft || (R.ui.draft = { name: '', band: '', avatar: AVATARS[0] });
   const first = !R.h.kids.length;
-  return `<section class="welcome">
-    <div class="wel-hero geo-hero" style="background-image:url(art/home-hero.webp)">
-      <div class="wel-tx">
-        <p class="kicker">${first ? 'Welcome to Bizzing Geography' : 'Add an explorer'}</p>
-        <h1 class="display">Know the world — <em>and know how you know.</em></h1>
-        <p class="lead">Maps and compasses, continents and capitals, rivers, weather and the restless Earth — then GeoGuesser, flags and landmarks in the Library. For ages 6 to 14.</p>
-      </div>
-    </div>
-    <div class="card form">
-      <label class="lab" for="kname">First name or nickname</label>
-      <input id="kname" class="inp" data-draft="name" value="${esc(d.name)}" maxlength="20" autocomplete="off" autocapitalize="words" placeholder="e.g. Ahana">
-      <p class="hint">Just a first name. We never ask for a surname, a birthday, a photo, an email or where you live — and nothing you type leaves this device.</p>
-      <p class="lab">Age</p>
-      <div class="chips" role="radiogroup" aria-label="Age">
-        ${BANDS.map((b) => `<button class="chip-btn${d.band === b.id ? ' on' : ''}" role="radio" aria-checked="${d.band === b.id}" data-act="draftBand" data-arg="${b.id}"><b>${b.label}</b><span>${b.blurb}</span></button>`).join('')}
-      </div>
-      <p class="lab">Pick a face</p>
-      ${avatarPicker(d.avatar, 'draftAv', 'new')}
-      <div class="row gap end">
-        ${!first ? btn('Cancel', 'nav', 'home') : ''}
-        ${btn('Start exploring', 'createKid', '', 'primary big', d.name.trim() && d.band ? '' : 'disabled')}
-      </div>
-    </div>
-  </section>`;
+  const d = R.ui.draft || (R.ui.draft = { step: first ? 'land' : 0, name: '', band: '', avatar: STARTER_AVATARS[0], theme: 'atlas' });
+  const shell = (body, n) => `<section class="welcome ob">${n != null ? `<div class="ob-top">${n ? `<button class="back" data-act="obBack" aria-label="Back"><span aria-hidden="true">←</span></button>` : first ? '' : back('nav', 'Cancel', 'home')}<ol class="ob-dots" aria-label="Step ${n + 1} of 4">${[0, 1, 2, 3].map((i) => `<li class="${i <= n ? 'on' : ''}"></li>`).join('')}</ol></div>` : ''}${body}</section>`;
+  if (d.step === 'land') return shell(`<div class="ob-land">
+      <div class="ob-hero" style="background-image:url(art/home-hero.webp)"></div>
+      <p class="kicker">Bizzing Geography</p>
+      <h1 class="display">Know the world — <em>and know how you know.</em></h1>
+      <p class="lead">Maps and compasses, continents and capitals, rivers, weather and the restless Earth — for explorers aged 6 to 14.</p>
+      ${btn('Start exploring →', 'obStart', '', 'primary big wide')}
+      <div class="ob-counts">${[[STOPS.length, 'stops on the Atlas'], [EXPEDITIONS.length, 'expeditions'], [195, 'countries'], [SHELF.length, 'Library tools']].map(([n, l]) => `<div><b>${n}</b><span>${l}</span></div>`).join('')}</div>
+      <div class="card ob-promises">${[['🗺️', 'One map, drawn with care', 'Every map is drawn by the app from open data — never by an AI.'], ['🔒', 'Nothing about your child leaves this device', 'A first name and an age band. No email, no photo, no tracking, no ads.'], ['📚', 'Every fact says where it is checked', 'And a grown-up’s page that reports what was learned, not how long.']].map(([g, t, x]) => `<div><span>${g}</span><p><b>${t}</b><br><span class="muted small">${x}</span></p></div>`).join('')}</div>
+      <p class="muted small center-t">Part of the Bizzing family, with Bizzing Bee, India, Finance and Maths.</p></div>`);
+  if (d.step === 0) return shell(`${guide(first ? 'Hello, explorer! I am Compass Owl, and I know the way to everywhere. What shall I call you?' : 'Another explorer! What shall I call this one?')}
+    <div class="card ob-card"><label class="lab" for="kname">First name or nickname</label>
+      <input id="kname" class="inp big" data-draft="name" value="${esc(d.name)}" maxlength="20" autocomplete="off" autocapitalize="words" placeholder="e.g. Ahana">
+      <p class="hint">Just a first name — never a surname, a birthday, a photo or where you live.</p>
+      ${btn('Next →', 'obNext', '', 'primary big wide', d.name.trim() ? '' : 'disabled')}</div>`, 0);
+  if (d.step === 1) return shell(`${guide(`Good to meet you, <b>${esc(d.name)}</b>! How old are you? It decides where your journey starts.`)}
+    <div class="card ob-card ob-opts">${BANDS.map((b) => `<button class="ob-opt${d.band === b.id ? ' on' : ''}" data-act="draftBand" data-arg="${b.id}"><b>${b.label}</b><span>${b.blurb} — you start on Level ${levelOf(START[b.id]).n}, ${esc(levelOf(START[b.id]).name)}.</span></button>`).join('')}</div>`, 1);
+  if (d.step === 2) return shell(`${guide('Every explorer needs a travelling companion. Which one is yours?')}
+    <div class="card ob-card"><div class="ob-avs" role="radiogroup" aria-label="Your companion">${STARTER_AVATARS.map((a) => `<button id="av-ob-${a}" class="av-pick${d.avatar === a ? ' on' : ''}" role="radio" aria-checked="${d.avatar === a}" data-act="draftAv" data-arg="${a}" aria-label="${esc(AVATAR_NAME[a])}">${av(a, 96)}<span>${esc(AVATAR_NAME[a].replace(/ \(.*\)/, ''))}</span></button>`).join('')}</div>
+      <p class="hint center-t">${AVATARS.length - STARTER_AVATARS.length} more companions wait on your own page — change any time.</p>
+      ${btn('Next →', 'obNext', '', 'primary big wide')}</div>`, 2);
+  return shell(`${guide('Last one! Which world would you like to explore in? It changes the colours, the letters and the living picture behind everything.')}
+    <div class="card ob-card"><div class="themes ob-themes" role="radiogroup" aria-label="Your world">${THEMES.filter((t) => STARTER_THEMES.includes(t.id)).map((t) => `<button class="theme-card" id="theme-ob-${t.id}" data-theme="${t.id}" data-act="draftTheme" data-arg="${t.id}" role="radio" aria-checked="${d.theme === t.id}">
+        <span class="tc-sw" aria-hidden="true"><svg class="tc-map" viewBox="0 0 120 60"><rect width="120" height="60" class="tc-sea"/><path class="tc-land" d="M8 14c10-6 22-4 28 4s2 16-6 20-18 8-22 0-6-18 0-24zM52 8c14-4 30 0 36 8s14 4 22 10-2 18-14 18-16-6-26-4-22-2-22-12 0-16 4-20z"/><path class="tc-hl" d="M64 22c6-2 12 2 10 8s-10 6-13 2-3-8 3-10z"/></svg><span class="tc-aa">Aa</span>${d.theme === t.id ? '<span class="tc-on">On</span>' : ''}</span>
+        <span class="tc-t"><b>${t.name}</b><span>${t.blurb}</span></span></button>`).join('')}</div>
+      <p class="hint center-t">Four more worlds on your page — desert, rainforest, aurora and space.</p>
+      ${btn('Start exploring 🚀', 'createKid', '', 'primary big wide')}</div>`, 3);
 }
 
 /* ------------------------------------------------------------- home */

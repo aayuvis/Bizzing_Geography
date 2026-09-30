@@ -106,8 +106,10 @@ function render() {
   const a = document.activeElement;
   focusId = a && a.id ? a.id : null;
   const caret = a && a.selectionStart != null ? a.selectionStart : null;
-  applyTheme(themeOf(kid(R.h)));   // the active child's theme; switching child switches it
-  syncScene(themeOf(kid(R.h)), R.ui.nav === 'run' || Store.loadDevice('still', false));   // a quiz run gets a still, faded scene
+  /* the active child's theme; on the welcome's last step, the world being chosen */
+  const th = (!kid(R.h) || R.ui.nav === 'welcome') && R.ui.draft && R.ui.draft.step === 3 ? R.ui.draft.theme : themeOf(kid(R.h));
+  applyTheme(th);
+  syncScene(th, R.ui.nav === 'run' || Store.loadDevice('still', false));   // a quiz run gets a still, faded scene
   root.innerHTML = V.shell(screen());
   restoreMaps(root);
   root.querySelectorAll('.seg .on').forEach((b) => { const s = b.parentElement; if (s.scrollWidth > s.clientWidth) s.scrollLeft = b.offsetLeft - (s.clientWidth - b.offsetWidth) / 2; });
@@ -221,12 +223,17 @@ function mapTap(t) {
 bindMaps(root, mapTap);
 
 /* welcome */
-on('draftBand', (b) => { R.ui.draft.band = b; render(); });
+on('obStart', () => { R.ui.draft.step = 0; render(); });
+on('obNext', () => { const d = R.ui.draft; if (d.step === 0 && !d.name.trim()) return; d.step++; sfx.click && sfx.click(); render(); scrollTo(0, 0); });
+on('obBack', () => { const d = R.ui.draft; d.step = Math.max(0, d.step - 1); render(); });
+on('draftBand', (b) => { R.ui.draft.band = b; R.ui.draft.step = 2; render(); scrollTo(0, 0); });
 on('draftAv', (a) => { R.ui.draft.avatar = a; render(); });
+on('draftTheme', (t) => { if (isTheme(t)) { R.ui.draft.theme = t; applyTheme(t); syncScene(t, false); render(); } });
 on('createKid', () => {
   const d = R.ui.draft; if (!d || !d.name.trim() || !d.band) return;
   const k = newKid(d.name, d.band, d.avatar);
-  R.h.kids.push(k); R.h.active = k.id; R.ui.draft = null; save(); sfx.level(); go('home');
+  if (d.theme) k.prefs.theme = d.theme;
+  R.h.kids.push(k); R.h.active = k.id; R.ui.draft = null; save(); sfx.level(); confetti(40); go('home');
 });
 on('switchKid', (id) => { R.h.active = id; R.ui.lib = {}; save(); go('home'); });
 on('setAv', (a) => { if (AVATARS.includes(a)) { kid(R.h).avatar = a; save(); render(); } });
@@ -290,7 +297,7 @@ root.addEventListener('input', (e) => {
   if (t.dataset.draft) {
     if (t.dataset.draft === 'pin') { R.ui.gateIn = t.value.replace(/\D/g, '').slice(0, 4); return; }
     R.ui.draft[t.dataset.draft] = t.value;
-    const b = root.querySelector('[data-act=createKid]'); if (b) b.disabled = !(R.ui.draft.name.trim() && R.ui.draft.band);
+    const b = root.querySelector('[data-act=obNext]'); if (b && t.dataset.draft === 'name') b.disabled = !R.ui.draft.name.trim();
     return;
   }
   if (t.dataset.libQuiet) { libCtx(R.ui.arg).ui[t.dataset.libQuiet] = t.value; return; }   // kept, never re-rendered while typing
@@ -303,6 +310,7 @@ addEventListener('keydown', (e) => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   const typing = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA');
   if (R.ui.nav === 'grownups' && e.key === 'Enter' && e.target.id === 'pin') { fire('gate'); return; }
+  if (e.key === 'Enter' && e.target.id === 'kname') { fire('obNext'); return; }
   if (R.run && !R.run.over) {
     const q = R.run.items[R.run.i];
     if (R.run.fb) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); nextQ(); } return; }
