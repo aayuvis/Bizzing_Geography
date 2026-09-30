@@ -124,12 +124,25 @@ Inherited from the family, and it holds here:
   ring** (sessions today against a 2/3/5 goal — `model.js session()`; today only, nothing carries
   over, so it is not a streak), word of the day; two picture journey cards (next station, your
   expedition); today's place and landmark of the day. Rank lives in the header pill and on Me.
-- **Expeditions** (`data/expeditions.js`, `src/expeditions.js`) are Bizzing India's
-  **Paathshala**: ten sprints of 20–30 days, each part = learn, learn, practise, check + a project
-  made at home. Every lesson is an existing stop or tool; every quiz comes from the stops' own
-  generators (thin banks top up with review from earlier parts, never a repeat). **The day rule**:
-  a check counts as learned only at 8/10 on a LATER day than its teaching — `ledger` is the only
-  door, `test/expeditions.mjs` proves it both ways. Grown-ups see objectives learned, never minutes.
+- **Expeditions** (`data/expeditions.js`, `src/expeditions.js`, `src/projects.js`) are Bizzing
+  India's **Paathshala**, laid out like the Atlas: a painted plate (`art/crs-<id>.webp`), a road,
+  a camp per part and a 🏁 final camp, a pick-card below. Ten expeditions of 20–30 days; each part
+  = learn, learn, practise, **test**, then **make** — and the making happens **in the app**, never
+  "at home". Each expedition ends with a final test (15 questions) and a final project, then a
+  certificate and a gallery of what the child made. Every lesson is an existing stop or tool;
+  every quiz comes from the stops' own generators. **The day rule**: a test counts as learned only
+  at 8/10 on a LATER day than its teaching — `ledger` is the only door, `test/expeditions.mjs`
+  proves it both ways. Grown-ups see objectives learned, never minutes.
+  **Projects** are five engines in `projects.js` (map-maker grid, route across real neighbours,
+  put-in-order, sort, design-a-flag), each `init / view / act / goals / solve`. Goals are a live
+  checklist measured from the child's work; "Finish" stays disabled until every goal is met.
+  Every fact a goal checks (neighbours, landlocked, hemisphere, continent, east-to-west order)
+  comes from the data. `selftest` proves every project is solvable and not done at init. A
+  project's size field is `count`, never `n` — `daysOf` numbers days with `n` and overwrote it.
+- **Earth Through Time is the painting.** No slider, no numbered buttons: the plate carries a
+  text overlay (when, title, the story in an accordion), arrows on its edges and dots below;
+  maps, sites and sources sit in a card under it. The title must be visible without scrolling
+  (`test/ui.mjs`).
 - **The welcome is Bizzing Finance's**: a landing page, then one question a screen with Compass
   Owl as guide — name, age, **five** companions, **two** worlds. The other 35 faces and four worlds
   are on the child's page from minute one, all free.

@@ -162,8 +162,9 @@ AVATAR = {
     'riverotter': "A river otter floating on its back holding a smooth pebble, glossy brown fur, cream chin, a few water ripples.",
 }
 for k, v in AVATAR.items(): JOBS['av-' + k] = (v + ' ' + AV_STYLE, '1:1')
+for e in data('expeditions', 'EXPEDITIONS'): JOBS['crs-' + e['id']] = (e['paint'] + '. No people, no lettering, no real map. ' + STYLE + ' Very wide landscape composition.', '21:9')
 
-GROUPS = {'postcards': 'pc-', 'landmarks': 'lm-', 'eras': 'era-', 'history': 'hist-', 'avatars': 'av-', 'worlds': 'w-', 'library': 'lib-'}
+GROUPS = {'postcards': 'pc-', 'landmarks': 'lm-', 'eras': 'era-', 'history': 'hist-', 'avatars': 'av-', 'courses': 'crs-', 'worlds': 'w-', 'library': 'lib-'}
 
 
 def call(model, prompt, ratio):

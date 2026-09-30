@@ -52,7 +52,7 @@ export const TABS = [
   { k: 'exp', n: 'Expeditions', icon: 'flag' },
   { k: 'library', n: 'Library', icon: 'book' },
 ];
-const NAV_OF = { lib: 'library', stop: 'atlas', world: 'atlas', road: 'atlas', expd: 'exp', run: null, me: 'home', grownups: null, privacy: null };
+const NAV_OF = { lib: 'library', stop: 'atlas', world: 'atlas', road: 'atlas', expd: 'exp', proj: 'exp', run: null, me: 'home', grownups: null, privacy: null };
 
 export function icon(k) {
   const p = {

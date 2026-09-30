@@ -86,7 +86,8 @@ function screen() {
     case 'stop': return stopOpen(R.h, k, R.ui.arg) || X.expAllows(k, R.ui.arg) ? V.viewStop(R.ui.arg) : V.viewWorld(byId[R.ui.arg].world);
     case 'road': return V.viewRoad();
     case 'exp': return X.viewHub(k, V.pageHead);
-    case 'expd': return X.viewExpedition(k, R.ui.arg, V);
+    case 'expd': return X.viewExpedition(k, R.ui.arg, V, { part: R.ui.part });
+    case 'proj': return X.viewProject(k, R.ui.arg, V);
     case 'library': return libraryView();
     case 'lib': return toolById[R.ui.arg] ? toolView(toolById[R.ui.arg]) : libraryView();
     case 'me': return V.viewMe();
@@ -181,7 +182,16 @@ on('openStop', (id) => { if (!stopOpen(R.h, kid(R.h), id) && !X.expAllows(kid(R.
 on('openTool', (id) => go('lib', id));
 on('openLandmark', (id) => { toolById.landmarks.act('sel', id, libCtx('landmarks')); go('lib', 'landmarks'); });
 /* expeditions: the engine decides what a day is; the host only goes, runs or toasts */
-on('expOpen', (id) => go('expd', id));
+on('expOpen', (id) => { R.ui.part = null; go('expd', id); });
+on('expPart', (j) => { R.ui.part = +j; render(); });
+/* a project's builder: every control is data-act="proj", arg "name|value" */
+on('proj', (a) => { const i = String(a).indexOf('|'), msg = X.projAct(kid(R.h), R.ui.arg, a.slice(0, i), a.slice(i + 1)); save(); if (msg) toast(msg); render(); });
+on('projDone', () => {
+  const k = kid(R.h), msg = X.projAct(k, R.ui.arg, 'done');
+  if (msg !== 'made') { toast(msg); return; }
+  session(k); save(); sfx.level(); confetti(50); toast('Made! It is in your expedition gallery.');
+  go('expd', String(R.ui.arg).split('|')[0]);
+});
 on('expDay', (arg) => {
   const [eid, n] = String(arg).split('|'), k = kid(R.h), r = X.doDay(k, eid, n);
   if (!r) return;
@@ -218,6 +228,7 @@ function mapTap(t) {
     if (q.kind === 'map' && t.cc) answer(t.cc);
     return;
   }
+  if (R.ui.nav === 'proj') { fire('proj', 'tap|' + JSON.stringify(t)); return; }
   if (R.ui.nav === 'lib' && toolById[R.ui.arg]) { toolById[R.ui.arg].act('tap', JSON.stringify(t), libCtx(R.ui.arg)); render(); }
 }
 bindMaps(root, mapTap);
@@ -294,6 +305,7 @@ root.addEventListener('error', (e) => {
 let inT = null;
 root.addEventListener('input', (e) => {
   const t = e.target;
+  if (t.dataset.projInput) { X.projAct(kid(R.h), R.ui.arg, t.dataset.projInput, t.value); save(); render(); return; }
   if (t.dataset.draft) {
     if (t.dataset.draft === 'pin') { R.ui.gateIn = t.value.replace(/\D/g, '').slice(0, 4); return; }
     R.ui.draft[t.dataset.draft] = t.value;
@@ -311,6 +323,7 @@ addEventListener('keydown', (e) => {
   const typing = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA');
   if (R.ui.nav === 'grownups' && e.key === 'Enter' && e.target.id === 'pin') { fire('gate'); return; }
   if (e.key === 'Enter' && e.target.id === 'kname') { fire('obNext'); return; }
+  if (e.target && e.target.dataset && e.target.dataset.projKeys && /^(Arrow(Up|Down|Left|Right)|Enter| |[1-9]|f|F)$/.test(e.key)) { e.preventDefault(); fire('proj', 'key|' + e.key); return; }
   if (R.run && !R.run.over) {
     const q = R.run.items[R.run.i];
     if (R.run.fb) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); nextQ(); } return; }

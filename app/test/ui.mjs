@@ -134,19 +134,40 @@ async function run(vp, tag) {
   ok(await page.locator('.jstep.done').count() >= 1, 'the road shows station 1 done');
   ok(await page.locator('.jglance .jg').count() === 10 && await page.locator('.atlas-seg [aria-selected=true]').innerText() === '🛤️ Your journey', 'Your journey is a tab of the Atlas, with all ten levels at a glance');
   ok(await page.locator(phone ? '.tb.on' : '.tab.on').getAttribute('data-arg') === 'atlas', 'the Atlas tab stays lit on the journey');
-  // Expeditions: ten sprints; a learn day opens its stop; a practice day is a run
-  await nav('exp'); await page.waitForSelector('.exp-grid');
-  ok(await page.locator('.exp-card').count() === 10, 'Expeditions offers ten sprints');
+  // Expeditions: ten, each a painted board with a camp per part; a part's steps; a project built IN the app
+  await nav('exp'); await page.waitForSelector('.crs-grid');
+  ok(await page.locator('.crs-card').count() === 10, 'Expeditions offers ten');
   await shot('23-expeditions'); await noSideways('expeditions');
-  await page.click('[data-act=expOpen][data-arg="first-maps"]'); await page.waitForSelector('.exp-days');
-  ok(await page.locator('.exp-day').count() >= 20, 'an expedition lists its 20–30 days');
+  await page.click('[data-act=expOpen][data-arg="first-maps"]'); await page.waitForSelector('.crs-board');
+  ok(await page.locator('.crs-camp').count() === 6, 'the board has a camp for each part and the finish');
+  ok(await page.locator('.crs-step').count() === 5, 'a part shows its five steps: learn, learn, practise, test, make');
   await shot('24-expedition'); await noSideways('expedition');
-  await page.click('.exp-next [data-act=expDay]'); await page.waitForTimeout(200);
+  await page.click('.crs-go [data-act=expDay]'); await page.waitForTimeout(200);
   ok(await page.evaluate(() => window.__bzg.R.ui.nav) === 'stop', 'day 1 opens its lesson');
-  await page.evaluate(() => window.__bzg.go('expd', 'first-maps')); await page.waitForSelector('.exp-days');
-  ok(await page.locator('.exp-day.done').count() === 1, 'and is ticked');
+  await page.evaluate(() => window.__bzg.go('expd', 'first-maps')); await page.waitForSelector('.crs-steps');
+  ok(await page.locator('.crs-step.done').count() === 1, 'and is ticked');
   await page.click('[data-act=expDay][data-arg="first-maps|3"]'); await page.waitForSelector('.qcard');
   ok(await page.evaluate(() => window.__bzg.R.run.kind) === 'sprint', 'a practice day is a quiz run');
+  await page.evaluate(() => { window.__bzg.R.run = null; window.__bzg.go('expd', 'first-maps'); });
+  await page.waitForSelector('.crs-steps');
+  await page.click('[data-act=expDay][data-arg="first-maps|5"]'); await page.waitForSelector('.pj-page');
+  ok(await page.locator('[data-act=projDone]').isDisabled(), 'an empty project cannot be finished');
+  // build the room by KEYBOARD: 2 = wall along the top row, 3 = bed, 4 = table, then a door by TOUCH
+  await page.focus('.pj-stage');
+  await page.keyboard.press('2');
+  for (let x = 0; x < 10; x++) { await page.keyboard.press(' '); await page.keyboard.press('ArrowRight'); }
+  await page.keyboard.press('ArrowDown'); await page.keyboard.press(' '); await page.keyboard.press('ArrowLeft'); await page.keyboard.press(' ');
+  await page.keyboard.press('ArrowDown'); await page.keyboard.press('3'); await page.keyboard.press(' '); await page.keyboard.press('ArrowLeft'); await page.keyboard.press(' ');
+  await page.keyboard.press('ArrowLeft'); await page.keyboard.press('4'); await page.keyboard.press(' ');
+  await page.click('.pj-tools [data-arg="tool|door"]');
+  const cell = await page.locator('.pj-cell').nth(40).boundingBox();
+  if (phone) await page.touchscreen.tap(cell.x + cell.width / 2, cell.y + cell.height / 2); else await page.mouse.click(cell.x + cell.width / 2, cell.y + cell.height / 2);
+  await page.waitForTimeout(150);
+  ok(await page.locator('.pj-goals li.ok').count() === 4, `the checklist ticks itself as the room is built (${await page.locator('.pj-goals li.ok').count()} of 4)`);
+  await shot('25-project'); await noSideways('project');
+  await page.click('[data-act=projDone]'); await page.waitForSelector('.crs-board');
+  ok(await page.evaluate(() => !!window.__bzg.R.h.kids[0].exp['first-maps'].art['fm1.project']), 'finishing saves what was made');
+  ok(await page.locator('.crs-gal .crs-gi').count() === 1, 'and it appears in the gallery');
   await page.evaluate(() => { window.__bzg.R.run = null; window.__bzg.go('home'); });
 
   // every Library tool renders
@@ -183,7 +204,7 @@ async function run(vp, tag) {
   await page.click('[data-arg="time|t|Oceania"]'); await page.evaluate(() => window.__bzg.fire('lib', 'time|i|3')); await page.waitForTimeout(150);
   ok(await page.locator('.tool-time .gmap[data-rot]').count() === 1, 'Oceania’s map is centred on the Pacific');
   await page.locator('.tool-time .gmap').scrollIntoViewIfNeeded(); await shot('20-time-oceania');
-  const last = await page.locator('.t-time-ticks button').count();
+  const last = await page.locator('.t-dots button').count();
   await page.evaluate((n) => window.__bzg.fire('lib', `time|i|${n}`), last - 1); await page.waitForTimeout(150);
   ok(await page.locator('.tool-time .gmap.noborders').count() === 0 && await page.locator('.tool-time .gmap .zone').count() === 0, 'today shows real borders and no zones');
   await page.click('[data-arg="time|where"]'); await page.waitForSelector('.qcard');
@@ -283,12 +304,14 @@ async function run(vp, tag) {
   await page.click('#theme-atlas'); await page.waitForTimeout(100);
   // above the fold: on every key screen the core content starts in the top half of the first screen
   for (const [nav, arg, sel, what] of [['home', null, '.h-ring [data-act]', 'the Start button'], ['home', null, '.h-journey', 'the journey card'], ['atlas', null, '.map-board', 'the island map'], ['road', null, '.jsteps', 'the road'],
-    ['exp', null, '.exp-card', 'the first expedition'], ['library', null, '.lib-tile', 'the first tool'], ['lib', 'capitals', '.gmap', 'the map'], ['lib', 'time', '.t-time-card', 'the picture'], ['lib', 'geoguess', '.t-geo-intro .btn, .t-geo-card', 'Play or the game'], ['lib', 'dictionary', '#t-dictionary-q', 'the search box']]) {
+    ['exp', null, '.crs-card', 'the first expedition'], ['expd', 'capitals', '.crs-board', 'the expedition board'], ['library', null, '.lib-tile', 'the first tool'], ['lib', 'capitals', '.gmap', 'the map'], ['lib', 'time', '.t-stage', 'the painting'], ['lib', 'geoguess', '.t-geo-intro .btn, .t-geo-card', 'Play or the game'], ['lib', 'dictionary', '#t-dictionary-q', 'the search box']]) {
     await page.evaluate(([n, a]) => { window.__bzg.go(n, a); scrollTo(0, 0); }, [nav, arg]); await page.waitForTimeout(120);
     const top = await page.evaluate((sel) => { const e = document.querySelector(sel); return e ? e.getBoundingClientRect().top : 1e9; }, sel);
     const h = await page.evaluate(() => innerHeight);
     ok(top < h * (phone ? 0.62 : 0.5), `${nav}${arg ? ' ' + arg : ''}: ${what} starts above the fold (${Math.round(top)} of ${h})`);
   }
+  await page.evaluate(() => { window.__bzg.go('lib', 'time'); scrollTo(0, 0); }); await page.waitForTimeout(150);
+  ok(await page.evaluate(() => { const b = document.querySelector('.t-ov h2').getBoundingClientRect(); return b.bottom <= innerHeight; }), 'Earth Through Time: the step’s title is on screen without scrolling');
   // grown-ups
   await page.evaluate(() => window.__bzg.go('grownups'));
   await page.fill('#pin', '1234'); await page.click('[data-act=gate]'); await page.waitForSelector('.report');
