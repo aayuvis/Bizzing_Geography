@@ -104,7 +104,7 @@ function dayTitle(d) {
 
 export function viewHub(k, pageHead) {
   return `<section class="exp-hub">
-    ${pageHead('Expeditions', esc(EXPEDITIONS_INTRO))}
+    ${pageHead('Expeditions')}
     <div class="exp-grid">${EXPEDITIONS.map((e) => {
       const s = stats(k, e), pct = Math.round((100 * s.done) / s.days);
       return `<button class="card exp-card" data-act="expOpen" data-arg="${e.id}" style="--ec:${e.colour}">
@@ -113,7 +113,7 @@ export function viewHub(k, pageHead) {
           <span class="exp-bar" aria-hidden="true"><i style="width:${pct}%"></i></span>
           <span class="exp-s">${s.started ? `Day ${s.next ? s.next.n : s.days} of ${s.days} · ${s.learned} of ${s.mods} learned` : 'Not started — any day is a good day'}</span></span></button>`;
     }).join('')}</div>
-    <p class="muted small center-t exp-note">No streaks, no timers. A missed day costs nothing — the next day simply waits for you.</p>
+    <p class="muted small center-t exp-note">${esc(EXPEDITIONS_INTRO)} No streaks, no timers: a missed day costs nothing — the next day simply waits for you.</p>
   </section>`;
 }
 
@@ -125,9 +125,9 @@ export function viewExpedition(k, eid, { pageHead, back, btn }) {
   const nx = s.next;
   const nxHint = nx && nx.k === 'c' && (() => { const taught = days.filter((d) => d.mod === nx.mod && d.k === 't').map((d) => r.seen[d.key]).filter(Boolean).sort().pop(); return taught === today; })();
   return `<section class="exp-one" style="--ec:${e.colour}">
-    ${pageHead(`${e.glyph} ${esc(e.name)}`, esc(e.blurb), back('nav', 'Expeditions', 'exp'))}
+    ${pageHead(`${e.glyph} ${esc(e.name)}`, '', back('nav', 'Expeditions', 'exp'))}
     <div class="card exp-top">
-      <div class="exp-top-t"><p class="kicker">${s.days} days · ${e.modules.length} parts · ${ageStr(e)}</p>
+      <div class="exp-top-t"><p class="kicker">${s.days} days · ${e.modules.length} parts · ${ageStr(e)}</p><p class="muted small">${esc(e.blurb)}</p>
         <p><b>${s.done}</b> of ${s.days} days done · <b>${s.learned}</b> of ${s.mods} parts learned</p>
         <span class="exp-bar big" aria-hidden="true"><i style="width:${Math.round((100 * s.done) / s.days)}%"></i></span></div>
       ${nx ? `<div class="exp-next"><span class="kicker">Next · Day ${nx.n}</span><b>${GLYPH[nx.k]} ${dayTitle(nx)}</b>

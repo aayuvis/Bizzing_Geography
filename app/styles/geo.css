@@ -143,7 +143,8 @@
 .update-bar button{margin-left:10px}
 
 /* ---------------------------------------------------------------- library tools */
-.tool-page .seg{margin:0 auto 12px;flex-wrap:wrap;justify-content:center}
+.tool-page .seg{margin:0 auto 12px;justify-content:center}
+@media (max-width:760px){.tool-page div.seg{flex-wrap:nowrap;justify-content:flex-start}}
 .t-review{font-size:var(--fs-label);background:var(--medium-tint);color:var(--treasure-deep);border-radius:var(--r-md);padding:6px 12px;display:inline-block}
 .t-geo{display:grid;grid-template-columns:1fr 1.3fr;gap:16px;align-items:start}
 .t-geo-card{margin:0;border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--sh-raised);background:var(--surface)}
@@ -234,7 +235,6 @@
 /* landmarks: the map of every landmark sits above the tiles */
 .tool-landmarks .gmap{margin:6px 0 4px}
 /* Earth Through Time — continent roads: soft zones, never lines */
-.t-time-tabs{flex-wrap:wrap}
 .gmap .zones{pointer-events:none}
 .gmap .zone{opacity:.5}
 .gmap .zone.z0{fill:#d9822b} .gmap .zone.z1{fill:#2f7fb5} .gmap .zone.z2{fill:#8a5cb8} .gmap .zone.z3{fill:#2f9e6e} .gmap .zone.z4{fill:#c0504d} .gmap .zone.z5{fill:#b8a23a}
@@ -247,3 +247,13 @@
 .t-hist-moments{padding-left:20px;margin:0 0 8px} .t-hist-moments li{margin:4px 0}
 .t-hist-site{background:var(--action-tint);border-radius:var(--r-md,10px);padding:8px 12px;margin:6px 0}
 .t-hist-sites{margin:6px 0 4px}
+/* compact tops: the tool's own controls first, its explanation small below */
+.t-geo-intro .row{margin-bottom:8px}
+.t-geo-intro p{margin:0}
+.t-dict-today{margin:0 0 10px;padding:8px 14px;border-radius:12px;background:var(--surface);box-shadow:var(--sh);font-size:14px}
+.t-dict-today .kicker{margin-right:6px}
+@media (max-width:760px){
+  .t-dict-topics,.t-ex-bar.chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .t-dict-topics > *{flex:none}
+  .t-time-ticks{display:none}
+}

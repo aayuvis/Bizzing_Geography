@@ -9,6 +9,9 @@ import { THEMES, themeOf, themePicker } from './themes.js';
 import { Store } from './store.js';
 import { EXPEDITIONS, EXPEDITIONS_PARENT } from './data/expeditions.js';
 import { learnedList, stats as expStats } from './expeditions.js';
+import { GOALS, goalOf, sessionsToday } from './model.js';
+import { todaysWord } from './library/dictionary.js';
+import { LANDMARKS } from './data/landmarks.js';
 import { BANDS, AVATARS, AVATAR_PACKS, AVATAR_NAME, avatarFile, RANKS, RANK_SRC, rankOf, kid, stopRec, road, stopOpen, lvFor, starsTotal, maxStars, levelOf } from './model.js';
 import { worldSVG, regionSVG, viewFor } from './map.js';
 import { POSTCARDS } from './data/postcards.js';
@@ -35,7 +38,7 @@ export const starRow = (n, max = 3, big = false) =>
 export const btn = (label, act, arg = '', kind = '', extra = '') =>
   `<button class="btn ${kind}" data-act="${act}"${arg !== '' ? ` data-arg="${esc(arg)}"` : ''} ${extra}>${label}</button>`;
 export const back = (act, label = 'Back', arg = '') =>
-  `<button class="back" data-act="${act}"${arg ? ` data-arg="${esc(arg)}"` : ''} aria-label="${esc(label)}"><span aria-hidden="true">←</span> ${esc(label)}</button>`;
+  `<button class="back" data-act="${act}"${arg ? ` data-arg="${esc(arg)}"` : ''} aria-label="${esc(label)}"><span aria-hidden="true">←</span> <span class="back-l">${esc(label)}</span></button>`;
 export function pageHead(title, sub = '', backBtn = '', right = '') {
   return `<header class="phead">${backBtn || '<span></span>'}<div class="phead-t"><h1>${title}</h1>${sub ? `<p>${sub}</p>` : ''}</div><div class="phead-r">${right}</div></header>`;
 }
@@ -135,35 +138,81 @@ export function viewWelcome() {
 const greet = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'; };
 export const todaysCard = () => pick(POSTCARDS, seeded('pc' + dayKey()));
 
+/* What your avatar says (Bizzing Bee's avatar greetings): a line per pack, turned by the day. */
+const SAY = {
+  kit: ['Compass ready. Which way today, {n}?', 'I packed the map. You bring the questions, {n}!', 'Every explorer starts with one step, {n}.'],
+  continents: ['I came a long way to explore with you, {n}!', 'Seven continents, {n} — which one first?', 'My home is on the map somewhere. Can you find it, {n}?'],
+  ocean: ['The sea covers most of the planet, {n}. Dive in!', 'Swim with me to somewhere new, {n}.', 'Which ocean shall we cross today, {n}?'],
+  earth: ['The Earth is always moving, {n}. Let’s keep up!', 'Mountains, rivers, storms — pick one, {n}!', 'Ready for an adventure, {n}?'],
+  forest: ['The forest is waking up, {n}. Let’s explore!', 'Follow the river with me, {n}.', 'So many places to see, {n}. Where to?'],
+};
+function sayLine(k) {
+  const pack = (AVATAR_PACKS.find((p) => p.avatars.includes(k.avatar)) || { id: 'kit' }).id;
+  const L = SAY[pack] || SAY.kit;
+  return L[Math.floor(seeded('say' + dayKey() + k.id)() * L.length)].replace('{n}', k.name);
+}
+/* the expedition to show: the one worked on most recently, else one for the child's age */
+function homeExpedition(k) {
+  const on = EXPEDITIONS.filter((e) => (k.exp || {})[e.id]).map((e) => ({ e, last: Object.values(k.exp[e.id].seen || {}).sort().pop() || k.exp[e.id].at }));
+  if (on.length) return on.sort((a, b) => (a.last < b.last ? 1 : -1))[0].e;
+  const age = { '6-7': 6, '8-10': 8, '11-14': 11 }[k.band] || 8;
+  return EXPEDITIONS.find((e) => age >= e.ages[0] && age <= e.ages[1]) || EXPEDITIONS[0];
+}
+const ring = (n, goal) => { const r = 34, c = 2 * Math.PI * r, f = Math.min(1, n / goal);
+  return `<svg class="h-ring-svg" viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="${r}" class="rb"/><circle cx="40" cy="40" r="${r}" class="rf" stroke-dasharray="${(f * c).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 40 40)"/></svg>`; };
+
+/* The home, in the family's shape (Bizzing Bee's and Bizzing India's homes):
+   a hero row — you, today's ring, the word of the day — then two journey cards,
+   then two small things of the day. Everything above the fold is something to do. */
 export function viewHome() {
-  const k = kid(R.h), rd = road(k), rk = rankOf(k.xp);
-  const nx = rd.next ? byId[rd.next.stop] : null;
-  const pc = todaysCard(), gd = (k.lib.geoguess || {}).daily || {};
-  const doneToday = gd[dayKey()];
+  const k = kid(R.h), rd = road(k);
+  const nx = rd.next ? byId[rd.next.stop] : null, nw = nx ? worldOf(nx.world) : worldOf(byId[rd.steps[0].stop].world);
+  const pc = todaysCard(), gd = (k.lib.geoguess || {}).daily || {}, doneToday = gd[dayKey()];
+  const done = sessionsToday(k), goal = goalOf(k);
+  const [tw, td] = todaysWord();
+  const e = homeExpedition(k), es = expStats(k, e), ed = es.next;
+  const edStop = ed ? (ed.stop || (ed.stops || [])[0]) : null;
+  const eArt = edStop ? `w-${byId[edStop].world}` : `w-${nw.id}`;
+  const lm = pick(LANDMARKS, seeded('lm' + dayKey()));
+  const startAct = nx ? ['openStop', nx.id, nx.title] : ed ? ['expDay', `${e.id}|${ed.n}`, `${e.name}, day ${ed.n}`] : ['openTool', 'geoguess', 'GeoGuesser'];
   return `<section class="home">
-    <div class="hello">
-      ${av(k.avatar, 64, '')}
-      <div><p class="kicker">${greet()}, ${esc(k.name)}</p><h1>Where shall we explore today?</h1>
-        <button class="theme-chip" data-act="themes" aria-label="Choose a theme"><i aria-hidden="true"></i>Theme: ${esc(THEMES.find((t) => t.id === themeOf(k)).name)}</button></div>
-    </div>
-    <div class="home-grid">
-      <button class="card next-card" data-act="${nx ? 'openStop' : 'nav'}" data-arg="${nx ? nx.id : 'road'}">
-        <span class="kicker">Level ${rd.L.n} · ${esc(rd.L.name)} · ${rd.done} of ${rd.steps.length} stations</span>
-        ${nx ? `<b class="nc-t">${nx.glyph} ${esc(nx.title)}</b><span class="muted">${esc(nx.hook)}</span><span class="btn primary">Go to station ${rd.next.n} →</span>`
-          : `<b class="nc-t">🏁 Road complete</b><span class="muted">Every station on Level ${rd.L.n} is done. Take the level check to open Level ${rd.L.n + 1}.</span><span class="btn primary">Take the level check</span>`}
+    <div class="home-top">
+      <div class="card h-hello">
+        ${av(k.avatar, 128, '')}
+        <div class="h-hello-t"><p class="muted">${greet()},</p><h1>${esc(k.name)}</h1><p class="h-say">“${esc(sayLine(k))}”</p>
+          <button class="theme-chip" data-act="themes" aria-label="Choose a theme"><i aria-hidden="true"></i>${esc(THEMES.find((t) => t.id === themeOf(k)).name)}</button></div>
+      </div>
+      <div class="card h-ring">
+        <div class="h-ring-c">${ring(done, goal)}<span><b>${done}/${goal}</b><i>today</i></span></div>
+        <div class="h-ring-t"><h3>Today’s ring</h3><p class="muted small h-ring-why">A station, a quiz, an expedition day or a GeoGuesser round — each fills one notch.</p>
+          <p class="small h-ring-next">Next: <b>${esc(startAct[2])}</b></p>
+          <div class="row gap wrap h-ring-go">${btn(done >= goal ? '✓ Full — keep going' : '▶ Start', startAct[0], startAct[1], 'primary')}
+            <span class="h-goal" role="group" aria-label="How many a day">${GOALS.map((g) => `<button class="${g === goal ? 'on' : ''}" data-act="goal" data-arg="${g}" aria-pressed="${g === goal}">${g}</button>`).join('')}<i>a day</i></span></div></div>
+      </div>
+      <button class="card h-word" data-act="openTool" data-arg="dictionary">
+        <span class="kicker">Word of the day</span><b>${esc(tw)}</b><span class="muted small">${esc(td)}.</span><span class="h-link">Dictionary →</span>
       </button>
-      <button class="card pc-card" data-act="openTool" data-arg="geoguess">
-        <img src="art/${pc.id}.webp" alt="" loading="lazy" width="1280" height="720">
-        <span class="pc-t"><span class="kicker">Today’s postcard</span><b>Where in the world is this?</b><span class="muted">${doneToday ? `You scored ${doneToday.toLocaleString('en-US')} points today. Come back tomorrow for a new one.` : 'One painted place a day. Tap the map where you think it is.'}</span></span>
-      </button>
     </div>
-    <div class="card rank-card">
-      <div class="row gap"><span class="rank-badge">${rk.i + 1}</span><div class="grow"><p class="kicker">Your rank</p><h3>${esc(rk.n)}</h3><p class="muted small">${esc(rk.why)}</p></div>
-        <div class="gold-line">★ ${starsTotal(k)} <span class="muted">stars</span></div></div>
-      ${rk.next ? `<div class="meter"><i style="width:${rk.pct}%"></i></div><p class="muted small">${rk.next.xp - k.xp} more right answers to ${esc(rk.next.n)}.</p>` : '<p class="muted small">The top rank. Every right answer still counts.</p>'}
+    <div class="home-two">
+      <div class="card h-journey">
+        <div class="h-art" style="background-image:url(art/w-${nw.id}.webp)"><span class="h-badge">${nx ? nx.glyph : '🏁'}</span><span class="h-chip">Level ${rd.L.n} · ${rd.done} of ${rd.steps.length}</span></div>
+        <div class="h-body"><p class="muted small">Next on your journey</p>
+          <h2>${nx ? esc(nx.title) : 'Road complete'}</h2><p class="muted small">${nx ? `${esc(nw.name)} · ${esc(nx.hook)}` : `Every station on Level ${rd.L.n} is done — take the level check.`}</p>
+          <div class="row gap h-go">${nx ? btn('▶ Start', 'openStop', nx.id, 'primary') : btn('Take the level check', 'nav', 'road', 'primary')}<span class="h-bar"><i style="width:${Math.round((100 * rd.done) / rd.steps.length)}%"></i></span></div></div>
+      </div>
+      <div class="card h-journey">
+        <div class="h-art" style="background-image:url(art/${eArt}.webp)"><span class="h-badge">${e.glyph}</span><span class="h-chip">${es.started ? `Day ${ed ? ed.n : es.days} of ${es.days}` : `${es.days} days`}</span></div>
+        <div class="h-body"><p class="muted small">${es.started ? 'Your expedition' : 'An expedition for you'}</p>
+          <h2>${esc(e.name)}</h2><p class="muted small">${ed ? `Day ${ed.n}: ${esc(ed.name || (ed.stop ? byId[ed.stop].title : ed.k === 'c' ? 'the check' : 'practice'))}` : 'Every day done.'}</p>
+          <div class="row gap h-go">${ed ? btn(es.started ? '▶ Continue' : '▶ Begin', 'expDay', `${e.id}|${ed.n}`, es.started ? 'primary' : '') : ''}${btn('All expeditions', 'nav', 'exp', 'small')}<span class="h-bar"><i style="width:${Math.round((100 * es.done) / es.days)}%"></i></span></div></div>
+      </div>
     </div>
-    <h2 class="sec-h">The Library</h2>
-    <div class="lib-grid mini">${SHELF.slice(0, 4).map(libTile).join('')}</div>
+    <div class="home-two small">
+      <button class="card h-mini" data-act="openTool" data-arg="geoguess"><img src="art/${pc.id}.webp" alt="" loading="lazy" width="1280" height="720">
+        <span><span class="kicker">Today’s place</span><b>Where in the world is this?</b><span class="muted small">${doneToday ? `You scored ${doneToday.toLocaleString('en-US')} today.` : 'Tap the map where you think it is.'}</span></span></button>
+      <button class="card h-mini" data-act="openLandmark" data-arg="${lm.id}"><img src="art/lm-${lm.id}.webp" alt="" loading="lazy" width="960" height="720">
+        <span><span class="kicker">Landmark of the day</span><b>${esc(lm.name)}</b><span class="muted small">${esc(lm.where)}</span></span></button>
+    </div>
   </section>`;
 }
 export const libTile = (t) => `<button class="lib-tile" data-act="openTool" data-arg="${t.id}">
@@ -190,7 +239,7 @@ const atlasTabs = (on) => `<div class="seg atlas-seg" role="tablist" aria-label=
 export function viewAtlas() {
   const h = R.h, k = kid(h);
   return `<section>
-    ${pageHead('The Explorer’s Atlas', 'Ten places on one island, each with its own lessons. Tap a place to travel there.', '', `<span class="chip gold">★ ${starsTotal(k)} / ${maxStars()}</span>`)}
+    ${pageHead('The Explorer’s Atlas', '', '', `<span class="chip gold">★ ${starsTotal(k)} / ${maxStars()}</span>`)}
     ${atlasTabs('map')}
     <div class="map-board">
       <img src="art/atlas.webp" alt="A painted map of the Explorer’s Island." width="1920" height="1072">
@@ -335,24 +384,20 @@ export function viewRoad() {
   const L = show || rd.L;
   const steps = show ? L.steps.map((s, i) => ({ ...s, n: i + 1, done: !!((k.stops[s.stop] || {}).lv || {})[s.lv], open: L.n < k.road.level || R.h.parent.tester })) : rd.steps;
   const mine = k.road.level;
-  const glance = `<div class="card jg-card"><h3>Your journey at a glance</h3>
-    <p class="muted small">Ten levels, from your first map to the stretch. Each level is a road of stations across the island; ten right answers in its level check opens the next.</p>
-    <ol class="jglance">${LEVELS.map((x) => {
+  /* the ten levels as one strip: what is done, where you are, what comes — tap one to see its road */
+  const glance = `<ol class="jglance" aria-label="Your journey: ten levels">${LEVELS.map((x) => {
+      const state = k.road.finished.includes(x.n) || x.n < mine ? 'fin' : x.n === mine ? 'now' : 'ahead';
       const worlds = [...new Set(x.steps.map((s) => byId[s.stop].world))].map(worldOf);
-      const state = k.road.finished.includes(x.n) ? 'fin' : x.n === mine ? 'now' : x.n < mine ? 'fin' : 'ahead';
-      return `<li><button class="jg ${state}${x.n === L.n ? ' shown' : ''}" data-act="lvShow" data-arg="${x.n}" aria-label="Level ${x.n}: ${esc(x.name)}">
-        <span class="jg-n">${state === 'fin' ? '✓' : x.n}</span>
-        <span class="jg-t"><b>${esc(x.name)}</b><span>${x.steps.length} stations · ${ageOf(x.n)}${state === 'now' ? ' · <em>you are here</em>' : ''}</span>
-        <span class="jg-w">${worlds.map((w) => `<i title="${esc(w.name)}">${w.glyph}</i>`).join('')}</span></span></button></li>`;
-    }).join('')}</ol></div>`;
+      return `<li><button class="jg ${state}${x.n === L.n ? ' shown' : ''}" data-act="lvShow" data-arg="${x.n}" aria-label="Level ${x.n}: ${esc(x.name)}${state === 'now' ? ', you are here' : ''}" title="${esc(x.name)} · ${x.steps.length} stations · ${worlds.map((w) => w.short).join(', ')}">
+        <span class="jg-n">${state === 'fin' ? '✓' : x.n}</span><span class="jg-t">${esc(x.name)}</span></button></li>`;
+    }).join('')}</ol>`;
   return `<section>
-    ${pageHead('The Explorer’s Atlas', 'Where your journey goes — and what to expect on the way.', '', `<span class="chip gold">★ ${starsTotal(k)} / ${maxStars()}</span>`)}
+    ${pageHead('The Explorer’s Atlas', '', '', `<span class="chip gold">★ ${starsTotal(k)} / ${maxStars()}</span>`)}
     ${atlasTabs('road')}
-    <div class="narrow">
     ${glance}
-    <h2 class="center-t">Level ${L.n} · ${esc(L.name)}</h2>
-    <div class="seg lv-seg" role="tablist" aria-label="Level">${LEVELS.map((x) => `<button role="tab" aria-selected="${x.n === L.n}" class="${x.n === L.n ? 'on' : ''}${x.n === k.road.level ? ' mine' : ''}${k.road.finished.includes(x.n) ? ' fin' : ''}" data-act="lvShow" data-arg="${x.n}">${x.n}</button>`).join('')}</div>
-    <p class="lead center-t">${esc(L.blurb)}</p>
+    <div class="narrow">
+    <h2 class="jl-h">Level ${L.n} · ${esc(L.name)} <span class="muted small">${ageOf(L.n)} · ${L.steps.length} stations${L.n === mine ? ' · you are here' : ''}</span></h2>
+    <p class="muted center-t jl-b">${esc(L.blurb)}</p>
     <ol class="jsteps">${steps.map((s) => {
       const st = byId[s.stop], w = worldOf(st.world);
       return `<li><button class="jstep${s.done ? ' done' : ''}${s.open ? '' : ' shut'}${!show && rd.next && rd.next.stop === s.stop ? ' cur' : ''}" data-act="${s.open ? 'openStop' : 'noop'}" data-arg="${s.stop}" style="--wi:${w.ink};--wt:${w.tint}" ${s.open ? '' : 'aria-disabled="true"'}>
@@ -374,20 +419,20 @@ export function viewMe() {
   const k = kid(R.h), rk = rankOf(k.xp);
   return `<section class="narrow">
     ${pageHead(esc(k.name), `${BANDS.find((b) => b.id === k.band).label} · Level ${k.road.level}`)}
-    <div class="card ladder-card">
-      <h3>Explorer ranks</h3>
-      <ol class="ladder">${RANKS.map((r, i) => `<li class="${i <= rk.i ? 'got' : ''}${i === rk.i ? ' now' : ''}"><b>${i + 1}. ${esc(r.n)}</b> <span class="muted small">${r.xp} right answers — ${esc(r.why)}</span></li>`).join('')}</ol>
-      ${srcList(RANK_SRC)}
-    </div>
+    <div class="card"><h3>Change your face</h3>${avatarPicker(k.avatar, 'setAv', 'me')}</div>
     ${themePicker(k)}
     <div class="card row gap wrap"><div style="flex:1;min-width:200px"><h3>Moving background</h3><p class="muted small">The world behind the page moves. Switch it to a still picture on this device if it distracts. It always holds still during a quiz.</p></div>
       <button class="btn" data-act="still" aria-pressed="${Store.loadDevice('still', false)}">${Store.loadDevice('still', false) ? '▶ Let it move' : '⏸ Hold it still'}</button></div>
-    <div class="card"><h3>Change your face</h3>${avatarPicker(k.avatar, 'setAv', 'me')}</div>
     <div class="card">
       <h3>Explorers on this device</h3>
       <div class="who-list">${R.h.kids.map((x) => `<button class="who-row${x.id === k.id ? ' on' : ''}" data-act="switchKid" data-arg="${x.id}">${av(x.avatar, 40)} <b>${esc(x.name)}</b></button>`).join('')}
         <button class="btn" data-act="nav" data-arg="welcome">+ Add an explorer</button></div>
     </div>
+    <details class="card ladder-card"><summary><h3>Explorer ranks</h3> <span class="muted small">— you are ${esc(rk.n)}</span></summary>
+      <ol class="ladder">${RANKS.map((r, i) => `<li class="${i <= rk.i ? 'got' : ''}${i === rk.i ? ' now' : ''}"><b>${i + 1}. ${esc(r.n)}</b> <span class="muted small">${r.xp} right answers — ${esc(r.why)}</span></li>`).join('')}</ol>
+      ${srcList(RANK_SRC)}
+    </details>
+
   </section>`;
 }
 

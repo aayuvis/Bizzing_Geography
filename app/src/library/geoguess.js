@@ -91,14 +91,13 @@ export function view(ctx) {
   if (!g) {
     const today = (d.daily || {})[dayKey()];
     return `<div class="card t-geo-intro">
-      <p class="lead">Look at the place — the land, the plants, the roads and the buildings — then tap the map where you think it is. The closer you are, the more points: up to 5,000 a card.</p>
-      <p class="muted">${on ? `Each round mixes <b>real Street View photos</b> — ${photoPool('11-14').length.toLocaleString('en-US')} real places in ${new Set(photoPool('11-14').map((p) => p.cc)).size} countries, shot by Google — with <b>painted postcards</b> made with an AI image model. Every card says which it is.`
-        : `${POSTCARDS.length} painted postcards of real kinds of places, made with an AI image model.${ctx.photosReady ? ' Real photos are switched off on this device (grown-ups’ page).' : ''}`}</p>
       <div class="row gap wrap">
         <button class="btn primary big" data-act="lib" data-arg="geoguess|start">Play a round of ${ROUND}</button>
         <button class="btn big" data-act="lib" data-arg="geoguess|daily" ${today != null ? 'disabled' : ''}>${today != null ? `Today’s place: ${today.toLocaleString('en-US')} points` : 'Today’s place'}</button>
+        ${d.best ? `<span class="muted small">Best round <b>${d.best.toLocaleString('en-US')}</b> · ${d.rounds || 0} played</span>` : ''}
       </div>
-      ${d.best ? `<p class="muted">Your best round: <b>${d.best.toLocaleString('en-US')}</b> of ${(ROUND * 5000).toLocaleString('en-US')}. Rounds played: ${d.rounds || 0}.</p>` : ''}
+      <p class="muted small">Look at the place, then tap the map where you think it is — up to 5,000 points a card. ${on ? `Rounds mix <b>real Street View photos</b> (${photoPool('11-14').length.toLocaleString('en-US')} places in ${new Set(photoPool('11-14').map((p) => p.cc)).size} countries, shot by Google) with <b>painted postcards</b> made with an AI image model; every card says which it is.`
+        : `${POSTCARDS.length} painted postcards of real kinds of places, made with an AI image model.${ctx.photosReady ? ' Real photos are switched off on this device (grown-ups’ page).' : ''}`}</p>
     </div>`;
   }
   if (g.i >= g.cards.length) {
@@ -151,6 +150,7 @@ export function act(name, arg, ctx) {
     g.i++; g.guess = null; g.heading = 0;
     if (g.i >= g.cards.length) {
       const tot = g.done.reduce((a, x) => a + x.pts, 0), d = ctx.data;
+      if (ctx.session) ctx.session();   // a round is one notch on Today’s ring
       if (g.daily) { d.daily = d.daily || {}; d.daily[dayKey()] = tot; const ks = Object.keys(d.daily).sort(); while (ks.length > 30) delete d.daily[ks.shift()]; }
       else { d.rounds = (d.rounds || 0) + 1; if (tot > (d.best || 0)) { d.best = tot; ctx.confetti(40); ctx.sfx.level(); } }
       ctx.save();

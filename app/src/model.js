@@ -90,6 +90,13 @@ export function newKid(name, band, avatar) {
 }
 export const kid = (h) => h.kids.find((k) => k.id === h.active) || null;
 
+/* Today's ring (the family's daily ring, as Bizzing Bee and India have it): one notch
+   per finished SESSION — a station quiz, a Library quiz, a GeoGuesser round, an
+   expedition day. It counts today only: nothing carries over, nothing is lost. */
+export const GOALS = [2, 3, 5];
+export const goalOf = (k) => (GOALS.includes((k.prefs || {}).goal) ? k.prefs.goal : 3);
+export function session(k) { const d = dayKey(), day = k.days[d] || (k.days[d] = { q: 0, ok: 0 }); day.s = (day.s || 0) + 1; }
+export const sessionsToday = (k) => ((k.days || {})[dayKey()] || {}).s || 0;
 export function tick(k, right, xp = 1) {
   const d = dayKey();
   const day = k.days[d] || (k.days[d] = { q: 0, ok: 0 });

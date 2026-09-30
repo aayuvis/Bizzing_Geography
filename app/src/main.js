@@ -5,7 +5,7 @@ import { R } from './runtime.js';
 import { Store } from './store.js';
 import { on, fire, bindRoot, sfx, setSound, toast, confetti, say, hush } from './ui.js';
 import { byId, drill, correct, worldOf, STOPS } from './stops.js';
-import { newHousehold, newKid, kid, AVATARS, tick, stopRec, scoreRun, road, stopOpen, lvFor, passLevel, levelOf, CHECK_PASS } from './model.js';
+import { newHousehold, newKid, kid, AVATARS, tick, session, GOALS, stopRec, scoreRun, road, stopOpen, lvFor, passLevel, levelOf, CHECK_PASS } from './model.js';
 import { byCc } from './geo.js';
 import { shuffle, rnd } from './rand.js';
 import * as V from './views.js';
@@ -40,6 +40,7 @@ function libCtx(id) {
     id, kid: k, band: k.band, ui, data, save, render, toast, sfx, confetti, say,
     photos: photosOn(R.h), photosReady: !!GKEY,
     tick: (right, xp = 1) => { tick(k, right, xp); save(); },
+    session: () => session(k),
     startRun: (title, items, extra = {}) => startRun('lib', title, items, { ...extra, lib: id }),
     go: (nav, arg) => go(nav, arg), openStop: (sid) => fire('openStop', sid),
   };
@@ -92,12 +93,12 @@ function screen() {
     default: return V.viewHome();
   }
 }
-const libraryView = () => `<section>${V.pageHead('The Explorer’s Library', 'Games and tools for the whole world: guess the place, learn the capitals and flags, walk through time.')}
+const libraryView = () => `<section>${V.pageHead('The Explorer’s Library')}
   <div class="lib-grid">${SHELF.map(V.libTile).join('')}</div></section>`;
 function toolView(tool) {
   let body;
   try { body = tool.view(libCtx(tool.TOOL.id)); } catch (e) { console.error(e); body = '<div class="card center-card"><p>Something went wrong in this tool.</p></div>'; }
-  return `<section class="tool-page tool-${tool.TOOL.id}">${V.pageHead(`${tool.TOOL.glyph} ${tool.TOOL.name}`, tool.TOOL.blurb, V.back('nav', 'Library', 'library'))}${body}</section>`;
+  return `<section class="tool-page tool-${tool.TOOL.id}">${V.pageHead(`${tool.TOOL.glyph} ${tool.TOOL.name}`, '', V.back('nav', 'Library', 'library'))}${body}</section>`;
 }
 
 let focusId = null;
@@ -109,6 +110,7 @@ function render() {
   syncScene(themeOf(kid(R.h)), R.ui.nav === 'run' || Store.loadDevice('still', false));   // a quiz run gets a still, faded scene
   root.innerHTML = V.shell(screen());
   restoreMaps(root);
+  root.querySelectorAll('.seg .on').forEach((b) => { const s = b.parentElement; if (s.scrollWidth > s.clientWidth) s.scrollLeft = b.offsetLeft - (s.clientWidth - b.offsetWidth) / 2; });
   if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); if (caret != null && el.setSelectionRange) try { el.setSelectionRange(caret, caret); } catch (_) {} } }
   document.title = 'Bizzing Geography';
 }
@@ -146,6 +148,7 @@ function nextQ() {
 function finish(run) {
   run.over = true;
   const k = kid(R.h), right = run.results.filter((r) => r.right).length, n = run.results.length;
+  if (n) session(k);   // one notch on Today’s ring
   if (run.kind === 'drill') {
     const res = scoreRun(k, run.stop, run.lv, right, n);
     const rd = road(k);
@@ -174,6 +177,7 @@ on('openWorld', (w) => { R.ui.pick = null; go('world', w); });
 on('pickStop', (id) => { R.ui.pick = id; render(); });
 on('openStop', (id) => { if (!stopOpen(R.h, kid(R.h), id) && !X.expAllows(kid(R.h), id)) { toast('That stop opens on a later level.'); return; } go('stop', id); });
 on('openTool', (id) => go('lib', id));
+on('openLandmark', (id) => { toolById.landmarks.act('sel', id, libCtx('landmarks')); go('lib', 'landmarks'); });
 /* expeditions: the engine decides what a day is; the host only goes, runs or toasts */
 on('expOpen', (id) => go('expd', id));
 on('expDay', (arg) => {
@@ -181,6 +185,7 @@ on('expDay', (arg) => {
   if (!r) return;
   save();
   if (r.run) return startRun('sprint', r.run.title, r.run.items, r.run.extra);
+  if (r.go || /^Made/.test(r.toast || '')) { session(k); save(); }
   if (r.toast) toast(r.toast);
   if (r.go) go(r.go[0], r.go[1]); else render();
 });
@@ -225,6 +230,7 @@ on('createKid', () => {
 });
 on('switchKid', (id) => { R.h.active = id; R.ui.lib = {}; save(); go('home'); });
 on('setAv', (a) => { if (AVATARS.includes(a)) { kid(R.h).avatar = a; save(); render(); } });
+on('goal', (n) => { const k = kid(R.h); if (GOALS.includes(+n)) { k.prefs.goal = +n; save(); render(); } });
 on('still', () => { Store.saveDevice('still', !Store.loadDevice('still', false)); render(); });
 /* themes belong to the child: chosen on their page, applied at once */
 on('theme', (id) => {

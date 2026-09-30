@@ -35,8 +35,7 @@ export function view(ctx) {
   const pins = list.map((x) => ({ at: x.at, cls: seen[x.id] ? 'known' : 'cap', r: 4 }));
   const view = cont === 'All' ? null : viewFor(CONTINENTS.find((c) => c.id === cont).view);
   const nSeen = LANDMARKS.filter((x) => seen[x.id]).length;
-  return `${note}
-    <div class="t-cap-bar"><span><b class="t-cap-n">${nSeen}</b> <span class="muted">of ${LANDMARKS.length} landmarks explored</span></span>
+  return `<div class="t-cap-bar"><span><b class="t-cap-n">${nSeen}</b> <span class="muted">of ${LANDMARKS.length} landmarks explored</span></span>
       <span class="row gap"><button class="btn primary" data-act="lib" data-arg="landmarks|quiz">Quiz: which country?</button><button class="btn" data-act="lib" data-arg="landmarks|find">Quiz: find it on the map</button></span></div>
     <div class="seg" role="tablist" aria-label="Continent">${CONTS.map((c) => `<button role="tab" aria-selected="${c === cont}" class="${c === cont ? 'on' : ''}" data-act="lib" data-arg="landmarks|cont|${c}">${esc(c)}</button>`).join('')}</div>
     <div class="row gap wrap t-ex-bar">
@@ -49,7 +48,8 @@ export function view(ctx) {
     <p class="muted small">${list.length} landmark${list.length === 1 ? '' : 's'}</p>
     <div class="t-lm-grid">${list.map((x) => `<button class="t-lm-tile${seen[x.id] ? ' seen' : ''}" data-act="lib" data-arg="landmarks|sel|${x.id}">
       <img src="art/lm-${x.id}.webp" alt="" loading="lazy" width="960" height="720"><span><b>${esc(x.name)}</b><i>${esc(byCc[x.cc].name)} · ${x.kind === 'natural' ? '🌿' : '🏗️'}</i></span></button>`).join('')}
-      ${list.length ? '' : '<p class="muted">No landmarks match — try another filter.</p>'}</div>`;
+      ${list.length ? '' : '<p class="muted">No landmarks match — try another filter.</p>'}</div>
+    ${note}`;
 }
 
 export function countryQuiz(r = rnd) {

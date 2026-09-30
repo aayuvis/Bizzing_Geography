@@ -96,14 +96,15 @@ button.card:hover{transform:translateY(-2px)}
 .bar i{display:block;height:100%;background:var(--treasure);border-radius:8px}
 .why-chip{display:inline-block;background:var(--medium-tint);color:var(--treasure-deep);border-radius:var(--r-pill);padding:4px 12px;font-size:var(--fs-label);font-weight:650}
 .av{display:block;flex:none;object-fit:contain}
-.phead{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;margin-bottom:18px}
+.phead{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;margin-bottom:12px}
 .phead-t{text-align:center;max-width:680px}
-.phead-t h1{margin:0}
-.phead-t p{color:var(--muted);margin:4px 0 0}
+.phead-t h1{margin:0;font-size:26px}
+.phead-t p{color:var(--muted);margin:2px 0 0;font-size:14px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
 .phead-r{justify-self:end;display:flex;gap:8px;align-items:center}
 .back{justify-self:start;display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r-pill);border:1px solid var(--line);background:var(--surface);font-weight:650;cursor:pointer;font-size:var(--fs-label)}
 .back:hover{border-color:var(--action)}
-@media (max-width:620px){.phead{grid-template-columns:1fr;text-align:center}.back{justify-self:start}.phead-r{justify-self:center}}
+/* a phone: back, title and the right-hand chip share ONE row; the subtitle goes (the tile or tab that led here already said it) */
+@media (max-width:620px){.phead{grid-template-columns:auto 1fr auto;gap:8px;margin-bottom:10px}.phead-t{text-align:left}.phead-t h1{font-size:21px}.phead-t p{display:none}.back{padding:6px 10px}.back span+*{}}
 .narrow{max-width:760px;margin:0 auto}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
 @media (max-width:820px){.two{grid-template-columns:1fr}}
@@ -764,10 +765,14 @@ button.hcard:hover,.journey:hover,.tile2:hover{transform:translateY(-3px);box-sh
 .case-chip.on b{background:var(--action);color:#fff}
 .case-note{margin:0;padding:10px 14px;border-radius:12px;background:var(--action-tint);color:var(--ink);max-width:75ch}
 
-/* ---- tab rows wrap on a phone: every tab visible, none hiding off the edge */
+/* ---- tab rows on a phone: ONE row that scrolls sideways (wrapping cost two or three
+   rows above the fold). The edges fade to say there is more, and main.js scrolls the
+   chosen tab into view on every render, so the selection is never hidden. */
 @media (max-width: 760px) {
-  div.seg{flex-wrap:wrap;justify-content:center;width:auto;max-width:100%;overflow:visible;border-radius:20px;row-gap:4px}
-  div.seg button{padding:8px 13px;flex:0 1 auto}
+  div.seg{flex-wrap:nowrap;justify-content:flex-start;width:auto;max-width:100%;overflow-x:auto;scrollbar-width:none;border-radius:20px;
+    -webkit-mask:linear-gradient(90deg,transparent 0,#000 14px,#000 calc(100% - 14px),transparent);mask:linear-gradient(90deg,transparent 0,#000 14px,#000 calc(100% - 14px),transparent)}
+  div.seg::-webkit-scrollbar{display:none}
+  div.seg button{padding:8px 13px;flex:none}
 }
 
 /* ---- the ten-level journey */
@@ -817,17 +822,19 @@ div.jcard{cursor:default}
 .ladder-card .ladder li b{min-width:9em;flex:none}
 /* the Atlas's two tabs, and the journey at a glance */
 .atlas-seg{margin:0 auto 16px;width:max-content;max-width:100%}
-.jglance{list-style:none;margin:10px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}
-.jg{display:flex;gap:10px;align-items:flex-start;width:100%;padding:10px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.jglance{list-style:none;margin:0 auto 14px;padding:4px 2px 8px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:thin;max-width:100%}
+.jglance li{flex:none}
+.jg{display:flex;gap:7px;align-items:center;padding:6px 12px 6px 6px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;cursor:pointer;white-space:nowrap}
 .jg:hover{border-color:var(--action)}
 .jg.shown{border-color:var(--action);box-shadow:0 0 0 3px color-mix(in srgb,var(--action) 22%,transparent)}
-.jg-n{flex:none;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--surface2);font:800 13px var(--mono)}
+.jg-n{flex:none;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--surface2);font:800 12px var(--mono)}
 .jg.fin .jg-n{background:var(--mastered);color:#fff} .jg.now .jg-n{background:var(--action);color:var(--action-ink)}
-.jg.ahead{opacity:.8}
-.jg-t{display:flex;flex-direction:column;gap:2px;min-width:0}
-.jg-t b{font-size:14px;line-height:1.2} .jg-t span{font-size:12px;color:var(--muted)} .jg-t em{color:var(--action);font-style:normal;font-weight:800}
-.jg-w{display:flex;gap:3px;font-size:15px}
-.jg-w i{font-style:normal}
+.jg-t{font-size:13px;font-weight:700}
+.jg.ahead .jg-t{color:var(--muted)}
+.jl-h{text-align:center;font-size:20px;margin:0 0 2px}
+.jl-h span{display:block;font:600 13px var(--ui)}
+.jl-b{margin:0 0 6px;font-size:14px}
+@media (max-width:620px){.back-l{display:none}}
 /* ---------------------------------------------------------------- expeditions */
 .exp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
 .exp-card{display:flex;gap:14px;align-items:flex-start;border-top:5px solid var(--ec)!important}
@@ -857,3 +864,60 @@ div.jcard{cursor:default}
 .ed-t b{font-size:15px} .ed-t span{font-size:13px;color:var(--muted)}
 .ed-k{font-size:11.5px!important;font-weight:800;letter-spacing:.03em;text-transform:uppercase}
 .ed-warn{color:var(--medium)!important} .ed-made{color:var(--mastered)!important;font-weight:700}
+.lib-t > span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ladder-card summary{cursor:pointer;list-style:none}
+.ladder-card summary h3{display:inline;margin:0}
+.ladder-card summary::after{content:" ▾";color:var(--muted)}
+/* ---------------------------------------------------------------- the home (the family's shape) */
+.home-top{display:grid;grid-template-columns:1.15fr 1.25fr 1fr;gap:14px;margin-bottom:14px}
+.home-top .card,.home-two .card{margin:0}
+.h-hello{display:flex;gap:16px;align-items:center}
+.h-hello .av{width:112px;height:112px;flex:none}
+.h-hello-t{min-width:0;display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+.h-hello-t p.muted{margin:0}
+.h-hello h1{margin:0;font-size:28px;line-height:1.1}
+.h-say{margin:4px 0;padding:8px 12px;border-radius:14px;background:var(--surface2);font-style:italic;font-size:14px;line-height:1.35}
+.h-ring{display:flex;gap:16px;align-items:center}
+.h-ring-c{position:relative;flex:none;width:96px;height:96px}
+.h-ring-svg{width:100%;height:100%}
+.h-ring-svg .rb{fill:none;stroke:var(--surface2);stroke-width:9}
+.h-ring-svg .rf{fill:none;stroke:var(--action);stroke-width:9;stroke-linecap:round;transition:stroke-dasharray .5s}
+.h-ring-c span{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.h-ring-c b{font:800 22px var(--display);line-height:1} .h-ring-c i{font:700 10px var(--ui);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-style:normal}
+.h-ring-t h3{margin:0}
+.h-ring-t p{margin:2px 0 8px}
+.h-ring-go{align-items:center}
+.h-goal{display:inline-flex;gap:4px;align-items:center}
+.h-goal button{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);font:700 13px var(--mono);cursor:pointer}
+.h-goal button.on{background:var(--action);color:var(--action-ink);border-color:transparent}
+.h-goal i{font-style:normal;font-size:12px;color:var(--muted);margin-left:2px}
+.h-word{display:flex;flex-direction:column;gap:4px;justify-content:center;text-align:left;cursor:pointer;border-left:5px solid var(--action)!important}
+.h-word b{font:750 24px var(--display)}
+.h-link{color:var(--action);font-weight:700;font-size:13px;margin-top:2px}
+.home-two{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.h-journey{padding:0;overflow:hidden}
+.h-art{position:relative;height:118px;background-size:cover;background-position:center 45%}
+.h-badge{position:absolute;left:16px;bottom:-18px;width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:24px;background:var(--action);box-shadow:var(--sh-raised)}
+.h-chip{position:absolute;right:12px;bottom:10px;padding:4px 10px;border-radius:999px;background:rgb(15 18 35 / .82);color:#fff;font:700 12px var(--ui)}
+.h-body{padding:22px 18px 16px}
+.h-body p{margin:0}
+.h-body h2{margin:2px 0 2px;font-size:22px}
+.h-go{align-items:center;margin-top:10px}
+.h-bar{flex:1;min-width:60px;height:7px;border-radius:99px;background:var(--surface2);overflow:hidden}
+.h-bar i{display:block;height:100%;background:var(--action);border-radius:inherit}
+.home-two.small .h-mini{display:flex;gap:12px;align-items:center;padding:10px;text-align:left;cursor:pointer}
+.h-mini img{width:110px;height:72px;object-fit:cover;border-radius:10px;flex:none}
+.h-mini > span{display:flex;flex-direction:column;gap:2px;min-width:0}
+@media (max-width:980px){.home-top{grid-template-columns:1fr 1fr}.h-word{grid-column:1/-1}}
+@media (max-width:640px){
+  .home-top,.home-two{grid-template-columns:1fr;gap:10px}
+  .h-hello .av{width:76px;height:76px}.h-hello h1{font-size:24px}
+  .h-ring-c{width:78px;height:78px}
+  .h-art{height:96px}
+}
+.h-ring-next{margin:0 0 8px!important}
+@media (max-width:640px){
+  .h-hello{padding:12px 14px}.h-hello-t p.muted{display:none}.h-say{font-size:13px;padding:6px 10px}
+  .h-ring{padding:12px 14px}.h-ring-why{display:none}
+  .h-word{padding:10px 14px;flex-direction:row;flex-wrap:wrap;align-items:baseline;gap:4px 8px}.h-word b{font-size:18px}.h-word .muted{flex-basis:100%}.h-link{display:none}
+}

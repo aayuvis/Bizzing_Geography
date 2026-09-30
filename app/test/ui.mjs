@@ -163,7 +163,7 @@ async function run(vp, tag) {
   // Earth Through Time: a continent road draws soft zones (no borders) until "today"; a dot is a place to visit
   await page.evaluate(() => window.__bzg.go('lib', 'time'));
   await page.click('[data-arg="time|t|Asia"]'); await page.waitForSelector('.tool-time .gmap .zone');
-  await page.click('[data-arg="time|i|3"]'); await page.waitForTimeout(150);
+  await page.evaluate(() => window.__bzg.fire('lib', 'time|i|3')); await page.waitForTimeout(150);
   ok(await page.locator('.tool-time .gmap.noborders').count() === 1, 'an ancient age draws no modern borders');
   ok(await page.locator('.tool-time .gmap .zone').count() >= 3, 'the age of empires shows its soft zones');
   await page.locator('.tool-time .gmap').scrollIntoViewIfNeeded();
@@ -172,11 +172,11 @@ async function run(vp, tag) {
   await page.waitForTimeout(150);
   ok(await page.locator('.t-hist-site').count() === 1, 'tapping a dot opens that place');
   await shot('19-time-asia'); await noSideways('time asia');
-  await page.click('[data-arg="time|t|Oceania"]'); await page.click('[data-arg="time|i|3"]'); await page.waitForTimeout(150);
+  await page.click('[data-arg="time|t|Oceania"]'); await page.evaluate(() => window.__bzg.fire('lib', 'time|i|3')); await page.waitForTimeout(150);
   ok(await page.locator('.tool-time .gmap[data-rot]').count() === 1, 'Oceania’s map is centred on the Pacific');
   await page.locator('.tool-time .gmap').scrollIntoViewIfNeeded(); await shot('20-time-oceania');
   const last = await page.locator('.t-time-ticks button').count();
-  await page.click(`[data-arg="time|i|${last - 1}"]`); await page.waitForTimeout(150);
+  await page.evaluate((n) => window.__bzg.fire('lib', `time|i|${n}`), last - 1); await page.waitForTimeout(150);
   ok(await page.locator('.tool-time .gmap.noborders').count() === 0 && await page.locator('.tool-time .gmap .zone').count() === 0, 'today shows real borders and no zones');
   await page.click('[data-arg="time|where"]'); await page.waitForSelector('.qcard');
   ok(await page.evaluate(() => window.__bzg.R.run.items.length) === 10, 'the which-continent quiz asks ten');
@@ -273,6 +273,14 @@ async function run(vp, tag) {
   await page.evaluate(() => window.__bzg.go('me')); await page.waitForSelector('.av-packs');
   ok(await page.locator('.av-packs .av-pick').count() === 40, 'the avatar picker offers 40 faces');
   await page.click('#theme-atlas'); await page.waitForTimeout(100);
+  // above the fold: on every key screen the core content starts in the top half of the first screen
+  for (const [nav, arg, sel, what] of [['home', null, '.h-ring [data-act]', 'the Start button'], ['home', null, '.h-journey', 'the journey card'], ['atlas', null, '.map-board', 'the island map'], ['road', null, '.jsteps', 'the road'],
+    ['exp', null, '.exp-card', 'the first expedition'], ['library', null, '.lib-tile', 'the first tool'], ['lib', 'capitals', '.gmap', 'the map'], ['lib', 'time', '.t-time-card', 'the picture'], ['lib', 'geoguess', '.t-geo-intro .btn, .t-geo-card', 'Play or the game'], ['lib', 'dictionary', '#t-dictionary-q', 'the search box']]) {
+    await page.evaluate(([n, a]) => { window.__bzg.go(n, a); scrollTo(0, 0); }, [nav, arg]); await page.waitForTimeout(120);
+    const top = await page.evaluate((sel) => { const e = document.querySelector(sel); return e ? e.getBoundingClientRect().top : 1e9; }, sel);
+    const h = await page.evaluate(() => innerHeight);
+    ok(top < h * (phone ? 0.62 : 0.5), `${nav}${arg ? ' ' + arg : ''}: ${what} starts above the fold (${Math.round(top)} of ${h})`);
+  }
   // grown-ups
   await page.evaluate(() => window.__bzg.go('grownups'));
   await page.fill('#pin', '1234'); await page.click('[data-act=gate]'); await page.waitForSelector('.report');
