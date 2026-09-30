@@ -10,7 +10,7 @@
    · the UI face in the CSS is the one themes.js advertises on the picker, and
      every face has a self-hosted @font-face with font-display: swap and a
      file that exists;
-   · the motif loops in at most 60s and stops under prefers-reduced-motion;
+   · (the moving scene is checked by test/scenes.mjs);
    · land stands out from sea on every map, in every theme (≥ 55 apart in RGB —
      they differ by hue more than by lightness — and the sea is the bluer) — a map that loses its coasts teaches nothing;
    · a child with no theme (every child made before themes) gets Old Atlas.
@@ -101,8 +101,6 @@ for (const t of THEMES) {
       const u = /url\(([^)]+)\)/.exec(b); if (!u || !existsSync(resolve(HERE, 'styles', u[1]))) fail(`${face}: file ${u && u[1]} is missing`);
     }
   }
-  // the motif exists for this theme
-  if (!new RegExp(`:root\\[data-theme="${t.id}"\\] \\.motif`).test(css)) fail(`${t.id}: has no motif`);
 }
 if (THEMES.length !== 6) fail(`there are ${THEMES.length} themes; the owner asked for six`);
 if (new Set(THEMES.map((t) => t.ui)).size !== THEMES.length) fail('two themes share a UI face — each should read differently');
@@ -116,11 +114,6 @@ for (const b of [...fonts.matchAll(/@font-face\s*\{([^}]*)\}/g)]) if (!/font-dis
 const dir = resolve(HERE, 'styles/fonts');
 const bytes = readdirSync(dir).filter((f) => f.endsWith('.woff2')).reduce((a, f) => a + statSync(resolve(dir, f)).size, 0);
 if (bytes > 950_000) fail(`fonts are ${Math.round(bytes / 1024)} KB; the budget is ~900 KB`);
-
-/* ---- motion: ≤ 60s loops, no drawn text, and a still picture for reduced motion */
-for (const m of css.matchAll(/(?:animation(?:-duration)?|--t)\s*:[^;]*?(\d+(?:\.\d+)?)s\b/g)) if (+m[1] > 60) fail(`a motif loop of ${m[1]}s is longer than 60s`);
-if (/<text\b/.test(css)) fail('a motif draws text; motifs are shapes only');
-if (!/prefers-reduced-motion:\s*reduce[\s\S]*\.motif[^{]*\{[^}]*animation:\s*none/.test(css)) fail('the motif does not stop under prefers-reduced-motion');
 
 /* ---- whose theme */
 if (themeOf({ prefs: {} }) !== 'atlas' || DEFAULT_THEME !== 'atlas') fail('a child without a theme must get Old Atlas');

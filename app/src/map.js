@@ -56,6 +56,8 @@ export function countryAt([lat, lng]) {
   }
   return null;
 }
+/* every drawn feature, for the Satellite theme's spinning globe (fill only, never a line) */
+export const worldFeatures = () => world().feats.map((x) => x.f);
 export const hasShape = (cc) => !!world().byId[cc];
 export const shapeName = (cc) => (world().byId[cc] || {}).n || '';
 

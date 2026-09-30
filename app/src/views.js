@@ -6,6 +6,7 @@ import { esc, cls } from './ui.js';
 import { WORLDS, STOPS, byId, worldOf, stopsIn } from './stops.js';
 import { LEVELS, ageOf, firstLevel } from './levels.js';
 import { THEMES, themeOf, themePicker } from './themes.js';
+import { Store } from './store.js';
 import { BANDS, AVATARS, AVATAR_PACKS, AVATAR_NAME, avatarFile, RANKS, RANK_SRC, rankOf, kid, stopRec, road, stopOpen, lvFor, starsTotal, maxStars, levelOf } from './model.js';
 import { worldSVG, regionSVG, viewFor } from './map.js';
 import { POSTCARDS } from './data/postcards.js';
@@ -353,6 +354,8 @@ export function viewMe() {
       ${srcList(RANK_SRC)}
     </div>
     ${themePicker(k)}
+    <div class="card row gap wrap"><div style="flex:1;min-width:200px"><h3>Moving background</h3><p class="muted small">The world behind the page moves. Switch it to a still picture on this device if it distracts. It always holds still during a quiz.</p></div>
+      <button class="btn" data-act="still" aria-pressed="${Store.loadDevice('still', false)}">${Store.loadDevice('still', false) ? '▶ Let it move' : '⏸ Hold it still'}</button></div>
     <div class="card"><h3>Change your face</h3>${avatarPicker(k.avatar, 'setAv', 'me')}</div>
     <div class="card">
       <h3>Explorers on this device</h3>

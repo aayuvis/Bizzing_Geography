@@ -14,12 +14,13 @@
 <link rel="stylesheet" href="styles/fonts.css">
 <link rel="stylesheet" href="styles/tokens.css">
 <link rel="stylesheet" href="styles/themes.css">
+<link rel="stylesheet" href="styles/scenes.css">
 <link rel="stylesheet" href="styles/app.css">
 <link rel="stylesheet" href="styles/geo.css">
 </head>
 <body>
-<!-- the theme's moving geography motif: outside #app so a re-render never restarts it -->
-<div class="motif" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+<!-- the theme's living scene (src/scenes.js): outside #app so a re-render never restarts it -->
+<div class="scene" id="scene" aria-hidden="true"></div>
 <div id="app"><noscript>Bizzing Geography needs JavaScript switched on.</noscript></div>
 <script type="module" src="src/main.js"></script>
 </body>

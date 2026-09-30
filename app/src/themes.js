@@ -2,23 +2,23 @@
 
    A theme belongs to the child (k.prefs.theme), so two children on one
    tablet each keep their own; light/dark stays a device setting. Colours,
-   faces, the map's own sea and land, and a moving geography motif live in
-   styles/themes.css, keyed by data-theme on <html>. This file is the list the
+   faces and the map's own sea and land live in styles/themes.css; the living
+   scene behind the page is src/scenes.js, keyed by data-theme on <html>. This file is the list the
    picker shows and the one place that decides what an unknown or missing
    value means: Old Atlas, the look the app had before themes. */
 
 export const THEMES = [
-  { id: 'atlas', name: 'Old Atlas', blurb: 'Parchment and terracotta. A compass rose turns.',
+  { id: 'atlas', name: 'Old Atlas', blurb: 'A chart-sea: a ship under sail, balloons, gulls and a compass rose.',
     display: 'Baloo 2', ui: 'Nunito', mono: 'Sono' },
-  { id: 'ocean', name: 'Ocean Deep', blurb: 'Teal water and coral. Waves roll, bubbles rise.',
+  { id: 'ocean', name: 'Ocean Deep', blurb: 'Under the waves: fish, a turtle, jellyfish, kelp and light rays.',
     display: 'Space Grotesk', ui: 'Lexend', mono: 'JetBrains Mono' },
-  { id: 'jungle', name: 'Rainforest', blurb: 'Deep greens and toucan orange. Leaves sway.',
+  { id: 'jungle', name: 'Rainforest', blurb: 'Canopy and vines: macaws, butterflies, falling leaves, fireflies.',
     display: 'Kalam', ui: 'Atkinson Hyperlegible Next', mono: 'Atkinson Hyperlegible Mono' },
-  { id: 'desert', name: 'Desert Dunes', blurb: 'Sand, sun and indigo night. The dunes drift.',
+  { id: 'desert', name: 'Desert Dunes', blurb: 'Dunes and pyramids: a camel caravan, a circling hawk, tumbleweeds.',
     display: 'Yatra One', ui: 'Mukta', mono: 'Red Hat Mono' },
-  { id: 'aurora', name: 'Polar Aurora', blurb: 'Ice and violet. The northern lights ripple.',
+  { id: 'aurora', name: 'Polar Aurora', blurb: 'Northern lights over snowy peaks: penguins, icebergs, snowfall.',
     display: 'Exo 2', ui: 'Archivo', mono: 'Azeret Mono' },
-  { id: 'orbit', name: 'Satellite', blurb: 'Earth from orbit. A satellite circles the globe.',
+  { id: 'orbit', name: 'Satellite', blurb: 'A spinning Earth, satellites in orbit, the Moon and a rocket.',
     display: 'Orbitron', ui: 'Exo 2', mono: 'Kode Mono' },
 ];
 
@@ -56,7 +56,7 @@ export function themePicker(k) {
   const cur = themeOf(k);
   return `<div class="card" id="themes">
     <h3>Your theme</h3>
-    <p class="muted small">Colours, letters, map colours and a moving picture behind everything. Yours alone — nobody else on this device gets it.</p>
+    <p class="muted small">Colours, letters, map colours and a whole living world behind everything. Yours alone — nobody else on this device gets it.</p>
     <div class="themes" role="radiogroup" aria-label="Theme">${THEMES.map((t) => {
       const on = t.id === cur;
       return `<button class="theme-card" id="theme-${t.id}" data-theme="${t.id}" data-act="theme" data-arg="${t.id}" role="radio" aria-checked="${on}" tabindex="${on ? 0 : -1}">

@@ -1,0 +1,184 @@
+/* scenes.css — the living backdrop (src/scenes.js builds it; Bizzing Bee's
+   worlds4.css is the model). Everything here is decorative and inert.
+
+   · A scene is a SKY (three stops per theme × mode) plus props at several
+     depths. Props keep their own bright colours in both modes; dark mode
+     dims the whole scene once (--scene-o), never prop by prop.
+   · The VEIL: the middle of the page fades towards paper, so text set over
+     the scene keeps its contrast; the edges carry the colour and the life.
+   · CALM (html.sc-calm: a quiz run, or the device's "Still background"
+     switch) and prefers-reduced-motion both PAUSE every animation — paused,
+     not removed, so everything stays spread across the scene where its
+     negative delay put it, a still picture rather than a heap at the left.
+   · Motion is transform and opacity only, so the compositor does the work. */
+
+.scene{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;contain:strict}
+.scene-in{position:absolute;inset:0;opacity:var(--scene-o,1);transition:opacity .4s}
+.scene .scn{position:absolute;pointer-events:none}
+.scene .scn svg{display:block;overflow:visible}
+.scene .flipx{transform:scaleX(-1)}
+.scene::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 40% 58% at 50% 44%,var(--veil) 0%,color-mix(in srgb,var(--veil) 60%,transparent) 45%,transparent 85%);opacity:var(--veil-o,.6)}
+.scene .s-sky{inset:0;background:linear-gradient(180deg,var(--sky1),var(--sky2) 55%,var(--sky3))}
+.scene .sc-night{display:none}
+:root[data-mode="dark"] .scene .sc-night{display:block}
+:root[data-mode="dark"] .scene .sc-day{display:none}
+
+/* ---- skies: light, then dark */
+:root[data-theme="atlas"]{--sky1:#FFF6E6;--sky2:#FBE9CB;--sky3:#F3D9AE;--veil:#FFFDF8}
+:root[data-theme="ocean"]{--sky1:#E6F8FD;--sky2:#AEE0F0;--sky3:#74C4DF;--veil:#F6FCFD}
+:root[data-theme="jungle"]{--sky1:#F3FBE8;--sky2:#DDF1C8;--sky3:#BFE2A0;--veil:#F9FDF5}
+:root[data-theme="desert"]{--sky1:#BDE6F8;--sky2:#FFE9C8;--sky3:#FFD49A;--veil:#FFFBF2}
+:root[data-theme="aurora"]{--sky1:#D6E2FF;--sky2:#ECF1FF;--sky3:#F7FAFF;--veil:#F9FBFF}
+:root[data-theme="orbit"]{--sky1:#E4E2FF;--sky2:#D7E1FF;--sky3:#CFE6FF;--veil:#FAFAFF}
+:root[data-mode="dark"][data-theme="atlas"]{--sky1:#1B1610;--sky2:#261D14;--sky3:#33261A;--veil:#16130F;--scene-o:.92}
+:root[data-mode="dark"][data-theme="ocean"]{--sky1:#0B2C3F;--sky2:#072131;--sky3:#04141F;--veil:#081B24;--scene-o:.8}
+:root[data-mode="dark"][data-theme="jungle"]{--sky1:#10230F;--sky2:#0B180B;--sky3:#061007;--veil:#0F1F0F;--scene-o:.9}
+:root[data-mode="dark"][data-theme="desert"]{--sky1:#170F30;--sky2:#34204E;--sky3:#5A3350;--veil:#1D1529;--scene-o:.8}
+:root[data-mode="dark"][data-theme="aurora"]{--sky1:#030716;--sky2:#0A1330;--sky3:#15204A;--veil:#0A1024;--scene-o:1}
+:root[data-mode="dark"][data-theme="orbit"]{--sky1:#02030C;--sky2:#070A24;--sky3:#0E1440;--veil:#090B1B;--scene-o:1}
+
+/* ---- the moves */
+.scene .a-across,.scene .a-acrossR,.scene .a-caravan,.scene .a-waddle,.scene .a-waddleR,.scene .a-iss{left:0}
+.scene .a-across{animation:sc-across var(--d,40s) linear var(--dl,0s) infinite}
+.scene .a-acrossR{animation:sc-acrossR var(--d,40s) linear var(--dl,0s) infinite}
+.scene .a-caravan,.scene .a-waddle{animation:sc-across var(--d,60s) linear var(--dl,0s) infinite}
+.scene .a-waddleR{animation:sc-acrossR var(--d,60s) linear var(--dl,0s) infinite}
+@keyframes sc-across{from{transform:translateX(-30vw)}to{transform:translateX(130vw)}}
+@keyframes sc-acrossR{from{transform:translateX(130vw)}to{transform:translateX(-30vw)}}
+.scene .a-bob{animation:sc-bob var(--d,4s) ease-in-out var(--dl,0s) infinite alternate}
+@keyframes sc-bob{from{transform:translateY(-6px)}to{transform:translateY(6px)}}
+.scene .a-rock{animation:sc-rock var(--d,5s) ease-in-out infinite alternate}
+@keyframes sc-rock{from{transform:translateY(-4px) rotate(-4deg)}to{transform:translateY(4px) rotate(4deg)}}
+.scene .a-spin{animation:sc-spin var(--d,60s) linear var(--dl,0s) infinite}
+@keyframes sc-spin{to{transform:rotate(360deg)}}
+.scene .a-roll,.scene .a-rollR{left:0;width:200vw;display:flex}
+.scene .a-roll svg,.scene .a-rollR svg{flex:none}
+.scene .a-roll{animation:sc-roll var(--d,40s) linear var(--dl,0s) infinite}
+.scene .a-rollR{animation:sc-roll var(--d,40s) linear var(--dl,0s) infinite reverse}
+@keyframes sc-roll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.scene .a-dive{animation:sc-dive var(--d,16s) ease-in-out var(--dl,0s) infinite}
+@keyframes sc-dive{0%,62%,100%{transform:translateY(70%);opacity:0}72%{opacity:1;transform:translateY(0)}84%{opacity:1;transform:translateY(0) rotate(6deg)}94%{opacity:0;transform:translateY(80%)}}
+.scene .a-twinkle{animation:sc-twinkle var(--d,3s) ease-in-out var(--dl,0s) infinite alternate}
+@keyframes sc-twinkle{from{opacity:.15;transform:scale(.6) rotate(0)}to{opacity:1;transform:scale(1.15) rotate(45deg)}}
+.scene .a-breathe{animation:sc-breathe var(--d,10s) ease-in-out var(--dl,0s) infinite alternate}
+@keyframes sc-breathe{from{transform:scale(.96)}to{transform:scale(1.07)}}
+.scene .a-sway{animation:sc-sway var(--d,7s) ease-in-out var(--dl,0s) infinite alternate}
+@keyframes sc-sway{from{transform:rotate(-6deg)}to{transform:rotate(6deg)}}
+.scene .a-circle{animation:sc-spin var(--d,24s) linear var(--dl,0s) infinite}
+
+/* ocean */
+.scene .s-ray{top:-8vh;height:92vh;background:linear-gradient(180deg,rgba(255,255,255,.7),rgba(255,255,255,0) 85%);rotate:14deg;transform-origin:50% 0}
+.scene .a-ray{animation:sc-ray var(--d,10s) ease-in-out var(--dl,0s) infinite alternate}
+@keyframes sc-ray{from{opacity:.25;transform:skewX(-8deg)}to{opacity:.85;transform:skewX(8deg)}}
+.scene .s-bubble{bottom:-6vh;aspect-ratio:1;border-radius:50%;border:2px solid rgba(255,255,255,.85);
+  background:radial-gradient(circle at 32% 30%,rgba(255,255,255,.9) 0 16%,rgba(255,255,255,.12) 22%,transparent 60%)}
+.scene .a-rise{animation:sc-rise var(--d,14s) linear var(--dl,0s) infinite}
+@keyframes sc-rise{0%{transform:translate(0,0);opacity:0}8%{opacity:1}50%{transform:translate(2vw,-56vh)}92%{opacity:1}100%{transform:translate(-1vw,-112vh);opacity:0}}
+.scene .a-riseslow{bottom:-16vh;animation:sc-riseslow var(--d,40s) linear var(--dl,0s) infinite}
+@keyframes sc-riseslow{0%{transform:translate(0,0)}50%{transform:translate(3vw,-60vh)}100%{transform:translate(0,-130vh)}}
+.scene .s-sand{left:0;right:0;bottom:0;height:9vh;background:linear-gradient(180deg,transparent,#EED9A0 45%,#DDBF7E)}
+.scene .s-coral{filter:saturate(1.1)}
+
+/* rainforest */
+.scene .s-beam{top:-12vh;width:10vw;height:130vh;rotate:20deg;background:linear-gradient(180deg,rgba(255,250,200,.75),rgba(255,250,200,0) 80%)}
+.scene .a-beam{animation:sc-beam var(--d,9s) ease-in-out var(--dl,0s) infinite alternate}
+@keyframes sc-beam{from{opacity:.2}to{opacity:.8}}
+.scene .a-flutter{animation:sc-flutter var(--d,20s) ease-in-out var(--dl,0s) infinite}
+@keyframes sc-flutter{0%,100%{transform:translate(0,0) rotate(-6deg)}20%{transform:translate(9vw,-7vh) rotate(8deg)}40%{transform:translate(18vw,2vh) rotate(-4deg)}60%{transform:translate(10vw,9vh) rotate(10deg)}80%{transform:translate(2vw,4vh) rotate(-8deg)}}
+.scene .a-fall{top:-8vh;animation:sc-fall var(--d,18s) linear var(--dl,0s) infinite}
+@keyframes sc-fall{from{transform:translate(0,0)}to{transform:translate(8vw,120vh)}}
+.scene .s-mote{width:7px;aspect-ratio:1;border-radius:50%;background:#FFF6B0;box-shadow:0 0 10px 3px rgba(255,240,140,.8)}
+.scene .a-float{animation:sc-float var(--d,9s) ease-in-out var(--dl,0s) infinite alternate}
+@keyframes sc-float{0%{transform:translate(0,0);opacity:.2}50%{opacity:1}100%{transform:translate(4vw,-6vh);opacity:.35}}
+
+/* desert */
+.scene .a-skim{left:-22vw;height:3px;border-radius:3px;background:linear-gradient(90deg,transparent,rgba(255,244,214,.95),transparent);animation:sc-skim var(--d,9s) linear var(--dl,0s) infinite}
+@keyframes sc-skim{from{transform:translateX(0);opacity:0}15%{opacity:1}85%{opacity:1}to{transform:translateX(145vw);opacity:0}}
+.scene .s-shimmer{left:0;right:0;bottom:9vh;height:12vh;background:linear-gradient(180deg,transparent,rgba(255,255,255,.28),transparent)}
+.scene .a-shimmer{animation:sc-shimmer var(--d,4s) ease-in-out infinite alternate}
+@keyframes sc-shimmer{from{opacity:.2;transform:skewX(0)}to{opacity:.8;transform:skewX(-4deg)}}
+
+/* aurora */
+.scene .s-curtain{top:-10vh;width:38vw;height:72vh;border-radius:45%;filter:blur(24px);mix-blend-mode:screen;
+  background:linear-gradient(180deg,transparent 0%,var(--c) 38%,color-mix(in srgb,var(--c) 40%,transparent) 70%,transparent 96%)}
+:root:not([data-mode="dark"]) .scene .s-curtain{mix-blend-mode:multiply;opacity:.55}
+.scene .a-curtain{animation:sc-curtain var(--d,16s) ease-in-out var(--dl,0s) infinite alternate}
+@keyframes sc-curtain{0%{transform:translateX(0) skewX(-14deg) scaleY(.9);opacity:.45}50%{opacity:1}100%{transform:translateX(8vw) skewX(12deg) scaleY(1.2);opacity:.6}}
+.scene .s-ice{background:linear-gradient(180deg,#EAF6FF,#CFE6F7)}
+.scene .s-flake{top:-4vh;aspect-ratio:1;border-radius:50%;background:#fff;box-shadow:0 0 4px rgba(255,255,255,.9)}
+.scene .a-snow{animation:sc-snow var(--d,16s) linear var(--dl,0s) infinite}
+@keyframes sc-snow{0%{transform:translate(0,0)}50%{transform:translate(3vw,55vh)}100%{transform:translate(-1vw,110vh)}}
+.scene .a-shoot{width:140px;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,#fff);rotate:24deg;animation:sc-shoot var(--d,11s) ease-out var(--dl,0s) infinite}
+@keyframes sc-shoot{0%{transform:translateX(0);opacity:0}2%{opacity:1}9%{transform:translateX(38vw);opacity:0}100%{transform:translateX(38vw);opacity:0}}
+:root:not([data-mode="dark"]) .scene .a-shoot{background:linear-gradient(90deg,transparent,#7C5CFF)}
+
+/* satellite */
+.scene .s-nebula{width:62vmax;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,var(--c),transparent 64%);opacity:.32;filter:blur(8px)}
+.scene .s-starfield{top:0;bottom:0;opacity:.7;
+  background-image:radial-gradient(circle,#fff 0 1px,transparent 1.6px),radial-gradient(circle,#BFD0FF 0 1px,transparent 1.6px);
+  background-size:97px 89px,151px 137px;background-position:0 0,41px 63px}
+.scene .s-starfield.s-far{opacity:.45;background-size:53px 61px,79px 73px}
+:root:not([data-mode="dark"]) .scene .s-starfield{filter:invert(.55) sepia(1) hue-rotate(200deg);opacity:.35}
+.scene .s-earth{left:-24vmin;top:24vh;width:min(64vmin,580px);aspect-ratio:1;border-radius:50%;overflow:hidden;background:#1E5BC0;
+  box-shadow:0 0 50px 14px rgba(90,170,255,.45)}
+.scene .s-earth .scn{top:0;left:0;height:100%}
+.scene .s-earthmap{width:400%;background-size:50% 100%;background-repeat:repeat-x}
+.scene .s-clouds{width:400%;display:flex}
+.scene .s-clouds svg{flex:none}
+.scene .a-spinmap{animation:sc-roll var(--d,90s) linear var(--dl,0s) infinite}
+.scene .s-earthshade{inset:0;width:100%;border-radius:50%;
+  background:radial-gradient(circle at 72% 30%,rgba(255,255,255,.38),transparent 34%),radial-gradient(circle at 50% 50%,transparent 52%,rgba(120,190,255,.35) 70%,rgba(0,0,30,.5) 100%),linear-gradient(245deg,transparent 58%,rgba(2,6,30,.6) 82%)}
+.scene .s-orbit-c{--ow:calc(min(64vmin,580px) * 1.05);left:calc(-24vmin + min(64vmin,580px) / 2);top:calc(24vh + min(64vmin,580px) / 2);
+  width:var(--ow);aspect-ratio:1;margin-left:calc(var(--ow) / -2);margin-top:calc(var(--ow) / -2);border-radius:50%;border:1px dashed rgba(160,190,255,.35)}
+.scene .s-orbit-c.s-o2{--ow:calc(min(64vmin,580px) * 1.3)}
+.scene .s-orbit-c.s-o3{--ow:calc(min(64vmin,580px) * 1.9);border-color:transparent}
+.scene .s-sat{translate:-50% -50%}
+.scene .a-iss{animation:sc-iss var(--d,36s) linear var(--dl,0s) infinite}
+@keyframes sc-iss{from{transform:translate(-20vw,18vh) rotate(-8deg)}to{transform:translate(120vw,-4vh) rotate(-8deg)}}
+.scene .a-launch{bottom:-16vh;animation:sc-launch var(--d,28s) ease-in var(--dl,0s) infinite}
+@keyframes sc-launch{0%,55%{transform:translateY(0);opacity:0}58%{opacity:1}92%{transform:translateY(-130vh);opacity:1}100%{transform:translateY(-130vh);opacity:0}}
+
+/* ---- the little lives inside a prop */
+.scene .sc-flap{transform-box:fill-box;transform-origin:center;animation:sc-flap .45s ease-in-out infinite alternate}
+@keyframes sc-flap{from{transform:scaleY(1)}to{transform:scaleY(.3)}}
+.scene .sc-wag{transform-box:fill-box;transform-origin:0 50%;animation:sc-wag .5s ease-in-out infinite alternate}
+@keyframes sc-wag{from{transform:rotate(-14deg)}to{transform:rotate(14deg)}}
+.scene .sc-paddle{transform-box:fill-box;transform-origin:100% 50%;animation:sc-wag 1.3s ease-in-out infinite alternate}
+.scene .sc-pulse{transform-box:fill-box;transform-origin:50% 0;animation:sc-pulse 1.6s ease-in-out infinite alternate}
+@keyframes sc-pulse{from{transform:scale(1,1)}to{transform:scale(1.08,.84)}}
+.scene .sc-palm{transform-box:fill-box;transform-origin:50% 100%;animation:sc-palm 4s ease-in-out infinite alternate}
+@keyframes sc-palm{from{transform:rotate(-3deg)}to{transform:rotate(3deg)}}
+.scene .sc-wing{transform-box:fill-box;transform-origin:center;animation:sc-wing .22s ease-in-out infinite alternate}
+@keyframes sc-wing{from{transform:scaleX(1)}to{transform:scaleX(.2)}}
+.scene .sc-leg,.scene .sc-leg2{transform-box:fill-box;transform-origin:50% 0;animation:sc-leg 1.2s ease-in-out infinite alternate}
+.scene .sc-leg2{animation-direction:alternate-reverse}
+@keyframes sc-leg{from{transform:rotate(-12deg)}to{transform:rotate(12deg)}}
+.scene .sc-waddle{transform-box:fill-box;transform-origin:50% 100%;animation:sc-waddle .45s ease-in-out infinite alternate}
+@keyframes sc-waddle{from{transform:rotate(-9deg)}to{transform:rotate(9deg)}}
+.scene .sc-flame{transform-box:fill-box;transform-origin:50% 0;animation:sc-flame .12s linear infinite alternate}
+@keyframes sc-flame{from{transform:scaleY(.7)}to{transform:scaleY(1.25)}}
+.scene .sc-spin-slow{transform-box:fill-box;transform-origin:center;animation:sc-spin 50s linear infinite}
+
+/* ---- calm and reduced motion: a still picture */
+:root.sc-calm .scene *,:root.sc-calm .scene *::before,:root.sc-calm .scene *::after{animation-play-state:paused!important}
+:root.sc-calm .scene-in{opacity:calc(var(--scene-o,1) * .4)}
+@media (prefers-reduced-motion:reduce){
+  .scene *,.scene *::before,.scene *::after{animation-play-state:paused!important}
+}
+
+/* ---- every card wears the theme (the Bee's card treatments), quietly */
+:root[data-theme] .card:not(.pc-card):not(.theme-card){position:relative;background-repeat:no-repeat}
+:root[data-theme="atlas"] .card:not(.pc-card){background-image:linear-gradient(90deg,transparent,rgba(169,74,28,.55),transparent);background-size:70% 3px;background-position:50% 0}
+:root[data-theme="ocean"] .card:not(.pc-card){background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 8'%3E%3Cpath d='M0 4q10-4 20 0t20 0 20 0 20 0' fill='none' stroke='%2338B2D4' stroke-width='2'/%3E%3C/svg%3E");background-size:80px 8px;background-repeat:repeat-x;background-position:0 100%}
+:root[data-theme="jungle"] .card:not(.pc-card){background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 30'%3E%3Cpath d='M4 28Q10 2 36 2Q32 26 4 28z' fill='%236FAF3A' opacity='.55'/%3E%3C/svg%3E");background-size:40px 30px;background-position:calc(100% - 8px) 8px}
+:root[data-theme="desert"] .card:not(.pc-card){background-image:linear-gradient(90deg,#E07A1F,#F2C94C,#4B3BA8);background-size:100% 3px;background-position:0 0}
+:root[data-theme="aurora"] .card:not(.pc-card){background-image:linear-gradient(90deg,#3CF0A8,#9B6BFF,#45B6FF);background-size:100% 3px;background-position:0 0}
+:root[data-theme="orbit"] .card:not(.pc-card){background-image:radial-gradient(circle,rgba(91,108,255,.55) 0 1.5px,transparent 2px);background-size:18px 18px;background-position:right 6px top 6px;background-repeat:repeat-x}
+
+/* text set straight on the scene (a page title, a section heading) gets a soft
+   halo of the page's own paper, so it reads over a wave, a leaf or the ice */
+.content h1,.content h2,.content .phead p,.content .kicker,.content .muted{text-shadow:0 0 3px var(--paper),0 0 8px var(--paper),0 0 14px var(--paper)}
+.content .card h1,.content .card h2,.content .card p,.content .card .kicker,.content .card .muted{text-shadow:none}
+:root[data-mode="dark"] .scene .s-ice{background:linear-gradient(180deg,#2B3D63,#1B2744)}
+:root[data-mode="dark"] .scene .s-peaks{opacity:.55!important}

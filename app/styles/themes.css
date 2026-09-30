@@ -18,11 +18,7 @@
    muted on paper/surface/tint ≥ 3:1, and land against sea ≥ 1.25:1 so a
    coast is always visible. Keep the tested tokens as #hex.
 
-   The motif is a fixed layer behind everything (<div class="motif"> in
-   index.html, outside #app so a re-render never restarts it). It draws
-   shapes only — never a letter, a digit or a real coastline — animates only
-   transform and opacity, loops in ≤ 60s, and stops under
-   prefers-reduced-motion.
+   The moving scene behind everything is src/scenes.js + styles/scenes.css.
 
    Rules are written ":root[data-theme=x], [data-theme=x]" so a card on the
    picker can carry data-theme="x" and preview that theme inside another. */
@@ -41,7 +37,6 @@
   --dot:rgb(168 80 36 / .10); --grid:rgb(168 80 36 / .06);
   --ground:linear-gradient(var(--grid) 1px,transparent 1px) 0 0/90px 90px,
     linear-gradient(90deg,var(--grid) 1px,transparent 1px) 0 0/90px 90px;
-  --motif-a:#A94A1C; --motif-b:#2E7F8F; --motif-c:#8A5B00; --motif-o:.16;
 }
 :root[data-mode="dark"][data-theme="atlas"],[data-mode="dark"] [data-theme="atlas"]{
   --sw2:#6EC3D1;
@@ -51,7 +46,6 @@
   --action:#F0915E; --action-ink:#241208; --action-tint:#3B2417; --action-deep:#F7B48E;
   --sea:#17313F; --sea-line:#24495C; --land:#554A36; --land-edge:#1F1B16; --land-hl:#D9A12A; --land-dim:#3A342A;
   --dot:rgb(240 145 94 / .08); --grid:rgb(240 145 94 / .05);
-  --motif-a:#F0915E; --motif-b:#6EC3D1; --motif-c:#F0C25A; --motif-o:.14;
 }
 
 /* ================================================================ 2 · Ocean Deep */
@@ -67,7 +61,6 @@
   --sea:#8CCBE3; --sea-line:#6FBBD8; --land:#F3E3B5; --land-edge:#FFFFFF; --land-hl:#F28A3A; --land-dim:#E8DDBF;
   --dot:rgb(10 116 136 / .12);
   --ground:radial-gradient(var(--dot) 1.2px,transparent 1.4px) 0 0/28px 28px;
-  --motif-a:#0A7488; --motif-b:#38B2D4; --motif-c:#F2785C; --motif-o:.2;
 }
 :root[data-mode="dark"][data-theme="ocean"],[data-mode="dark"] [data-theme="ocean"]{
   --sw2:#FF9C82;
@@ -77,7 +70,6 @@
   --action:#4FD1E6; --action-ink:#03222A; --action-tint:#113D4A; --action-deep:#8FE3F0;
   --sea:#0E3A52; --sea-line:#1A5270; --land:#5A553C; --land-edge:#0D2430; --land-hl:#F0A040; --land-dim:#3C3D2E;
   --dot:rgb(79 209 230 / .08);
-  --motif-a:#4FD1E6; --motif-b:#2A8FB0; --motif-c:#FF9C82; --motif-o:.2;
 }
 
 /* ================================================================ 3 · Rainforest */
@@ -95,7 +87,6 @@
   --ground:radial-gradient(ellipse 50% 40% at 0% 0%,rgb(42 116 48 / .10),transparent 70%) fixed,
     radial-gradient(ellipse 45% 35% at 100% 100%,rgb(232 116 46 / .08),transparent 70%) fixed,
     radial-gradient(var(--dot) 1px,transparent 1.3px) 0 0/24px 24px;
-  --motif-a:#2A7430; --motif-b:#6FAF3A; --motif-c:#E8742E; --motif-o:.2;
 }
 :root[data-mode="dark"][data-theme="jungle"],[data-mode="dark"] [data-theme="jungle"]{
   --sw2:#FF9D5C;
@@ -107,7 +98,6 @@
   --dot:rgb(127 212 127 / .07);
   --ground:radial-gradient(ellipse 50% 40% at 0% 0%,rgb(127 212 127 / .07),transparent 70%) fixed,
     radial-gradient(var(--dot) 1px,transparent 1.3px) 0 0/24px 24px;
-  --motif-a:#5FBF5F; --motif-b:#A6D86A; --motif-c:#FF9D5C; --motif-o:.18;
 }
 
 /* ================================================================ 4 · Desert Dunes */
@@ -124,7 +114,6 @@
   --dot:rgb(224 122 31 / .12);
   --ground:linear-gradient(170deg,rgb(224 122 31 / .06),transparent 40%) fixed,
     radial-gradient(var(--dot) 1px,transparent 1.3px) 0 0/20px 20px;
-  --motif-a:#E8A13A; --motif-b:#D9742B; --motif-c:#4B3BA8; --motif-o:.2;
 }
 :root[data-mode="dark"][data-theme="desert"],[data-mode="dark"] [data-theme="desert"]{
   --sw2:#F2A04A;
@@ -135,7 +124,6 @@
   --sea:#1C2F55; --sea-line:#28406E; --land:#6A5230; --land-edge:#251B33; --land-hl:#F07A45; --land-dim:#4A3B2A;
   --dot:rgb(242 160 74 / .08);
   --ground:radial-gradient(var(--dot) 1px,transparent 1.3px) 0 0/20px 20px;
-  --motif-a:#F2A04A; --motif-b:#C8612A; --motif-c:#A99BFF; --motif-o:.2;
 }
 
 /* ================================================================ 5 · Polar Aurora */
@@ -151,7 +139,6 @@
   --sea:#AFCFEC; --sea-line:#93BDE3; --land:#E9EFE6; --land-edge:#FFFFFF; --land-hl:#1FA67A; --land-dim:#DCE3E2;
   --dot:rgb(100 54 181 / .10);
   --ground:radial-gradient(var(--dot) 1px,transparent 1.4px) 0 0/34px 34px;
-  --motif-a:#1FC98E; --motif-b:#8A5CF0; --motif-c:#3FA7F5; --motif-o:.2;
 }
 :root[data-mode="dark"][data-theme="aurora"],[data-mode="dark"] [data-theme="aurora"]{
   --sw2:#7EF0C4;
@@ -163,7 +150,6 @@
   --dot:rgb(234 240 255 / .10);
   --ground:radial-gradient(var(--dot) 1px,transparent 1.4px) 0 0/34px 34px,
     radial-gradient(var(--dot) 1px,transparent 1.6px) 13px 21px/71px 71px;
-  --motif-a:#3CF0A8; --motif-b:#9B6BFF; --motif-c:#45B6FF; --motif-o:.3;
 }
 
 /* ================================================================ 6 · Satellite */
@@ -180,7 +166,6 @@
   --dot:rgb(63 81 216 / .14);
   --ground:radial-gradient(var(--dot) 1px,transparent 1.6px) 0 0/53px 53px,
     radial-gradient(var(--dot) 1px,transparent 1.6px) 19px 31px/89px 89px;
-  --motif-a:#3F51D8; --motif-b:#C0341C; --motif-c:#1FA3A3; --motif-o:.2;
 }
 :root[data-mode="dark"][data-theme="orbit"],[data-mode="dark"] [data-theme="orbit"]{
   --sw2:#8C9BFF;
@@ -193,107 +178,6 @@
   --ground:radial-gradient(var(--dot) 1px,transparent 1.6px) 0 0/53px 53px,
     radial-gradient(var(--dot) 1px,transparent 1.6px) 19px 31px/89px 89px,
     radial-gradient(var(--dot) 1.4px,transparent 2px) 41px 7px/137px 137px;
-  --motif-a:#5B6CFF; --motif-b:#FF8A6B; --motif-c:#5FE0D0; --motif-o:.3;
-}
-
-/* ================================================================ the motif layer */
-.motif{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;opacity:var(--motif-o,.2);contain:strict}
-.motif i{position:absolute;display:none;will-change:transform}
-.motif i::before,.motif i::after{content:"";position:absolute;inset:0}
-.motif i::before{background:var(--c,var(--motif-a));-webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat}
-.motif i::after{display:none}
-
-/* --- Old Atlas: a compass rose turns; a smaller one answers; a dotted route */
-:root[data-theme="atlas"] .motif i:nth-child(-n+3){display:block}
-:root[data-theme="atlas"] .motif i:nth-child(1),:root[data-theme="atlas"] .motif i:nth-child(2){
-  --m:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 2l6 42 42 6-42 6-6 42-6-42-42-6 42-6z'/><path d='M50 22l4 24 24 4-24 4-4 24-4-24-24-4 24-4z' transform='rotate(45 50 50)' opacity='.7'/><circle cx='50' cy='50' r='30' fill='none' stroke='black' stroke-width='1.5'/><circle cx='50' cy='50' r='46' fill='none' stroke='black' stroke-width='1' stroke-dasharray='2 3'/></svg>")}
-:root[data-theme="atlas"] .motif i:nth-child(1){right:-4vmin;top:10%;width:min(52vmin,460px);aspect-ratio:1;animation:bzSpin 60s linear infinite}
-:root[data-theme="atlas"] .motif i:nth-child(2){left:3%;bottom:6%;width:min(24vmin,200px);aspect-ratio:1;--c:var(--motif-b);animation:bzSpin 45s linear infinite reverse}
-:root[data-theme="atlas"] .motif i:nth-child(3){left:10%;top:18%;width:min(60vw,640px);height:min(24vw,260px);--c:var(--motif-c);animation:bzDrift 40s ease-in-out infinite alternate;
-  --m:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 120'><path d='M4 110C60 20 160 0 296 40' fill='none' stroke='black' stroke-width='3' stroke-dasharray='8 8'/><circle cx='4' cy='110' r='6'/><path d='M288 30l10 10-14 4z'/></svg>")}
-
-/* --- Ocean Deep: three waves roll; bubbles rise */
-:root[data-theme="ocean"] .motif i:nth-child(-n+7){display:block}
-:root[data-theme="ocean"] .motif i:nth-child(-n+3){left:0;width:200vw;height:16vh;
-  --m:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 40' preserveAspectRatio='none'><path d='M0 20Q25 0 50 20T100 20T150 20T200 20V40H0z'/></svg>")}
-:root[data-theme="ocean"] .motif i:nth-child(-n+3)::before{-webkit-mask-size:50% 100%;mask-size:50% 100%;-webkit-mask-repeat:repeat-x;mask-repeat:repeat-x}
-:root[data-theme="ocean"] .motif i:nth-child(1){bottom:0;animation:bzRoll 24s linear infinite}
-:root[data-theme="ocean"] .motif i:nth-child(2){bottom:5vh;--c:var(--motif-b);opacity:.7;animation:bzRoll 34s linear infinite reverse}
-:root[data-theme="ocean"] .motif i:nth-child(3){bottom:10vh;--c:var(--motif-c);opacity:.45;animation:bzRoll 46s linear infinite}
-:root[data-theme="ocean"] .motif i:nth-child(n+4){bottom:-8vh;width:clamp(14px,3vmin,30px);aspect-ratio:1;animation:bzRise 22s linear infinite;
-  --m:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><circle cx='10' cy='10' r='8.5' fill='none' stroke='black' stroke-width='2'/><circle cx='7' cy='7' r='2'/></svg>")}
-:root[data-theme="ocean"] .motif i:nth-child(4){left:12%}
-:root[data-theme="ocean"] .motif i:nth-child(5){left:38%;animation-duration:28s;animation-delay:-9s;--c:var(--motif-b)}
-:root[data-theme="ocean"] .motif i:nth-child(6){left:67%;animation-duration:19s;animation-delay:-14s}
-:root[data-theme="ocean"] .motif i:nth-child(7){left:88%;animation-duration:31s;animation-delay:-4s;--c:var(--motif-b)}
-
-/* --- Rainforest: six leaves sway */
-:root[data-theme="jungle"] .motif i:nth-child(-n+6){display:block;width:clamp(90px,18vmin,200px);aspect-ratio:1;animation:bzSway 16s ease-in-out infinite alternate;
-  --m:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 96C20 80 8 50 20 20 34 6 60 4 80 12c10 30 2 62-30 84z'/><path d='M50 96C48 60 56 36 78 14' fill='none' stroke='white' stroke-width='3'/></svg>")}
-:root[data-theme="jungle"] .motif i:nth-child(1){left:-2%;top:6%;transform-origin:0 0}
-:root[data-theme="jungle"] .motif i:nth-child(2){right:-1%;top:14%;--c:var(--motif-b);animation-duration:21s;animation-delay:-7s}
-:root[data-theme="jungle"] .motif i:nth-child(3){left:6%;bottom:4%;--c:var(--motif-b);animation-duration:19s;animation-delay:-3s}
-:root[data-theme="jungle"] .motif i:nth-child(4){right:5%;bottom:8%;animation-duration:24s;animation-delay:-12s}
-:root[data-theme="jungle"] .motif i:nth-child(5){left:46%;top:-3%;width:clamp(70px,13vmin,150px);--c:var(--motif-c);animation-duration:18s;animation-delay:-5s}
-:root[data-theme="jungle"] .motif i:nth-child(6){left:30%;bottom:-4%;width:clamp(70px,12vmin,140px);animation-duration:26s;animation-delay:-16s}
-
-/* --- Desert Dunes: a sun breathes; two dune lines drift; sand skims */
-:root[data-theme="desert"] .motif i:nth-child(-n+5){display:block}
-:root[data-theme="desert"] .motif i:nth-child(1){right:6%;top:8%;width:min(26vmin,240px);aspect-ratio:1;animation:bzBreathe 20s ease-in-out infinite alternate;
-  --m:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='26'/><circle cx='50' cy='50' r='38' fill='none' stroke='black' stroke-width='2' stroke-dasharray='4 6'/></svg>")}
-:root[data-theme="desert"] .motif i:nth-child(2),:root[data-theme="desert"] .motif i:nth-child(3){left:0;width:200vw;height:22vh;
-  --m:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 60' preserveAspectRatio='none'><path d='M0 60V40C40 10 80 10 120 34S200 50 240 22 330 8 400 40V60z'/></svg>")}
-:root[data-theme="desert"] .motif i:nth-child(2)::before,:root[data-theme="desert"] .motif i:nth-child(3)::before{-webkit-mask-size:50% 100%;mask-size:50% 100%;-webkit-mask-repeat:repeat-x;mask-repeat:repeat-x}
-:root[data-theme="desert"] .motif i:nth-child(2){bottom:0;--c:var(--motif-b);animation:bzRoll 60s linear infinite}
-:root[data-theme="desert"] .motif i:nth-child(3){bottom:7vh;opacity:.6;animation:bzRoll 44s linear infinite reverse}
-:root[data-theme="desert"] .motif i:nth-child(4),:root[data-theme="desert"] .motif i:nth-child(5){left:-20vw;width:18vw;height:1.2vh;--c:var(--motif-c);animation:bzSkim 26s linear infinite;
-  --m:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 6' preserveAspectRatio='none'><path d='M0 3Q50 -2 100 3Q50 8 0 3z'/></svg>")}
-:root[data-theme="desert"] .motif i:nth-child(4){top:34%}
-:root[data-theme="desert"] .motif i:nth-child(5){top:58%;animation-duration:34s;animation-delay:-15s}
-
-/* --- Polar Aurora: three curtains ripple; stars twinkle */
-:root[data-theme="aurora"] .motif i:nth-child(-n+7){display:block}
-:root[data-theme="aurora"] .motif i:nth-child(-n+3){top:-6vh;width:70vw;height:60vh;border-radius:50%;filter:blur(28px);animation:bzCurtain 22s ease-in-out infinite alternate}
-:root[data-theme="aurora"] .motif i:nth-child(-n+3)::before{background:linear-gradient(180deg,transparent,var(--c,var(--motif-a)) 45%,transparent);-webkit-mask:none;mask:none;border-radius:50%}
-:root[data-theme="aurora"] .motif i:nth-child(1){left:-10vw}
-:root[data-theme="aurora"] .motif i:nth-child(2){left:22vw;--c:var(--motif-b);animation-duration:28s;animation-delay:-9s}
-:root[data-theme="aurora"] .motif i:nth-child(3){left:50vw;--c:var(--motif-c);animation-duration:25s;animation-delay:-16s}
-:root[data-theme="aurora"] .motif i:nth-child(n+4){width:clamp(10px,2vmin,18px);aspect-ratio:1;animation:bzTwinkle 6s ease-in-out infinite alternate;--c:var(--ink);
-  --m:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path d='M10 0l2 8 8 2-8 2-2 8-2-8-8-2 8-2z'/></svg>")}
-:root[data-theme="aurora"] .motif i:nth-child(4){left:14%;top:62%}
-:root[data-theme="aurora"] .motif i:nth-child(5){left:44%;top:74%;animation-delay:-2s}
-:root[data-theme="aurora"] .motif i:nth-child(6){left:72%;top:66%;animation-delay:-4s}
-:root[data-theme="aurora"] .motif i:nth-child(7){left:90%;top:82%;animation-delay:-1s}
-
-/* --- Satellite: a globe; a satellite circles it; the moon goes round further out; stars */
-:root[data-theme="orbit"] .motif i:nth-child(-n+6){display:block}
-:root[data-theme="orbit"] .motif i:nth-child(1){left:-8vmin;bottom:-10vmin;width:min(56vmin,520px);aspect-ratio:1;--c:var(--motif-a);
-  --m:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40'/><g fill='none' stroke='white' stroke-width='1.2' opacity='.7'><ellipse cx='50' cy='50' rx='40' ry='14'/><ellipse cx='50' cy='50' rx='14' ry='40'/><path d='M10 50h80M50 10v80'/></g></svg>")}
-:root[data-theme="orbit"] .motif i:nth-child(2),:root[data-theme="orbit"] .motif i:nth-child(3){left:calc(-8vmin + min(56vmin,520px) / 2);bottom:calc(-10vmin + min(56vmin,520px) / 2);width:0;height:0;animation:bzSpin 40s linear infinite}
-:root[data-theme="orbit"] .motif i:nth-child(2)::before{inset:auto;left:calc(min(56vmin,520px) * .62);top:-14px;width:40px;height:28px;--c:var(--motif-b);
-  --m:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 28'><rect x='15' y='8' width='10' height='12' rx='2'/><rect x='0' y='10' width='13' height='8'/><rect x='27' y='10' width='13' height='8'/><path d='M20 8V2' stroke='black' stroke-width='2'/></svg>")}
-:root[data-theme="orbit"] .motif i:nth-child(3){animation-duration:60s;animation-direction:reverse}
-:root[data-theme="orbit"] .motif i:nth-child(3)::before{inset:auto;left:calc(min(56vmin,520px) * .95);top:-18px;width:36px;height:36px;--c:var(--motif-c);
-  --m:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><circle cx='10' cy='10' r='9'/></svg>")}
-:root[data-theme="orbit"] .motif i:nth-child(n+4){width:clamp(10px,2vmin,18px);aspect-ratio:1;animation:bzTwinkle 5s ease-in-out infinite alternate;--c:var(--motif-a);
-  --m:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path d='M10 0l2 8 8 2-8 2-2 8-2-8-8-2 8-2z'/></svg>")}
-:root[data-theme="orbit"] .motif i:nth-child(4){right:12%;top:14%}
-:root[data-theme="orbit"] .motif i:nth-child(5){right:30%;top:8%;animation-delay:-2s;--c:var(--motif-c)}
-:root[data-theme="orbit"] .motif i:nth-child(6){right:6%;top:44%;animation-delay:-3.5s}
-
-@keyframes bzSpin{to{transform:rotate(360deg)}}
-@keyframes bzDrift{0%{transform:translate(0,0) rotate(-2deg)}100%{transform:translate(3vw,-2vh) rotate(3deg)}}
-@keyframes bzRoll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-@keyframes bzRise{0%{transform:translate(0,0);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translate(2vw,-115vh);opacity:0}}
-@keyframes bzSway{0%{transform:rotate(-7deg) translateY(0)}100%{transform:rotate(9deg) translateY(1.5vh)}}
-@keyframes bzBreathe{from{transform:scale(1)}to{transform:scale(1.1)}}
-@keyframes bzSkim{from{transform:translateX(0)}to{transform:translateX(140vw)}}
-@keyframes bzCurtain{0%{transform:translateX(0) scaleY(1) skewX(-6deg);opacity:.55}50%{opacity:1}100%{transform:translateX(12vw) scaleY(1.25) skewX(8deg);opacity:.7}}
-@keyframes bzTwinkle{from{opacity:.25;transform:scale(.8)}to{opacity:1;transform:scale(1.1)}}
-
-/* a child who has asked the device for less motion gets a still picture */
-@media (prefers-reduced-motion:reduce){
-  .motif i,.motif i::before,.motif i::after{animation:none!important}
 }
 
 /* ================================================================ the picker */

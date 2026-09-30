@@ -15,6 +15,7 @@ import { shapeName } from './map.js';
 import { regionsOf } from './library/states.js';
 import { GKEY, photosOn } from './photos.js';
 import { THEMES, themeOf, isTheme, applyTheme, syncThemeColor } from './themes.js';
+import { syncScene } from './scenes.js';
 
 const root = document.getElementById('app');
 
@@ -102,6 +103,7 @@ function render() {
   focusId = a && a.id ? a.id : null;
   const caret = a && a.selectionStart != null ? a.selectionStart : null;
   applyTheme(themeOf(kid(R.h)));   // the active child's theme; switching child switches it
+  syncScene(themeOf(kid(R.h)), R.ui.nav === 'run' || Store.loadDevice('still', false));   // a quiz run gets a still, faded scene
   root.innerHTML = V.shell(screen());
   restoreMaps(root);
   if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); if (caret != null && el.setSelectionRange) try { el.setSelectionRange(caret, caret); } catch (_) {} } }
@@ -207,6 +209,7 @@ on('createKid', () => {
 });
 on('switchKid', (id) => { R.h.active = id; R.ui.lib = {}; save(); go('home'); });
 on('setAv', (a) => { if (AVATARS.includes(a)) { kid(R.h).avatar = a; save(); render(); } });
+on('still', () => { Store.saveDevice('still', !Store.loadDevice('still', false)); render(); });
 /* themes belong to the child: chosen on their page, applied at once */
 on('theme', (id) => {
   const k = kid(R.h); if (!k || !isTheme(id)) return;

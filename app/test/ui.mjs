@@ -94,6 +94,7 @@ async function run(vp, tag) {
   await page.waitForSelector('.stop-page');
   await page.evaluate(() => { const R = window.__bzg.R; R.h.parent.tester = false; });
   await page.evaluate(() => { const R = window.__bzg.R; R.run = { kind: 'drill', title: 'Map test', items: [{ kind: 'map', text: 'Tap France on the map.', ok: ['FR'], view: [-25, 34, 45, 72], why: '', target: 'FR', stop: 'cap-europe', lv: 2 }, { kind: 'map', text: 'Tap Spain on the map.', ok: ['ES'], view: [-25, 34, 45, 72], why: '', target: 'ES', stop: 'cap-europe', lv: 2 }], i: 0, results: [], fb: null, over: false, stop: 'cap-europe', lv: 2 }; window.__bzg.go('run'); });
+  ok(await page.evaluate(() => document.documentElement.classList.contains('sc-calm')), 'a quiz run holds the scene still (calm)');
   await page.waitForSelector('.gmap.tap');
   await page.waitForTimeout(300); await shot('08-mapq');
   // France's shape includes overseas parts; tap inside the European part via the projection
@@ -241,6 +242,7 @@ async function run(vp, tag) {
   // themes: the chip on home opens the picker; a choice restyles the page AND the map, and belongs to the child
   await page.evaluate(() => window.__bzg.go('home')); await page.waitForSelector('.theme-chip');
   ok(await page.evaluate(() => document.documentElement.dataset.theme) === 'atlas', 'a new child starts in Old Atlas');
+  ok(await page.locator('#scene .scn').count() >= 40 && !(await page.evaluate(() => document.documentElement.classList.contains('sc-calm'))), 'home shows a full, moving scene');
   await page.click('.theme-chip'); await page.waitForSelector('.theme-card[aria-checked="true"]');
   ok(await page.locator('.theme-card').count() === 6, 'the picker offers six themes');
   const seaBefore = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--sea').trim());
@@ -249,6 +251,7 @@ async function run(vp, tag) {
   ok(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--sea').trim()) !== seaBefore, 'the map’s sea takes the theme’s colour');
   await page.focus('#theme-ocean'); await page.keyboard.press('ArrowRight'); await page.waitForTimeout(150);
   ok(await page.evaluate(() => document.documentElement.dataset.theme) === 'jungle', 'the arrow keys move the choice (keyboard)');
+  ok(await page.locator('#scene .sc-jungle').count() === 1, 'the scene follows the theme (Rainforest now)');
   for (const t of ['desert', 'aurora', 'orbit']) { await page.click(`#theme-${t}`); await page.waitForTimeout(250); await page.evaluate(() => scrollTo(0, 0)); await shot(`21-theme-${t}`); }
   await page.evaluate(() => window.__bzg.go('lib', 'capitals')); await page.waitForSelector('.gmap'); await page.waitForTimeout(200); await shot('22-orbit-map');
   await page.evaluate(() => window.__bzg.go('me')); await page.waitForSelector('.av-packs');
