@@ -70,7 +70,7 @@ export function rankOf(xp) {
 
 /* ---------------------------------------------------------------- kids */
 
-export function newHousehold() { return { v: 3, kids: [], active: null, parent: { pin: null, tester: false, streetview: true } }; }
+export function newHousehold() { return { v: 4, kids: [], active: null, parent: { pin: null, tester: false, streetview: true } }; }
 
 export function newKid(name, band, avatar) {
   return {
@@ -83,6 +83,7 @@ export function newKid(name, band, avatar) {
     road: { level: START[band] || 3, finished: [], checks: {} },   // the ten roads
     lib: {},              // library tool id → that tool's own record
     days: {},             // dayKey → { q, ok }
+    exp: {},              // expedition id → { at, seen, m } (src/expeditions.js ledger)
     created: Date.now(),
     prefs: {},
   };

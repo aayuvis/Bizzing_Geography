@@ -16,6 +16,7 @@ import { regionsOf } from './library/states.js';
 import { GKEY, photosOn } from './photos.js';
 import { THEMES, themeOf, isTheme, applyTheme, syncThemeColor } from './themes.js';
 import { syncScene } from './scenes.js';
+import * as X from './expeditions.js';
 
 const root = document.getElementById('app');
 
@@ -81,8 +82,10 @@ function screen() {
   switch (n) {
     case 'atlas': return V.viewAtlas();
     case 'world': return worldOf(R.ui.arg) ? V.viewWorld(R.ui.arg) : V.viewAtlas();
-    case 'stop': return stopOpen(R.h, k, R.ui.arg) ? V.viewStop(R.ui.arg) : V.viewWorld(byId[R.ui.arg].world);
+    case 'stop': return stopOpen(R.h, k, R.ui.arg) || X.expAllows(k, R.ui.arg) ? V.viewStop(R.ui.arg) : V.viewWorld(byId[R.ui.arg].world);
     case 'road': return V.viewRoad();
+    case 'exp': return X.viewHub(k, V.pageHead);
+    case 'expd': return X.viewExpedition(k, R.ui.arg, V);
     case 'library': return libraryView();
     case 'lib': return toolById[R.ui.arg] ? toolView(toolById[R.ui.arg]) : libraryView();
     case 'me': return V.viewMe();
@@ -154,6 +157,9 @@ function finish(run) {
     const pass = right / n >= CHECK_PASS;
     if (pass) { const L = passLevel(k); run.summary = { stars: 3, lines: [`Level check passed. Welcome to Level ${L}: ${levelOf(L).name}.`] }; sfx.level(); confetti(60); }
     else run.summary = { stars: right / n >= 0.6 ? 1 : 0, lines: [`Ten right opens the next level. Walk a few more stations on your road, then try again.`] };
+  } else if (run.kind === 'sprint') {
+    run.summary = X.finishDay(k, run, right, n);
+    if (run.summary.big) { sfx.level(); confetti(40); }
   } else if (run.kind === 'lib') {
     const t = toolById[run.lib];
     run.summary = t && t.done ? t.done(run, libCtx(run.lib)) : null;
@@ -166,8 +172,18 @@ function finish(run) {
 on('nav', (a) => go(a || 'home'));
 on('openWorld', (w) => { R.ui.pick = null; go('world', w); });
 on('pickStop', (id) => { R.ui.pick = id; render(); });
-on('openStop', (id) => { if (!stopOpen(R.h, kid(R.h), id)) { toast('That stop opens on a later level.'); return; } go('stop', id); });
+on('openStop', (id) => { if (!stopOpen(R.h, kid(R.h), id) && !X.expAllows(kid(R.h), id)) { toast('That stop opens on a later level.'); return; } go('stop', id); });
 on('openTool', (id) => go('lib', id));
+/* expeditions: the engine decides what a day is; the host only goes, runs or toasts */
+on('expOpen', (id) => go('expd', id));
+on('expDay', (arg) => {
+  const [eid, n] = String(arg).split('|'), k = kid(R.h), r = X.doDay(k, eid, n);
+  if (!r) return;
+  save();
+  if (r.run) return startRun('sprint', r.run.title, r.run.items, r.run.extra);
+  if (r.toast) toast(r.toast);
+  if (r.go) go(r.go[0], r.go[1]); else render();
+});
 on('learned', (id) => { const r = stopRec(kid(R.h), id); if (!r.learned) { r.learned = true; r.stars = Math.max(r.stars, 1); save(); sfx.coin(); } render(); });
 on('startDrill', (id) => { const s = byId[id], k = kid(R.h), lv = lvFor(k, id); startRun('drill', s.title, drill(s, lv, 10), { stop: id, lv, sub: `${s.glyph} ${['', 'First look', 'Deeper', 'Stretch'][lv]}` }); });
 on('levelCheck', () => {
@@ -179,8 +195,8 @@ on('levelCheck', () => {
 on('lvShow', (n) => { R.ui.lvShow = +n; render(); });
 on('choose', (a) => answer(a));
 on('nextQ', () => nextQ());
-on('quitRun', () => { const r = R.run; R.run = null; if (r && r.kind === 'lib') return go('lib', r.lib); if (r && r.kind === 'drill') return go('stop', r.stop); go(r && r.kind === 'check' ? 'road' : 'home'); });
-on('endRun', () => { const r = R.run; R.run = null; if (r && r.kind === 'lib') return go('lib', r.lib); if (r && r.kind === 'drill') return go('stop', r.stop); go(r && r.kind === 'check' ? 'road' : 'home'); });
+on('quitRun', () => { const r = R.run; R.run = null; if (r && r.kind === 'sprint') return go('expd', r.exp); if (r && r.kind === 'lib') return go('lib', r.lib); if (r && r.kind === 'drill') return go('stop', r.stop); go(r && r.kind === 'check' ? 'road' : 'home'); });
+on('endRun', () => { const r = R.run; R.run = null; if (r && r.kind === 'sprint') return go('expd', r.exp); if (r && r.kind === 'lib') return go('lib', r.lib); if (r && r.kind === 'drill') return go('stop', r.stop); go(r && r.kind === 'check' ? 'road' : 'home'); });
 on('mapZoom', (a) => { const [key, how] = a.split('|'); zoomMap(root, key, how); });
 on('lib', (a) => {
   const [id, name, ...rest] = a.split('|'), tool = toolById[id];

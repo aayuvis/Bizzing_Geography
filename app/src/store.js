@@ -16,7 +16,7 @@
 
 const KEY = 'bzg_household';
 const DEV = 'bzg_device';
-export const SCHEMA = 3;
+export const SCHEMA = 4;
 
 const STEPS = {
   // v0 is "no version field at all": anything from a pre-release build
@@ -25,6 +25,8 @@ const STEPS = {
   1: (h) => { h.v = 2; h.parent.streetview = !!h.parent.streetview; return h; },
   // v3: real photos become the default (the owner's decision); a grown-up can switch them off
   2: (h) => { h.v = 3; h.parent.streetview = true; return h; },
+  // v4: Expeditions — each child gets an empty record of the ten learning sprints
+  3: (h) => { h.v = 4; (h.kids || []).forEach((k) => { k.exp = k.exp || {}; }); return h; },
 };
 
 export function migrate(h) {

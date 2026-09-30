@@ -7,6 +7,8 @@ import { WORLDS, STOPS, byId, worldOf, stopsIn } from './stops.js';
 import { LEVELS, ageOf, firstLevel } from './levels.js';
 import { THEMES, themeOf, themePicker } from './themes.js';
 import { Store } from './store.js';
+import { EXPEDITIONS, EXPEDITIONS_PARENT } from './data/expeditions.js';
+import { learnedList, stats as expStats } from './expeditions.js';
 import { BANDS, AVATARS, AVATAR_PACKS, AVATAR_NAME, avatarFile, RANKS, RANK_SRC, rankOf, kid, stopRec, road, stopOpen, lvFor, starsTotal, maxStars, levelOf } from './model.js';
 import { worldSVG, regionSVG, viewFor } from './map.js';
 import { POSTCARDS } from './data/postcards.js';
@@ -44,10 +46,10 @@ export const srcList = (src) => (src && src.length ? `<details class="src"><summ
 export const TABS = [
   { k: 'home', n: 'Home', icon: 'home' },
   { k: 'atlas', n: 'Atlas', icon: 'map' },
-  { k: 'road', n: 'My road', icon: 'road' },
+  { k: 'exp', n: 'Expeditions', icon: 'flag' },
   { k: 'library', n: 'Library', icon: 'book' },
 ];
-const NAV_OF = { lib: 'library', stop: 'atlas', world: 'atlas', run: null, me: 'home', grownups: null, privacy: null };
+const NAV_OF = { lib: 'library', stop: 'atlas', world: 'atlas', road: 'atlas', expd: 'exp', run: null, me: 'home', grownups: null, privacy: null };
 
 export function icon(k) {
   const p = {
@@ -59,6 +61,7 @@ export function icon(k) {
     sound: '<path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" class="i2"/>',
     mute: '<path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path d="m16 9.5 5 5M21 9.5l-5 5" class="i2"/>',
     moon: '<path d="M19.5 14.5A8 8 0 0 1 9.5 4.5a8 8 0 1 0 10 10z"/>',
+    flag: '<path d="M5 21V4"/><path d="M5 4.5c4-2 7 2 11 0l3-1v10l-3 1c-4 2-7-2-11 0" class="i2"/>',
   }[k] || '';
   return `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">${p}</svg>`;
 }
@@ -178,10 +181,17 @@ export const MAP_PINS = {
 };
 const worldStars = (k, w) => stopsIn(w.id).reduce((a, s) => a + ((k.stops[s.id] || {}).stars || 0), 0);
 
+/* The Atlas has two faces of one island: the MAP (where the places are) and
+   YOUR JOURNEY (the order you will walk them, level by level). They were two
+   tabs once — "Atlas" and "My road" — but the road only ever explains the map. */
+const atlasTabs = (on) => `<div class="seg atlas-seg" role="tablist" aria-label="The Atlas">
+  <button role="tab" aria-selected="${on === 'map'}" class="${on === 'map' ? 'on' : ''}" data-act="nav" data-arg="atlas">🗺️ The map</button>
+  <button role="tab" aria-selected="${on === 'road'}" class="${on === 'road' ? 'on' : ''}" data-act="nav" data-arg="road">🛤️ Your journey</button></div>`;
 export function viewAtlas() {
   const h = R.h, k = kid(h);
   return `<section>
     ${pageHead('The Explorer’s Atlas', 'Ten places on one island, each with its own lessons. Tap a place to travel there.', '', `<span class="chip gold">★ ${starsTotal(k)} / ${maxStars()}</span>`)}
+    ${atlasTabs('map')}
     <div class="map-board">
       <img src="art/atlas.webp" alt="A painted map of the Explorer’s Island." width="1920" height="1072">
       ${WORLDS.map((w) => {
@@ -324,8 +334,23 @@ export function viewRoad() {
   const show = R.ui.lvShow && R.ui.lvShow !== rd.L.n ? levelOf(R.ui.lvShow) : null;
   const L = show || rd.L;
   const steps = show ? L.steps.map((s, i) => ({ ...s, n: i + 1, done: !!((k.stops[s.stop] || {}).lv || {})[s.lv], open: L.n < k.road.level || R.h.parent.tester })) : rd.steps;
-  return `<section class="narrow">
-    ${pageHead('My road', `Level ${L.n} · ${esc(L.name)} · ${ageOf(L.n)}`)}
+  const mine = k.road.level;
+  const glance = `<div class="card jg-card"><h3>Your journey at a glance</h3>
+    <p class="muted small">Ten levels, from your first map to the stretch. Each level is a road of stations across the island; ten right answers in its level check opens the next.</p>
+    <ol class="jglance">${LEVELS.map((x) => {
+      const worlds = [...new Set(x.steps.map((s) => byId[s.stop].world))].map(worldOf);
+      const state = k.road.finished.includes(x.n) ? 'fin' : x.n === mine ? 'now' : x.n < mine ? 'fin' : 'ahead';
+      return `<li><button class="jg ${state}${x.n === L.n ? ' shown' : ''}" data-act="lvShow" data-arg="${x.n}" aria-label="Level ${x.n}: ${esc(x.name)}">
+        <span class="jg-n">${state === 'fin' ? '✓' : x.n}</span>
+        <span class="jg-t"><b>${esc(x.name)}</b><span>${x.steps.length} stations · ${ageOf(x.n)}${state === 'now' ? ' · <em>you are here</em>' : ''}</span>
+        <span class="jg-w">${worlds.map((w) => `<i title="${esc(w.name)}">${w.glyph}</i>`).join('')}</span></span></button></li>`;
+    }).join('')}</ol></div>`;
+  return `<section>
+    ${pageHead('The Explorer’s Atlas', 'Where your journey goes — and what to expect on the way.', '', `<span class="chip gold">★ ${starsTotal(k)} / ${maxStars()}</span>`)}
+    ${atlasTabs('road')}
+    <div class="narrow">
+    ${glance}
+    <h2 class="center-t">Level ${L.n} · ${esc(L.name)}</h2>
     <div class="seg lv-seg" role="tablist" aria-label="Level">${LEVELS.map((x) => `<button role="tab" aria-selected="${x.n === L.n}" class="${x.n === L.n ? 'on' : ''}${x.n === k.road.level ? ' mine' : ''}${k.road.finished.includes(x.n) ? ' fin' : ''}" data-act="lvShow" data-arg="${x.n}">${x.n}</button>`).join('')}</div>
     <p class="lead center-t">${esc(L.blurb)}</p>
     <ol class="jsteps">${steps.map((s) => {
@@ -339,6 +364,7 @@ export function viewRoad() {
       <p class="muted">Twelve questions from this road. Ten right opens Level ${Math.min(10, L.n + 1)}${rd.all ? '' : ' — even before you have walked every station'}.</p>
       ${L.n < 10 || !k.road.finished.includes(10) ? btn('Take the level check', 'levelCheck', '', rd.all ? 'primary big' : 'big') : ''}
     </div>`}
+    </div>
   </section>`;
 }
 
@@ -384,7 +410,11 @@ export function viewGrownups() {
       return `<div class="card report"><div class="row gap">${av(k.avatar, 44)}<div><h3>${esc(k.name)}</h3><p class="muted small">Level ${k.road.level} · ${rankOf(k.xp).n}</p></div></div>
         <p>Last seven days: <b>${q}</b> questions, <b>${ok}</b> right.</p>
         <p>Stops passed (★★ or better): ${passed.length ? passed.map((s) => esc(s.title)).join(', ') : 'none yet'}.</p>
-        <p>Capitals known in the Library: ${Object.values((k.lib.capitals || {}).box || {}).filter((b) => b >= 2).length} of 195 countries, ${Object.values((k.lib.states || {}).box || {}).filter((b) => b >= 2).length} states and provinces.</p></div>`;
+        <p>Capitals known in the Library: ${Object.values((k.lib.capitals || {}).box || {}).filter((b) => b >= 2).length} of 195 countries, ${Object.values((k.lib.states || {}).box || {}).filter((b) => b >= 2).length} states and provinces.</p>
+        ${(() => { const L = learnedList(k), on = EXPEDITIONS.filter((e) => (k.exp || {})[e.id]);
+          return `<h4>Expeditions</h4>${on.length ? `<p class="muted small">${on.map((e) => `${e.glyph} ${esc(e.name)}: ${expStats(k, e).learned} of ${e.modules.length} parts learned`).join(' · ')}</p>` : '<p class="muted small">None started yet.</p>'}
+          ${L.length ? `<ul class="learned">${L.map((x) => `<li>✓ ${esc(k.name)} can ${esc(x.m.objective)} <span class="muted small">(${esc(x.e.name)}, ${x.on})</span></li>`).join('')}</ul>` : ''}
+          <p class="hint">${esc(EXPEDITIONS_PARENT)}</p>`; })()}</div>`;
     }).join('')}
     <div class="card"><h3>Settings</h3>
       <label class="tog"><input type="checkbox" data-act="tester" ${h.parent.tester ? 'checked' : ''}> Tester mode — opens every stop and level for a grown-up to look round. Changes nothing about a child.</label>

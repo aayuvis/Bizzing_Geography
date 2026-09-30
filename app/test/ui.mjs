@@ -124,6 +124,22 @@ async function run(vp, tag) {
 
   await page.waitForSelector('.jsteps'); await shot('09-road'); await noSideways('road');
   ok(await page.locator('.jstep.done').count() >= 1, 'the road shows station 1 done');
+  ok(await page.locator('.jglance .jg').count() === 10 && await page.locator('.atlas-seg [aria-selected=true]').innerText() === '🛤️ Your journey', 'Your journey is a tab of the Atlas, with all ten levels at a glance');
+  ok(await page.locator(phone ? '.tb.on' : '.tab.on').getAttribute('data-arg') === 'atlas', 'the Atlas tab stays lit on the journey');
+  // Expeditions: ten sprints; a learn day opens its stop; a practice day is a run
+  await nav('exp'); await page.waitForSelector('.exp-grid');
+  ok(await page.locator('.exp-card').count() === 10, 'Expeditions offers ten sprints');
+  await shot('23-expeditions'); await noSideways('expeditions');
+  await page.click('[data-act=expOpen][data-arg="first-maps"]'); await page.waitForSelector('.exp-days');
+  ok(await page.locator('.exp-day').count() >= 20, 'an expedition lists its 20–30 days');
+  await shot('24-expedition'); await noSideways('expedition');
+  await page.click('.exp-next [data-act=expDay]'); await page.waitForTimeout(200);
+  ok(await page.evaluate(() => window.__bzg.R.ui.nav) === 'stop', 'day 1 opens its lesson');
+  await page.evaluate(() => window.__bzg.go('expd', 'first-maps')); await page.waitForSelector('.exp-days');
+  ok(await page.locator('.exp-day.done').count() === 1, 'and is ticked');
+  await page.click('[data-act=expDay][data-arg="first-maps|3"]'); await page.waitForSelector('.qcard');
+  ok(await page.evaluate(() => window.__bzg.R.run.kind) === 'sprint', 'a practice day is a quiz run');
+  await page.evaluate(() => { window.__bzg.R.run = null; window.__bzg.go('home'); });
 
   // every Library tool renders
   await nav('library'); await page.waitForSelector('.lib-grid');
