@@ -1472,3 +1472,14 @@ h1,h2,h3,.tab,.tb,.set-head h1,.set-sec h2,.shop-page h1,.dr-i{font-family:var(-
 .switch i{top:9px;z-index:1}
 .switch[aria-checked="true"]{background:none}
 .mp-me{position:absolute;right:-12px;top:-12px;width:30px;height:30px;border-radius:50%;background:var(--surface);box-shadow:0 0 0 2px var(--action),0 2px 6px rgb(0 0 0 / .3)}
+
+/* ================================================================ the family shell (bizzing-shell.css)
+   Colours only, through its tokens: the app's accent, cards and ink in every world, day and night. */
+:root,html[data-bz-dark]{--bz-accent:var(--action);--bz-accent-ink:var(--action-ink);--bz-ink:var(--ink);--bz-muted:var(--muted);--bz-line:var(--line);--bz-card:var(--surface);
+  --bz-hdr:color-mix(in srgb,var(--paper) 84%,transparent);--bz-tabbar:color-mix(in srgb,var(--paper) 94%,transparent)}
+.bz-greet .bz-bubble{font-style:normal}
+.bz-ringcard .hm-ring{display:flex;gap:14px;align-items:center;height:100%}
+.bz-ringcard .h-goal{display:flex;gap:6px;margin-top:6px}
+.bz-content > .foot{padding:26px 0 0;max-width:none}
+.bz-content .demo-bar,.bz-content .tester{margin:-6px 0 12px;border-radius:12px}
+.bz-content .hive-chip{margin:0 0 12px}

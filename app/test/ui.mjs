@@ -9,6 +9,7 @@ import { gzipSync } from 'node:zlib';
 import { spawn } from 'node:child_process';
 import { mkdirSync, existsSync, symlinkSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { checkShell } from './shell-check.mjs';
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PW || '/opt/node22/lib/node_modules/playwright');
 
@@ -54,7 +55,7 @@ async function run(vp, tag) {
   const shot = (n) => page.screenshot({ path: `${SHOTS}/${tag}-${n}.png` });
   const S = () => page.evaluate(() => { const r = window.__bzg.R, q = r.run && r.run.items[r.run.i]; return { nav: r.ui.nav, run: r.run && { kind: r.run.kind, i: r.run.i, n: r.run.items.length, over: r.run.over, fb: r.run.fb, q } }; });
   const phone = vp.width < 760;
-  const nav = async (k) => { await page.evaluate(() => { window.__bzg.R.ui.medalPop = []; }); return page.click(phone ? `.tb[data-arg=${k}]` : `.tab[data-arg=${k}]`); };
+  const nav = async (k) => { await page.evaluate(() => { window.__bzg.R.ui.medalPop = []; }); return page.click(phone ? `[data-bz=tabbar] a[href="#/${k}"]` : `[data-bz=tabs] a[href="#/${k}"]`); };
   /* measured against the viewport WE set: Chromium widens innerWidth/clientWidth to fit overflow under
      mobile emulation, so a check against them passes on a broken page */
   const W = vp.width;
@@ -85,7 +86,7 @@ async function run(vp, tag) {
   const T0 = Date.now();
   /* P3: every tap target at least 44px — measured, not trusted */
   const targets = async (where) => {
-    const small = await page.evaluate(() => [...document.querySelectorAll('#app button, #app [role=tab], #app a.btn, #app input[type=range], #app summary')].filter((b) => b.offsetParent && !b.closest('.foot, .demo-bar, .prose p, .muted, .src') && !b.classList.contains('linkish')).map((b) => [b, b.getBoundingClientRect()]).filter(([, r]) => r.height < 43.5 || r.width < 43.5).map(([b, r]) => `${(b.innerText || b.getAttribute('aria-label') || b.className).trim().slice(0, 24)} ${Math.round(r.width)}×${Math.round(r.height)}`));
+    const small = await page.evaluate(() => [...document.querySelectorAll('#app button, #app [role=tab], #app a.btn, #app input[type=range], #app summary')].filter((b) => b.offsetParent && !b.closest('.foot, .demo-bar, .prose p, .muted, .src, [data-bz=bar]') && !b.classList.contains('linkish')).map((b) => [b, b.getBoundingClientRect()]).filter(([, r]) => r.height < 43.5 || r.width < 43.5).map(([b, r]) => `${(b.innerText || b.getAttribute('aria-label') || b.className).trim().slice(0, 24)} ${Math.round(r.width)}×${Math.round(r.height)}`));
     ok(!small.length, `${where}: every target is at least 44px${small.length ? ' — ' + small.slice(0, 4).join(', ') : ''}`);
   };
   await page.goto(`http://127.0.0.1:${port}/Bizzing_Geography/`);
@@ -122,15 +123,26 @@ async function run(vp, tag) {
   ok(await page.locator('.why-card').count() === 1 && await page.evaluate(() => window.__bzg.R.run.kind === 'drill'), 'then straight into the first stop, its "why" above the first question');
   ok(await page.evaluate(() => window.__bzg.R.h.kids[0].days && Object.values(window.__bzg.R.h.kids[0].days).some((d) => d.q >= 1)), 'the question tried first is counted on the new explorer');
   await page.click('[data-act=quitRun]'); await page.evaluate(() => window.__bzg.go('home'));
-  await page.waitForSelector('.home');
+  await page.waitForSelector('[data-bz=home]');
   await page.waitForTimeout(300); await shot('02-home'); await noSideways('home'); await targets('home');
   ok(await page.evaluate(() => window.__bzg.R.h.kids[0].road.level) === 3, 'an 8–10 starts on Level 3');
   /* B2: exactly one filled primary button on home — the Continue card, chosen by next.js */
-  ok(await page.evaluate(() => [...document.querySelectorAll('.btn.primary')].filter((b) => b.offsetParent).length) === 1, 'home has exactly one primary button');
-  ok(await page.evaluate(() => { const b = document.querySelector('.hm-cta'); return b && b.getBoundingClientRect().bottom <= innerHeight; }), 'Continue is above the fold');
-  ok(await page.evaluate(() => { const b = document.querySelector('.hm-cta'); return b.dataset.act === 'openStop' && !!b.dataset.arg; }), 'Continue opens the next station');
-  ok(await page.locator('.hm-ways > *').count() <= 6, 'six ways in at most');
-  ok(await page.locator('.top .hive').getAttribute('href') === 'https://aayuvis.github.io/Bizzing_Schedule/', 'the top bar goes back to the Hive');
+  /* the family shell: Bee's chrome and home, MEASURED (integration/shell-check.mjs), light and dark */
+  for (const mode of ['light', 'dark']) {
+    await page.evaluate((m) => { document.documentElement.setAttribute('data-mode', m); window.__bzg.R.ui.medalPop = []; window.__bzg.go('home'); }, mode); await page.waitForTimeout(250);
+    /* measured like for like: Bee's numbers were taken with a 40-coin chip, and the chip's width is its digits */
+    await page.evaluate(() => { const w = JSON.parse(localStorage.getItem('bizzing.wallet') || '{"v":1,"kids":{}}'); w.kids.ahana = w.kids.ahana || { coins: 0, ledger: [] }; window.__coins0 = w.kids.ahana.coins; w.kids.ahana.coins = 40; localStorage.setItem('bizzing.wallet', JSON.stringify(w)); window.__bzg.R.render(); });
+    const sf = await checkShell(page, { phone });
+    await page.evaluate(() => { const w = JSON.parse(localStorage.getItem('bizzing.wallet')); w.kids.ahana.coins = window.__coins0; localStorage.setItem('bizzing.wallet', JSON.stringify(w)); window.__bzg.R.render(); }); console.log(`  checkShell ${tag} ${mode}: ${JSON.stringify(sf)}`);
+    ok(!sf.length, `checkShell (${mode}): Bee's top bar, tabs, home and drawer — ${sf.join('; ')}`);
+    if (mode === 'dark') await shot('02b-home-dark');
+  }
+  await page.evaluate(() => { document.documentElement.setAttribute('data-mode', 'light'); window.__bzg.R.render(); });
+  ok(await page.evaluate(() => [...document.querySelectorAll('.btn.primary, .bz-btn:not(.out)')].filter((b) => b.offsetParent).length) === 1, 'home has exactly one primary button');
+  ok(await page.evaluate(() => { const b = document.querySelector('[data-bz=continue]'); return b && b.getBoundingClientRect().bottom <= innerHeight; }), 'Continue is above the fold');
+  ok(await page.evaluate(() => { const b = document.querySelector('[data-bz=continue]'); return b.getAttribute('href') === '#/continue'; }), 'Continue opens the next station');
+  ok(await page.locator('.hm-ways, .hm-three').count() === 0 && await page.evaluate(() => ['greet', 'ring', 'hour', 'next', 'second', 'tip', 'quote'].every((x) => document.querySelector(`[data-bz=home] [data-bz=${x}]`)) && document.querySelectorAll('[data-bz=home] .bz-card, [data-bz=home] .bz-journey').length === 7), 'home is Bee’s three rows: greeting · ring · hour, two journeys, tip · quote — nothing else');
+  ok(await page.locator('[data-bz=hive]').getAttribute('href') === 'https://aayuvis.github.io/Bizzing_Schedule/', 'the top bar goes back to the Hive');
   /* the activity feed (O3): an active minute is written for this child */
   for (let i = 0; i < 6; i++) { await page.keyboard.press('Shift'); await page.clock.runFor(15000); }
   ok(await page.evaluate(() => { const f = JSON.parse(localStorage.getItem('bizzing.activity') || '{}'); return (f.s || []).some((x) => x.a === 'geography' && x.who === 'Ahana' && x.m >= 1); }), 'bizzing.activity gets an active minute for this child');
@@ -212,7 +224,7 @@ async function run(vp, tag) {
   await page.waitForSelector('.jsteps'); await shot('09-road'); await noSideways('road');
   ok(await page.locator('.jstep.done').count() >= 1, 'the road shows station 1 done');
   ok(await page.locator('.jglance .jg').count() === 10 && (await page.locator('.atlas-seg [aria-selected=true]').innerText()).trim() === 'Your journey', 'Your journey is a tab of the Atlas, with all ten levels at a glance');
-  ok(await page.locator(phone ? '.tb.on' : '.tab.on').getAttribute('data-arg') === 'atlas', 'the Atlas tab stays lit on the journey');
+  ok(await page.locator(phone ? '[data-bz=tabbar] [aria-current=page]' : '[data-bz=tabs] [aria-current=page]').getAttribute('href') === '#/atlas', 'the Atlas tab stays lit on the journey');
   // Expeditions: ten, each a painted board with a camp per part; a part's steps; a project built IN the app
   await nav('exp'); await page.waitForSelector('.crs-grid');
   ok(await page.locator('.crs-card').count() === 10, 'Expeditions offers ten');
@@ -281,9 +293,9 @@ async function run(vp, tag) {
   ok(roseOk === true, 'compass drills: the rose beside the plan is whole inside its drawing');
   await page.evaluate(() => { window.__bzg.R.run = null; window.__bzg.go('home'); });
   /* the place of the hour opens THAT place (it opened the game's menu) */
-  await page.waitForSelector('[data-act=openPlace]');
-  const placeId = await page.locator('[data-act=openPlace]').getAttribute('data-arg');
-  await page.click('[data-act=openPlace]'); await page.waitForSelector('.wo-hud');
+  await page.waitForSelector('[data-bz=hour]');
+  const placeId = (await page.locator('[data-bz=hour]').getAttribute('href')).split('/').pop();
+  await page.click('[data-bz=hour]'); await page.waitForSelector('.wo-hud');
   ok(await page.evaluate((id) => { const g = window.__bzg.R.ui.lib.geoguess.g; return !!g && g.place && g.cards.length === 1 && g.cards[0].id === id; }, placeId), 'the place-of-the-hour card opens that very place');
   await page.evaluate(() => { window.__bzg.R.ui.lib.geoguess.g = null; });
   /* a link to a tool that does not exist lands on the Library and the address says so */
@@ -441,7 +453,7 @@ async function run(vp, tag) {
   ok(await page.evaluate(() => (window.__bzg.R.h.kids[0].lib.capitals.box || {}).AR) === 1, 'a right pick climbs the capital’s box');
 
   // WORLDS (§7): Settings → Look; worlds 1–2 open, 3–6 locked until coins or the family plan; a choice restyles page AND map
-  await page.evaluate(() => window.__bzg.go('home')); await page.waitForSelector('.top [data-act=drawer]');
+  await page.evaluate(() => window.__bzg.go('home')); await page.waitForSelector('[data-bz=menu]');
   ok(await page.evaluate(() => document.documentElement.dataset.theme) === 'atlas', 'a new child starts in Old Atlas');
   ok(await page.locator('#scene .scn').count() >= 40 && !(await page.evaluate(() => document.documentElement.classList.contains('sc-calm'))), 'home shows a full, moving scene');
   await page.evaluate(() => window.__bzg.go('settings')); await page.waitForSelector('.world-thumb[aria-checked="true"]');
@@ -523,19 +535,19 @@ async function run(vp, tag) {
   ok(await page.locator('.ledger li').count() >= 3, 'the Shop ends with the wallet history');
   await shot('28-shop'); await noSideways('shop');
   /* K9: the coin chip opens the wallet history; Escape closes it */
-  await page.click('.coin-chip'); await page.waitForSelector('#wallet-sheet');
+  await page.click('[data-bz=coins]'); await page.waitForSelector('#wallet-sheet');
   ok(/bought|right answer|stop/.test(await page.locator('#wallet-sheet .ledger').innerText()) && await page.locator('#wallet-sheet .ledger li').count() <= 30, 'the coin chip opens the last 30 coins, in words');
   await page.keyboard.press('Escape'); await page.waitForTimeout(100);
   ok(await page.locator('#wallet-sheet').count() === 0, 'Escape closes the wallet');
   /* §3: the ☰ drawer opens and closes by keyboard, in the family order, focus kept inside */
-  await page.focus('.burger'); await page.keyboard.press('Enter'); await page.waitForSelector('.drawer');
-  ok(await page.evaluate(() => [...document.querySelectorAll('.drawer .dr-i span')].map((x) => x.innerText.trim()).join('|')).then((t) => /^My page\|Shop\|Collection\|Medals\|.*Settings\|Grown-ups\|Help\|Privacy\|Back to the Hive$/.test(t)), 'the ☰ menu: My page · Shop · Collection · Medals · … · Settings · Grown-ups · Help · Privacy · Back to the Hive');
+  await page.focus('[data-bz=menu]'); await page.keyboard.press('Enter'); await page.waitForTimeout(250);
+  ok(await page.evaluate(() => !document.querySelector('[data-bz=drawer]').hidden), '☰ opens by keyboard');
   for (let i = 0; i < 25; i++) await page.keyboard.press('Tab');
-  ok(await page.evaluate(() => !!document.activeElement.closest('.drawer')), 'focus stays inside the open drawer');
+  ok(await page.evaluate(() => !!document.activeElement.closest('[data-bz=drawer]')), 'focus stays inside the open drawer');
   await page.keyboard.press('Escape'); await page.waitForTimeout(100);
-  ok(await page.locator('.drawer').count() === 0 && await page.evaluate(() => document.activeElement.classList.contains('burger')), 'Escape closes the drawer and focus goes back to ☰');
-  await page.click('.burger'); await page.click('.drawer [data-act=sound]'); await page.waitForTimeout(80);
-  ok(await page.evaluate(() => window.__bzg.R.sound === false), 'mute is one tap from ☰'); await page.evaluate(() => { window.__bzg.fire('sound'); window.__bzg.R.ui.drawer = false; window.__bzg.R.render(); });
+  ok(await page.evaluate(() => document.querySelector('[data-bz=drawer]').hidden && document.activeElement === document.querySelector('[data-bz=menu]')), 'Escape closes the drawer and focus goes back to ☰');
+  await page.click('[data-bz=menu]'); await page.click('[data-bz=drawer] [data-bz-act=sound]'); await page.waitForTimeout(80);
+  ok(await page.evaluate(() => window.__bzg.R.sound === false), 'mute is one tap from ☰'); await page.evaluate(() => { window.__bzg.fire('sound'); });
   /* C4: one search finds a stop, a country and a word */
   await page.evaluate(() => window.__bzg.go('search')); await page.waitForSelector('#search-q');
   for (const [q, want] of [['compass', 'Eight compass points'], ['canberra', 'Australia'], ['delta', 'delta']]) {
@@ -567,7 +579,7 @@ async function run(vp, tag) {
   ok(await page.evaluate(() => window.__bzg.R.h.kids[0].miss['Tap Spain on the map.|ES'].box === 1), 'F3: a missed card came back after a gap; right moves it up a step');
   await page.evaluate(() => { window.__bzg.R.run = null; window.__bzg.go('home'); });
   // above the fold: on every key screen the core content starts in the top half of the first screen
-  for (const [nav, arg, sel, what] of [['home', null, '.hm-go', 'the Continue card'], ['atlas', null, '.map-board', 'the island map'], ['road', null, '.jsteps', 'the road'],
+  for (const [nav, arg, sel, what] of [['home', null, '[data-bz=next]', 'the Continue card'], ['atlas', null, '.map-board', 'the island map'], ['road', null, '.jsteps', 'the road'],
     ['exp', null, '.crs-card', 'the first expedition'], ['expd', 'capitals', '.crs-board', 'the expedition board'], ['library', null, '.lib-tile', 'the first tool'], ['lib', 'capitals', '.gmap', 'the map'], ['lib', 'time', '.t-stage', 'the painting'], ['lib', 'geoguess', '.t-geo-intro .btn, .wo', 'Play or the game'], ['lib', 'dictionary', '#t-dictionary-q', 'the search box']]) {
     await page.evaluate(([n, a]) => { window.__bzg.go(n, a); scrollTo(0, 0); }, [nav, arg]); await page.waitForTimeout(120);
     const top = await page.evaluate((sel) => { const e = document.querySelector(sel); return e ? e.getBoundingClientRect().top : 1e9; }, sel);
@@ -590,7 +602,7 @@ async function run(vp, tag) {
   await shot('14-grownups'); await noSideways('grown-ups');
   ok(await page.evaluate(() => [...document.querySelectorAll('[data-act=tester], [data-act=streetview]')].map((i) => i.closest('label')).every((l) => l && l.getBoundingClientRect().width > 240)), 'grown-ups settings: every switch label has room to read (was squeezed into 50px)');
   ok(await page.evaluate(() => [...document.querySelectorAll('[data-act=tester], [data-act=streetview]')].map((i) => i.closest('label')).every((l) => { const t = l.querySelector(':scope > span'); return t && l.children.length === 2 && t.getBoundingClientRect().width > 0.75 * l.getBoundingClientRect().width; })), 'grown-ups settings: each label is one block of words, not split into columns');
-  ok(await page.evaluate((W) => [...document.querySelectorAll('.top button, .top a')].filter((b) => b.offsetParent).every((b) => { const r = b.getBoundingClientRect(); return r.left >= 0 && r.right <= W; }), W), 'the top bar fits the device: every button, the lock included, is whole on screen');
+  ok(await page.evaluate((W) => [...document.querySelectorAll('[data-bz=bar] button, [data-bz=bar] a')].filter((b) => b.offsetParent).every((b) => { const r = b.getBoundingClientRect(); return r.left >= 0 && r.right <= W; }), W), 'the top bar fits the device: every button, the lock included, is whole on screen');
   ok((await page.locator('.report').innerText()).includes('Ahana'), 'the grown-ups page reports the child');
   ok(await page.locator('.report .rc3 section').count() === 3 && /Time[\s\S]*Progress[\s\S]*Mastery/.test(await page.locator('.report .rc3').innerText()), 'the report card is Time · Progress · Mastery');
   ok(/\d+\s+active minutes this week/.test(await page.locator('.report').innerText()), 'Time is active minutes from the family feed');
@@ -601,14 +613,14 @@ async function run(vp, tag) {
   await page.evaluate(() => { window.__spoken = []; });
   await page.click('[data-act=obNext]'); await page.click('[data-act=createKid]'); await page.waitForSelector('.runner'); await page.waitForTimeout(600);
   ok(await page.evaluate(() => window.__spoken.length >= 1 && window.__spoken[0].includes(window.__bzg.R.run.items[0].text)), 'for a 6–7 explorer each question reads itself aloud');
-  await page.click('[data-act=quitRun]'); await page.evaluate(() => window.__bzg.go('home')); await page.waitForSelector('.hm');
-  await page.click('.top .who'); await page.waitForSelector('.who-menu');
+  await page.click('[data-act=quitRun]'); await page.evaluate(() => window.__bzg.go('home')); await page.waitForSelector('[data-bz=home]');
+  await page.click('[data-bz=kid]'); await page.waitForSelector('.who-menu');
   ok(await page.locator('.who-menu .wm-kid').count() === 2, 'the top bar menu lists both explorers');
   await shot('26-who-menu'); await noSideways('who menu');
   const xpA = await page.evaluate(() => window.__bzg.R.h.kids.find((k) => k.name === 'Ahana').xp);
-  await page.click('.who-menu .wm-kid:has-text("Ahana")'); await page.waitForSelector('.hm');
+  await page.click('.who-menu .wm-kid:has-text("Ahana")'); await page.waitForSelector('[data-bz=home]');
   ok(await page.evaluate(() => { const R = window.__bzg.R; return R.h.kids.find((k) => k.id === R.h.active).name; }) === 'Ahana', 'one tap switches explorer');
-  ok(await page.evaluate(() => window.__bzg.R.h.kids.find((k) => k.name === 'Kabir').xp) <= 1 && xpA > 1 && (await page.locator('.hm-say').innerText()).includes('Ahana'), 'switching never mixes their progress');
+  ok(await page.evaluate(() => window.__bzg.R.h.kids.find((k) => k.name === 'Kabir').xp) <= 1 && xpA > 1 && (await page.locator('[data-bz=greet]').innerText()).includes('Ahana'), 'switching never mixes their progress');
   await page.keyboard.press('Escape');
   /* M3: one child deleted, behind the PIN and a confirm; the other untouched */
   await page.evaluate(() => window.__bzg.go('grownups'));
@@ -622,14 +634,14 @@ async function run(vp, tag) {
   ok(await page.evaluate(() => window.__bzg.R.h.kids.length === 1 && window.__bzg.R.h.kids[0].name === 'Ahana' && window.__bzg.R.h.kids[0].xp > 1), 'deleting Kabir leaves Ahana exactly as she was');
   await page.evaluate(() => window.__bzg.go('home'));
   /* #/continue from the Hive goes straight to the Continue target */
-  const want = await page.evaluate(() => document.querySelector('.hm-cta').dataset.arg);
-  await page.goto(`http://127.0.0.1:${port}/Bizzing_Geography/?from=hive#/continue`); await page.waitForSelector('.content');
+  const want = await page.evaluate(() => { const k = window.__bzg.R.h.kids[0]; return window.__bzg.next(k).arg; });
+  await page.goto(`http://127.0.0.1:${port}/Bizzing_Geography/?from=hive#/continue`); await page.waitForSelector('[data-bz=content]');
   ok(await page.evaluate((w) => window.__bzg.R.ui.nav === 'stop' && window.__bzg.R.ui.arg === w, want), '#/continue opens the Continue card’s target');
   ok(await page.locator('.hive-chip').count() === 1, '?from=hive shows “back to my day”');
   /* ?demo: a labelled sample with weeks of progress that never touches the real household or the shared feeds */
   const before = await page.evaluate(() => [localStorage.getItem('bzg_household'), localStorage.getItem('bizzing.activity'), localStorage.getItem('bizzing.wallet')]);
-  await page.goto(`http://127.0.0.1:${port}/Bizzing_Geography/?demo`); await page.waitForSelector('.hm');
-  ok(await page.locator('.demo-bar').count() === 1 && (await page.locator('.hm-say').innerText()).includes('Sample'), '?demo opens a labelled sample explorer');
+  await page.goto(`http://127.0.0.1:${port}/Bizzing_Geography/?demo`); await page.waitForSelector('[data-bz=home]');
+  ok(await page.locator('.demo-bar').count() === 1 && (await page.locator('[data-bz=greet]').innerText()).includes('Sample'), '?demo opens a labelled sample explorer');
   ok(await page.evaluate(() => Object.keys(window.__bzg.R.h.kids[0].days).length >= 10 && window.__bzg.R.h.kids[0].xp > 50), 'the sample has weeks of progress');
   /* N2 — the first-screen budget (family standard §11): what the home pulls before anything is
      tapped, with JS and CSS counted gzipped as GitHub Pages serves them */

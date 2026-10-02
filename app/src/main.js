@@ -6,6 +6,7 @@ import { R } from './runtime.js';
 import { Store, pinHash } from './store.js';
 import { on, fire, bindRoot, sfx, setSound, setCalm, onSound, ac, toast, confetti, say, hush, setSayRate } from './ui.js';
 import * as C from './chrome.js';
+import { bindShell } from './bizzing-shell.js';
 import { oops } from './mascot.js';
 import * as M from './music.js';
 import { viewSearch } from './search.js';
@@ -92,6 +93,9 @@ function writeHash() {
 function doContinue() { const k = kid(R.h); if (!k) return go(R.h.kids.length ? 'home' : 'welcome'); const n = nextStep(k); fire(n.act, n.arg); }
 function readHash() {
   if (/^#\/continue\b/.test(location.hash || '')) { R.ui.nav = 'home'; return doContinue(); }
+  /* the home's links (Bee's home is anchors): a trip, the place of the hour, the word of the hour */
+  const hm = /^#\/(trip|place|word)(?:\/(.+))?$/.exec(location.hash || '');
+  if (hm && kid(R.h)) { const a = hm[2] ? decodeURIComponent(hm[2]) : ''; if (hm[1] === 'trip') return fire('trip'); if (hm[1] === 'place') return fire('openPlace', a); return fire('openWord', a); }
   const m = /^#\/([a-z]+)(?:\/(.+))?$/.exec(location.hash || '');
   if (m) go(m[1], m[2] ? decodeURIComponent(m[2]) : null, true); else render();
 }
@@ -182,7 +186,7 @@ function render() {
   if (loop === th) lastLoopTheme = th;
   if (R.ui.coinToast) { const c = R.ui.coinToast; R.ui.coinToast = 0; setTimeout(() => toast(`+${c} Bizzing ${c === 1 ? 'coin' : 'coins'} for learning`), 0); }
   syncScene(th, R.ui.nav === 'run' || Store.loadDevice('still', false) || Store.loadDevice('motion', false));   // a quiz run gets a still, faded scene
-  root.innerHTML = C.shell(screen());
+  root.innerHTML = C.shell(screen(), { home: R.ui.nav === 'home' && !!kid(R.h) });
   starsToIcons(root);
   restoreMaps(root);
   root.querySelectorAll('.wo-view').forEach((v) => {   // a new picture starts in the middle; a re-render keeps where the child looked
@@ -548,10 +552,10 @@ on('themes', () => {
 /* chrome */
 on('sound', () => { R.sound = !R.sound; setSound(R.sound); Store.saveDevice('sound', R.sound); render(); });
 /* the menu closes on a tap outside it, or Escape */
-root.addEventListener('click', (e) => { if (R.ui.menu && !e.target.closest('.who-menu, .who')) { R.ui.menu = false; render(); } }, true);
+root.addEventListener('click', (e) => { if (R.ui.menu && !e.target.closest('.who-menu, .who, [data-bz=kid]')) { R.ui.menu = false; render(); } }, true);
 on('mode', () => {
   const m = document.documentElement.getAttribute('data-mode') === 'dark' ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-mode', m); Store.saveDevice('mode', m); syncThemeColor();
+  document.documentElement.setAttribute('data-mode', m); Store.saveDevice('mode', m); syncThemeColor(); render();
 });
 
 /* grown-ups */
@@ -593,6 +597,19 @@ on('wipeYes', () => { Store.wipe(); R.h = newHousehold(); R.ui = { nav: 'welcome
 /* ------------------------------------------------------------- inputs & keys */
 
 bindRoot(root);
+/* the family shell's own buttons, wired once by delegation (bizzing-shell.js) */
+bindShell({
+  onTheme: () => { if (holdFired) { holdFired = false; return; } fire('mode'); render(); },
+  onLock: () => go('grownups'),
+  onKid: () => fire('menu'),
+  onCoins: () => fire('wallet'),
+  onSearch: (q) => { R.ui.q = q; go('search'); },
+  onSound: () => fire('sound'),
+});
+/* long-press the theme button: the worlds (Settings → Look), as Bee does */
+let holdT = null, holdFired = false;
+addEventListener('pointerdown', (e) => { if (!e.target.closest('[data-bz=theme]')) return; holdT = setTimeout(() => { holdFired = true; fire('themes'); }, 600); }, true);
+addEventListener('pointerup', () => clearTimeout(holdT), true);
 /* a Street View photo with no imagery answers 404: swap in another place, uncounted */
 root.addEventListener('error', (e) => {
   const t = e.target;
@@ -696,7 +713,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
 
 /* the family's activity feed: active minutes for the Hive, per child, never sent anywhere */
 const act = trackActivity(APP, () => (kid(R.h) || {}).name);
-window.__bzg = { R, go, fire, music: M.musicState };   // for test/ui.mjs, which drives the built app
+window.__bzg = { R, go, fire, music: M.musicState, next: nextStep };   // for test/ui.mjs, which drives the built app
 /* the tools kept out of the first download arrive once the app is idle, so they work offline too */
 setTimeout(() => (window.requestIdleCallback || ((f) => setTimeout(f, 1)))(() => { loadTool('geoguess'); loadTool('time'); }), 4000);
 R.ui.nav = kid(R.h) ? 'home' : 'welcome';

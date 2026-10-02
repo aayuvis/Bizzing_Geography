@@ -17,6 +17,7 @@ import { MEDALS, earned, medallion, SHOP, shopOf, PIN_PATH } from './rewards.js'
 import { worldSVG } from './map.js';
 import { GKEY } from './photos.js';
 import { missDue, missCount } from './mistakes.js';
+import { shell as famShell } from './bizzing-shell.js';
 
 export const VERSION = '2.0';
 const av = (id, size = 48, alt = '') => `<img class="av" src="avatars/${esc(id)}.webp" width="${size}" height="${size}" alt="${esc(alt)}" loading="lazy" decoding="async">`;
@@ -256,25 +257,39 @@ function firstPop(k) {
     ${shelly('cheer', 150, 'mp-shelly')}<p class="kicker">Your first right answer</p><h2>That’s it, ${esc(k.name)}!</h2><p>${esc(R.ui.firstPop)}</p>
     <button class="btn primary big" data-act="firstOk" autofocus>Keep exploring</button></div></div>`;
 }
-export function shell(body) {
-  const h = R.h, k = kid(h), inRun = R.ui.nav === 'run' || (R.ui.nav === 'lib' && R.ui.arg === 'geoguess' && !!((R.ui.lib || {}).geoguess || {}).g);
-  return `
-  <a class="skip" href="#main">Skip to the content</a>
-  ${topBar(k)}
-  ${k && !inRun ? `<nav class="tabs" aria-label="Main">${tabs('tab')}</nav>` : ''}
-  ${k && R.ui.menu ? whoMenu(k) : ''}
-  ${R.ui.drawer ? drawer(k) : ''}
-  ${k && R.ui.sheet === 'wallet' ? walletSheet(k) : ''}
-  ${R.demo ? '<div class="demo-bar" role="note"><b>Sample explorer</b> — a few weeks of made-up progress to look round. Nothing here is saved. <a href="./">Leave the sample</a></div>' : ''}
-  ${R.fromHive && !inRun ? `<a class="hive-chip" href="${HIVE}">← back to my day</a>` : ''}
-  ${h.parent.tester ? '<div class="tester" role="note">TESTER MODE — every stop is open. Nothing about the child changes. <button data-act="testerOff">Turn off</button></div>' : ''}
-  <main id="main" class="content" tabindex="-1">${body}</main>
-  ${k && R.ui.firstPop ? firstPop(k) : k && (R.ui.medalPop || []).length ? medalPop(R.ui.medalPop[0]) : ''}
-  ${k ? `<nav class="tabbar" aria-label="Main">${tabs('tb')}</nav>` : ''}
-  <footer class="foot">Bizzing Geography · part of the Bizzing family with
+/* The chrome is Bizzing Bee's, as the family's measured drop-in (bizzing-shell.js, vendored
+   byte for byte): top bar, tab row, phone tab bar and ☰ drawer. This app gives it its words,
+   its mascot, its tabs and its routes — never its geometry. */
+const NAV_ACTIVE = (n) => (NAV_OF[n] !== undefined ? NAV_OF[n] : n) || '';
+export function inGame() { return R.ui.nav === 'run' || (R.ui.nav === 'lib' && R.ui.arg === 'geoguess' && !!((R.ui.lib || {}).geoguess || {}).g); }
+export const FOOT = () => `Bizzing Geography · part of the Bizzing family with
     <a href="https://www.bizzingbee.com/" rel="noopener">Bizzing Bee</a>,
     <a href="https://aayuvis.github.io/bizzingindia.com/" rel="noopener">Bizzing India</a>,
     <a href="https://aayuvis.github.io/bizzingfinance/" rel="noopener">Bizzing Finance</a> and
     <a href="https://aayuvis.github.io/Bizzing-Maths/" rel="noopener">Bizzing Maths</a>
-    · No ads, no tracking, no accounts. ${GKEY && R.h.parent.streetview ? 'Where on Earth?’s real photos load from Google Street View (a grown-up can switch them off); nothing about your child is sent.' : 'Nothing leaves this device.'} Maps: Natural Earth (India’s depiction). Music composed in code for Bizzing. <button class="linkish" data-act="nav" data-arg="privacy">Privacy</button></footer>`;
+    · No ads, no tracking, no accounts. ${GKEY && R.h.parent.streetview ? 'Where on Earth?’s real photos load from Google Street View (a grown-up can switch them off); nothing about your child is sent.' : 'Nothing leaves this device.'} Maps: Natural Earth (India’s depiction). Music composed in code for Bizzing. <a href="#/privacy">Privacy</a>`;
+export function shell(body, { home = false } = {}) {
+  const h = R.h, k = kid(h), run = inGame();
+  const pre = `${R.demo ? '<div class="demo-bar" role="note"><b>Sample explorer</b> — a few weeks of made-up progress to look round. Nothing here is saved. <a href="./">Leave the sample</a></div>' : ''}
+  ${R.fromHive && !run ? `<a class="hive-chip" href="${HIVE}">← back to my day</a>` : ''}
+  ${h.parent.tester ? '<div class="tester" role="note">TESTER MODE — every stop is open. Nothing about the child changes. <button data-act="testerOff">Turn off</button></div>' : ''}`;
+  const due = k ? missDue(k).length : 0;
+  const out = famShell({
+    app: 'geography', name: 'Geography', mascot: 'mascot/shelly-head.webp', search: 'Search places, stops, words',
+    tabs: [{ id: 'home', label: 'Home', icon: 'home', href: '#/home' }, { id: 'atlas', label: 'Atlas', icon: 'map', href: '#/atlas' },
+      { id: 'exp', label: 'Expeditions', icon: 'compass', href: '#/exp' }, { id: 'library', label: 'Library', icon: 'book', href: '#/library' }],
+    active: NAV_ACTIVE(R.ui.nav), coins: k ? balance(k.name) : 0, dark: dark(), query: R.ui.nav === 'search' ? (R.ui.q || '') : '',
+    kid: k ? { name: k.name, avatar: `avatars/${k.avatar}.webp` } : { name: 'Explorer' }, inRun: run,
+    drawer: { sub: k ? `Level ${k.road.level} · ${rankOf(k.xp).n}` : 'Welcome',
+      app: [{ icon: 'path', label: 'Your journey', sub: 'the ten levels, stop by stop', href: '#/road' },
+        { icon: 'star', label: 'My mistakes', sub: due ? `${due} ready to try again` : 'misses come back after a gap', href: '#/mistakes' },
+        { icon: 'globe', label: 'Where on Earth?', sub: 'pin a real place on the map', href: '#/lib/geoguess' },
+        { icon: 'search', label: 'Search', sub: 'places, stops, words and tools', href: '#/search' }] },
+    content: `${pre}${body}${home ? '' : `<footer class="foot">${FOOT()}</footer>`}`,
+  });
+  return `<a class="skip" href="#main">Skip to the content</a>
+  ${out}
+  ${k && R.ui.menu ? whoMenu(k) : ''}
+  ${k && R.ui.sheet === 'wallet' ? walletSheet(k) : ''}
+  ${k && R.ui.firstPop ? firstPop(k) : k && (R.ui.medalPop || []).length ? medalPop(R.ui.medalPop[0]) : ''}`;
 }

@@ -29,6 +29,8 @@ import { HIVE, balance, ledger as walletLedger, APP, activityRows } from './fami
 import { MEDALS, earned, medallion, SHOP, shopOf, PIN_PATH, TIER } from './rewards.js';
 import { nextStep, homeExpedition } from './next.js';
 import { missDue, missCount } from './mistakes.js';
+import { home as famHome } from './bizzing-shell.js';
+import { FOOT } from './chrome.js';
 import { certificatesOf } from './certificate.js';
 
 /* ------------------------------------------------------------- helpers */
@@ -153,52 +155,26 @@ export function viewHome() {
   const done = sessionsToday(k), goal = goalOf(k);
   const [tw, td] = todaysWord();
   const e = homeExpedition(k), es = expStats(k, e), ed = es.next;
-  const lm = pick(LANDMARKS, seeded('lm' + dayKey()));
-  const known = Object.entries((k.lib.capitals || {}).box || {}).filter(([, b]) => b >= 2).map(([cc]) => cc);
-  const coins = balance(k.name);
   const trip = (k.trips || {})[dayKey()];
-  return `<section class="home hm">
-    <div class="card hm-hello">
-      <div class="hm-me">${shelly('wave', 104, 'hm-shelly')}<div class="hm-say"><p class="muted small hm-who">${av(k.avatar, 28, '')} ${greet()}, <b>${esc(k.name)}</b></p><p class="hm-bub">${greetLine(k)}</p></div></div>
-      <div class="hm-ring" role="group" aria-label="Today’s ring: ${done} of ${goal}">
+  const plain = (t) => String(t).replace(/<[^>]+>/g, '');
+  /* Bizzing Bee's home, the family's measured drop-in: greeting · daily ring · place of the
+     hour; the next stop (the ONE filled Continue) and the expedition; a tip and a quote. */
+  return famHome({
+    greet: { mascot: 'mascot/shelly-wave.webp', hello: `${greet()},`, name: k.name, line: plain(greetLine(k)) },
+    ring: { html: `<div class="hm-ring" role="group" aria-label="Today’s ring: ${done} of ${goal}">
         <div class="h-ring-c">${ring(done, goal)}<span><b>${done}/${goal}</b><i>today</i></span></div>
         <div><p class="small"><b>Today’s ring</b><br><span class="muted">each finished quiz, day or round fills a notch</span></p>
-          <span class="h-goal" role="group" aria-label="How many a day">${GOALS.map((g) => `<button class="${g === goal ? 'on' : ''}" data-act="goal" data-arg="${g}" aria-pressed="${g === goal}">${g}</button>`).join('')}<i>a day</i></span></div>
-      </div>
-    </div>
-    <div class="card hm-go">
-      <div class="hm-art" style="background-image:url(art/${n.art}.webp)"><span class="h-badge">${gi(n.glyph)}</span></div>
-      <div class="hm-body">
-        <p class="kicker">Next on your journey · ${esc(n.kicker)}</p>
-        <h2>${n.html ? n.title : esc(n.title)}</h2>
-        <p class="muted small hm-sub">${esc(n.sub)}</p>
-        <div class="hm-prog">
-          <span class="hm-bar" aria-label="Level ${n.level}: ${n.done} of ${n.total} stops"><i style="width:${Math.round((100 * n.done) / Math.max(1, n.total))}%"></i></span>
-          <span class="small"><b>Level ${n.level}</b> · ${n.done} of ${n.total} stops · <span title="${esc(rk.why)}">${esc(rk.n)}</span>${rk.next ? ` <span class="hm-rk"><i style="width:${rk.pct}%"></i></span>` : ''}</span>
-        </div>
-        <button class="btn primary big hm-cta" data-act="${n.act}" data-arg="${esc(n.arg)}">Continue ${ico('next')}</button>
-      </div>
-    </div>
-    <div class="card hm-exp">
-      <div class="hm-exp-art" style="background-image:url(art/crs-${e.id}.webp)"><span class="h-badge">${gi(e.glyph)}</span></div>
-      <div><p class="kicker">${es.started ? 'Your expedition' : 'An expedition for you'} · ${es.started ? `day ${ed ? ed.n : es.days} of ${es.days}` : `${es.days} days`}</p>
-        <h3>${esc(e.name)}</h3><span class="hm-bar thin"><i style="width:${Math.round((100 * es.done) / es.days)}%"></i></span>
-        <div class="row gap wrap">${btn(es.started ? 'Open the expedition' : 'Have a look', 'expOpen', e.id, 'small')}${btn('All expeditions', 'nav', 'exp', 'small ghost')}</div></div>
-    </div>
-    <div class="hm-three" aria-label="Today’s three">
-      <button class="card hm-t" data-act="trip"><span class="hm-tg">${ico('timer')}</span><span><span class="kicker">5-minute trip</span><b>${trip ? `Done today — ${trip.right} of ${trip.n}` : 'Review, one new thing, one map'}</b><span class="muted small">${trip ? 'Another one any time.' : 'Ends by itself. Nothing lost for skipping.'}</span></span></button>
-      <button class="card hm-t" data-act="openPlace" data-arg="${pc.id}"><img src="art/${pc.id}.webp" alt="" loading="lazy" width="1280" height="720"><span><span class="kicker">Place of the hour</span><b>Where on Earth is this?</b><span class="muted small">${doneToday ? `You scored ${doneToday.toLocaleString('en-US')} today.` : 'Pin it on the map.'}</span></span></button>
-      <button class="card hm-t" data-act="openLandmark" data-arg="${lm.id}"><img src="art/lm-${lm.id}.webp" alt="" loading="lazy" width="960" height="720"><span><span class="kicker">Landmark of the day</span><b>${esc(lm.name)}</b><span class="muted small">${esc(lm.where)}</span></span></button>
-    </div>
-    <nav class="hm-ways" aria-label="Ways in">
-      <button class="hm-w" data-act="nav" data-arg="atlas"><span>${ico('map')}</span><b>Atlas</b><i>${ico('star')} ${starsTotal(k)} / ${maxStars()}</i></button>
-      <button class="hm-w" data-act="nav" data-arg="mistakes"><span>${ico('retry')}</span><b>My mistakes</b><i>${missDue(k).length ? missDue(k).length + ' ready' : missCount(k) ? 'waiting for a gap' : 'none yet'}</i></button>
-      <button class="hm-w" data-act="nav" data-arg="library"><span>${ico('book')}</span><b>Library</b><i>${SHELF.length} tools</i></button>
-      <button class="hm-w hm-known" data-act="openTool" data-arg="capitals" aria-label="Countries you know: ${known.length} of 195">${worldSVG({ key: 'home-known', fill: Object.fromEntries(known.map((c) => [c, 'kn'])), grat: false, label: 'Countries whose capitals you know' })}<b>Countries you know</b><i>${known.length} of 195</i></button>
-      <button class="hm-w" data-act="nav" data-arg="me"><span>${ico('medal')}</span><b>My page</b><i>${ico('coin')} ${coins} · medals</i></button>
-      <button class="hm-w" data-act="openWord" data-arg="${esc(tw)}"><span>${ico('book2')}</span><b>${esc(tw)}</b><i>word of the day</i></button>
-    </nav>
-  </section>`;
+          <span class="h-goal" role="group" aria-label="How many a day">${GOALS.map((g) => `<button class="${g === goal ? 'on' : ''}" data-act="goal" data-arg="${g}" aria-pressed="${g === goal}" aria-label="${g} a day">${g}</button>`).join('')}</span></div></div>`,
+      foot: { kicker: 'Your level', title: `Level ${n.level} · ${rk.n}`, href: '#/me' } },
+    hour: { kicker: 'Place of the hour', title: 'Where on Earth is this?', sub: doneToday ? `You scored ${doneToday.toLocaleString('en-US')} today. Pin this one too.` : 'A painted place somewhere on Earth. Pin it on the map.', href: `#/place/${pc.id}`, icon: 'globe' },
+    next: { plate: `art/${n.art}.webp`, icon: 'path', chip: `Level ${n.level}`, kicker: `Next on your journey · ${plain(n.kicker)}`, title: plain(n.title), sub: n.sub, href: '#/continue', cta: 'Continue',
+      progress: { pct: Math.round((100 * n.done) / Math.max(1, n.total)), label: `${n.done} of ${n.total} stops` } },
+    second: { plate: `art/crs-${e.id}.webp`, icon: 'compass', chip: `${es.days} days`, kicker: es.started ? 'Your expedition' : 'An expedition for you', title: e.name, sub: es.started ? `Day ${ed ? ed.n : es.days} of ${es.days}` : e.blurb || '', href: `#/expd/${e.id}`, cta: es.started ? 'Open the expedition' : 'Have a look', ctaIcon: 'flag',
+      progress: { pct: Math.round((100 * es.done) / es.days), label: `${es.done} of ${es.days} days` } },
+    tip: { kicker: '5-minute trip', text: trip ? `Done today — ${trip.right} of ${trip.n}. Another one any time.` : 'Review, one new thing, one map — then it ends by itself. Nothing is lost for skipping.', href: '#/trip' },
+    quote: { kicker: 'Word of the hour', text: `${td}.`, who: tw, href: `#/word/${encodeURIComponent(tw)}` },
+    foot: FOOT(),
+  });
 }
 export const libTile = (t) => `<button class="lib-tile" data-act="openTool" data-arg="${t.id}">
       <span class="lib-art" style="background-image:url(art/${t.art}.webp)"></span>
