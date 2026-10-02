@@ -6,6 +6,7 @@ import { R } from './runtime.js';
 import { Store, pinHash } from './store.js';
 import { on, fire, bindRoot, sfx, setSound, setCalm, onSound, ac, toast, confetti, say, hush, setSayRate } from './ui.js';
 import * as C from './chrome.js';
+import { oops } from './mascot.js';
 import * as M from './music.js';
 import { viewSearch } from './search.js';
 import { missAdd, missDue, missRight, missWrong, keyOf } from './mistakes.js';
@@ -154,7 +155,7 @@ const libraryView = () => `<section>${V.pageHead('The Explorer’s Library')}
   <div class="lib-grid">${SHELF.map(V.libTile).join('')}</div></section>`;
 function toolView(tool) {
   let body;
-  try { body = tool.view(libCtx(tool.TOOL.id)); } catch (e) { console.error(e); body = '<div class="card center-card"><p>Something went wrong in this tool.</p></div>'; }
+  try { body = tool.view(libCtx(tool.TOOL.id)); } catch (e) { console.error(e); body = oops('Something went wrong in this tool. It is not your fault — try it again.', `<button class="btn primary" data-act="openTool" data-arg="${tool.TOOL.id}">Try again</button>`); }
   return `<section class="tool-page tool-${tool.TOOL.id}">${V.pageHead(`${gi(tool.TOOL.glyph)} ${tool.TOOL.name}`, '', V.back('nav', 'Library', 'library'))}${body}</section>`;
 }
 

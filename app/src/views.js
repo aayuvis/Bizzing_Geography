@@ -222,7 +222,7 @@ const atlasTabs = (on) => `<div class="seg atlas-seg" role="tablist" aria-label=
   <button role="tab" aria-selected="${on === 'map'}" class="${on === 'map' ? 'on' : ''}" data-act="nav" data-arg="atlas">${ico('map')} The map</button>
   <button role="tab" aria-selected="${on === 'road'}" class="${on === 'road' ? 'on' : ''}" data-act="nav" data-arg="road">${ico('road')} Your journey</button></div>`;
 export function viewAtlas() {
-  const h = R.h, k = kid(h);
+  const h = R.h, k = kid(h), nx = road(k).next, here = nx ? byId[nx.stop].world : null;   // the child's own face marks where they are (J6)
   return `<section>
     ${pageHead('The Explorer’s Atlas', '', '', `<span class="chip gold">★ ${starsTotal(k)} / ${maxStars()}</span>`)}
     ${atlasTabs('map')}
@@ -232,7 +232,7 @@ export function viewAtlas() {
         const p = MAP_PINS[w.id], open = stopsIn(w.id).some((s) => stopOpen(h, k, s.id));
         const onroad = road(k).steps.filter((s) => !s.done && byId[s.stop].world === w.id).length;
         return `<button class="map-pin${open ? '' : ' shut'}${p.side === 'l' ? ' lab-l' : ''}" style="left:${p.x}%;top:${p.y}%;--wi:${w.ink};--wt:${w.tint}" data-act="openWorld" data-arg="${w.id}" aria-label="${esc(w.name)}${open ? '' : ', later levels'}">
-          <span class="mp-g">${gi(w.glyph)}</span><span class="mp-t"><b>${esc(w.short)}</b>${onroad ? `<i class="mp-road">${onroad} on your road</i>` : open ? '' : '<i>Later levels</i>'}</span></button>`;
+          <span class="mp-g">${gi(w.glyph)}${here === w.id ? `<img class="mp-me" src="avatars/${esc(avatarFile(k.avatar))}.webp" alt="" width="30" height="30">` : ''}</span><span class="mp-t"><b>${esc(w.short)}</b>${onroad ? `<i class="mp-road">${onroad} on your road</i>` : open ? '' : '<i>Later levels</i>'}</span></button>`;
       }).join('')}
     </div></div>
     <div class="world-list">
