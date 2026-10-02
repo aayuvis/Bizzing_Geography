@@ -66,7 +66,10 @@ export async function checkShell(page, { phone = false, bee = false } = {}) {
     cmp(fails, 'top bar', m.bar, D.bar, 4);
     cmp(fails, '⬡ Hive', m.hive, D.hive, 3); cmp(fails, '☰ menu', m.menu, D.menu, 3);
     if (!m.brand || !near(m.brand[0], D.brandX, 4)) fails.push(`logo starts at ${m.brand?.[0]}px, Bee's at ${D.brandX}px`);
-    cmp(fails, 'search', m.search, D.search, 5);
+    cmp(fails, 'search', m.search, D.search, 5, [1, 2, 3]);
+    // the search box sits against the coin chip, as on Bee; its x then follows the balance's digits
+    if (m.search && m.coins && !near(m.coins[0] - (m.search[0] + m.search[2]), D.coinsRight - 66 - (D.search[0] + D.search[2]), 3))
+      fails.push(`search ends ${m.coins[0] - (m.search[0] + m.search[2])}px before the coin chip, Bee's ${D.coinsRight - 66 - (D.search[0] + D.search[2])}px`);
     if (!m.coins || !near(m.coins[0] + m.coins[2], D.coinsRight, 4)) fails.push(`coin chip ends at ${m.coins && m.coins[0] + m.coins[2]}px, Bee's at ${D.coinsRight}px`);
     cmp(fails, 'theme button', m.theme, D.theme, 3); cmp(fails, '🔒 grown-ups', m.lock, D.lock, 3);
     if (!m.kid || !near(m.kid[0] + m.kid[2], D.kidRight, 4) || !near(m.kid[3], D.kidH, 3)) fails.push(`child switcher at ${JSON.stringify(m.kid)}, Bee's ends at ${D.kidRight}px, ${D.kidH}px tall`);

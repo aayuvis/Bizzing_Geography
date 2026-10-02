@@ -48,7 +48,8 @@ html[data-bz-dark] {
 .bz-search input { box-sizing: border-box; width: 100%; height: 41px; padding: 9px 36px 9px 41px; border-radius: 999px;
   border: 1px solid var(--bz-line); background: var(--bz-chip); color: var(--bz-ink); font: 700 14.7px var(--bz-body); }
 .bz-coins { display: flex; align-items: center; gap: 6px; height: 40px; padding: 0 13px; border: 0; border-radius: 999px; cursor: pointer;
-  background: linear-gradient(135deg, #ffd24d, #f0a93c); box-shadow: inset 0 -2px 0 rgba(0,0,0,.12); color: #5a3d00; font: 900 14.2px var(--bz-body); flex: 0 0 auto; }
+  background: linear-gradient(135deg, #ffd24d, #f0a93c); box-shadow: inset 0 -2px 0 rgba(0,0,0,.12); color: #5a3d00; font: 900 14.2px var(--bz-body); flex: 0 0 auto;
+  min-width: 66px; box-sizing: border-box; justify-content: center; }   /* Bee's chip with a two-digit balance: 0–99 never moves the search box */
 .bz-coins svg { width: 17px; height: 17px; }
 .bz-kid { display: flex; align-items: center; gap: 2px; height: 41px; box-sizing: border-box; padding: 0 7px 0 3px; border-radius: 999px; cursor: pointer;
   background: var(--bz-chip); border: 1px solid color-mix(in srgb, var(--bz-accent) 45%, #fff); color: var(--bz-muted); flex: 0 0 auto; }
@@ -112,7 +113,7 @@ html[data-bz-dark] {
 .bz-ringfoot b { font: 800 16px var(--bz-display); }
 .bz-hour { display: flex; align-items: center; gap: 14px; padding: 15px 17px; border-radius: 15px;
   background: linear-gradient(100deg, var(--bz-hour), var(--bz-card) 62%); text-decoration: none; color: inherit; }
-.bz-kicker { display: block; font: 800 11.5px var(--bz-body); letter-spacing: .1em; text-transform: uppercase; color: #b07a10; }
+.bz-kicker { display: block; font: 800 11.5px var(--bz-body); letter-spacing: .1em; text-transform: uppercase; color: #8a5a00; }   /* 6.1:1 on white (Bee's #b07a10 was 3.7:1) */
 html[data-bz-dark] .bz-kicker { color: #f0c46a; }
 .bz-hour h3 { margin: 2px 0 4px; font: 800 24px var(--bz-display); }
 .bz-hour p { margin: 0; color: var(--bz-muted); font-size: 14.2px; line-height: 1.45; }
