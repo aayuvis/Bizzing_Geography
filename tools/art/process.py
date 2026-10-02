@@ -108,10 +108,11 @@ def trim(im):
 
 
 total = 0
+PREFIX = next((a.split('=', 1)[1] for a in sys.argv if a.startswith('--prefix=')), '')   # e.g. --prefix=game- : only those
 for f in sorted(os.listdir(RAW)):
-    if not f.endswith('.png') or f.startswith('av-'): continue
+    if not f.endswith('.png') or f.startswith(('av-', 'mascot-')) or not f.startswith(PREFIX): continue
     n = f[:-4]; im = trim(Image.open(os.path.join(RAW, f)).convert('RGB'))
-    w = 1280 if n.startswith(('pc-', 'era-', 'hist-')) else 960 if n.startswith('lm-') else 640 if n.startswith('lib-') else 1920
+    w = 1280 if n.startswith(('pc-', 'era-', 'hist-')) else 960 if n.startswith('lm-') else 640 if n.startswith('lib-') else 1600 if n == 'game-tradewinds' else 800 if n.startswith('game-') else 1920
     im = im.resize((w, round(w * im.height / im.width)), Image.LANCZOS)
     p = os.path.join(OUT, n + '.webp'); im.save(p, 'WEBP', quality=78, method=6)
     total += os.path.getsize(p); print(f'{n}: {im.width}x{im.height} {os.path.getsize(p)//1024} KB')

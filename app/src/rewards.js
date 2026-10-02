@@ -58,6 +58,16 @@ export const MEDALS = [
   { id: 'big-round', tier: 3, glyph: '🌍', name: 'World reader', how: 'Score 20,000 points in one round of Where on Earth?', test: (k) => ((k.lib.geoguess || {}).best || 0) >= 20000 },
   { id: 'first-made', tier: 1, glyph: '🛠️', name: 'Maker', how: 'Make your first expedition project.', test: (k) => EXPEDITIONS.some((e) => expStats(k, e).made > 0) },
   { id: 'part-learned', tier: 2, glyph: '🧠', name: 'It stuck', how: 'Pass an expedition test on a later day than its lessons — 8 of 10.', test: (k) => EXPEDITIONS.some((e) => expStats(k, e).learned > 0) },
+  /* Play: each from what the game recorded — a port woken, an age reached, a chain at its shortest */
+  { id: 'tw-five', tier: 1, glyph: '⛵', name: 'Lamplighter', how: 'In Shelly’s Trade Winds, wake five sleeping ports.', test: (k) => ((k.lib.tradewinds || {}).woke || 0) >= 5 },
+  { id: 'tw-steam', tier: 1, glyph: '🚢', name: 'Full steam', how: 'In Shelly’s Trade Winds, earn enough goodwill to reach the Age of Steam.', test: (k) => ((k.lib.tradewinds || {}).era || 0) >= 1 },
+  { id: 'tw-ocean', tier: 2, glyph: '🌊', name: 'An ocean lit', how: 'In Shelly’s Trade Winds, light every port of one ocean.', test: (k) => Object.keys((k.lib.tradewinds || {}).oceans || {}).length >= 1 },
+  { id: 'tw-world', tier: 3, glyph: '🌍', name: 'The world connected', how: 'In Shelly’s Trade Winds, light all sixty ports.', test: (k) => ((k.lib.tradewinds || {}).wins || 0) >= 1 },
+  { id: 'chain-ten', tier: 2, glyph: '🔗', name: 'Shortest way', how: 'In Neighbour Chain, find the shortest chain ten times.', test: (k) => ((k.lib.chain || {}).perfect || 0) >= 10 },
+  { id: 'compass-two', tier: 2, glyph: '🧭', name: 'Dead reckoning', how: 'In Hot & Cold Compass, find a hidden capital in two guesses or fewer.', test: (k) => ((k.lib.compass || {}).quick || 0) >= 7 },
+  { id: 'bigger-fools', tier: 2, glyph: '⚖️', name: 'Not fooled', how: 'In Bigger or Smaller?, see through five maps that make a country look bigger than it is.', test: (k) => ((k.lib.bigger || {}).foolsBeaten || 0) >= 5 },
+  { id: 'shape-ten', tier: 2, glyph: '🔍', name: 'Shape detective', how: 'In Shape Detective, name ten countries from their shape alone — no clue.', test: (k) => ((k.lib.shape || {}).noClue || 0) >= 10 },
+  { id: 'sun-full', tier: 2, glyph: '☀️', name: 'Sun reader', how: 'In Sun Clock, get every question in a round right.', test: (k) => ((k.lib.sunclock || {}).best || 0) >= 8 },
   ...EXPEDITIONS.map((e) => ({ id: 'exp-' + e.id, tier: 3, glyph: e.glyph, name: `${e.name}, finished`, how: `Finish every day of ${e.name}, the final project included.`, test: (k) => expStats(k, e).complete })),
 ];
 export const TIER = ['', 'bronze', 'silver', 'gold'];

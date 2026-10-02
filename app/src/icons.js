@@ -135,6 +135,7 @@ export function ico(name, cls = '') {
 
 /* The emoji a world, stop, expedition, tool or medal carries in its data → its drawing. */
 export const GLYPH = {
+  '🔗': 'road', '⚖️': 'layers', '🔍': 'lens',
   '🗺️': 'map', '🌍': 'globe', '🌐': 'globe', '🌏': 'globe', '🌎': 'globe', '🧭': 'compass', '🌋': 'volcano', '🏛️': 'building', '🚩': 'flag', '🏳️': 'flag', '🏁': 'flag',
   '📍': 'pin', '🦁': 'paw', '⚓': 'anchor', '🏅': 'medal', '🪙': 'coin', '🔒': 'lock', '🏰': 'castle', '🐼': 'paw', '🦅': 'bird', '🦘': 'paw',
   '🏔️': 'mountain', '⛰️': 'mountain', '🌊': 'wave', '⭐': 'star', '📖': 'book', '📚': 'book', '🛠️': 'tools', '🌿': 'leaf', '🏗️': 'city', '🛤️': 'road',

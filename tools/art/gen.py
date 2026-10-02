@@ -264,7 +264,44 @@ for k, v in WORLDP.items():
 
 for e in data('expeditions', 'EXPEDITIONS'): JOBS['crs-' + e['id']] = (e['paint'] + '. No people, no lettering, no real map. ' + STYLE + ' Very wide landscape composition.', '21:9')
 
-GROUPS = {'mascot': 'mascot-', 'day': 'wd-', 'night': 'wn-', 'postcards': 'pc-', 'landmarks': 'lm-', 'eras': 'era-', 'history': 'hist-', 'avatars': 'av-', 'courses': 'crs-', 'worlds': 'w-', 'library': 'lib-'}
+# the Play tab's covers — places and things only, no lettering, no digits, no real map (a globe or chart would draw one)
+GAMES = {
+    'game-tradewinds': ("A tall three-masted sailing ship running before the wind across a sparkling turquoise open ocean at golden hour, every sail full and bellied, "
+                        "white wake behind, flying fish leaping, seabirds, towering puffy trade-wind clouds and a distant palm-fringed island on the horizon. In the water "
+                        "beside the bow swims the attached mascot, Shelly the cheerful sea turtle, exactly as in the reference — her round shell patterned only with "
+                        "curved latitude and longitude lines on plain ocean blue — no green patches, no land shapes, no continents at all. No people visible on deck, no flags, no lettering, no map.", '16:9', 'mascot-wave'),
+    'game-chain': ("A trail of big round stepping stones winding from a flowery green meadow, across a sparkling stream, through a pine forest, over golden dry hills "
+                   "and on towards a distant snowy mountain — one journey through many different landscapes, seen from a gentle bird's-eye angle. No people, no signs, no lettering.", '4:3'),
+    'game-compass': ("A large antique brass compass with a glowing needle lying open on a weathered wooden explorer's table, beside a magnifying glass, a brass spyglass "
+                     "and a small oil lantern, warm lamplight and a few scattered leaves. The compass face shows only a decorative star rose — no letters, no numbers. No map.", '4:3'),
+    'game-bigger': ("An old brass balance scale on an explorer's desk, one pan holding a big heap of terracotta-coloured clay and the other a smaller heap of "
+                    "sea-green clay, a measuring tape curled beside it, warm window light. No globe, no map, no lettering, no numbers.", '4:3'),
+    'game-shape': ("A detective's magnifying glass resting over a scatter of brightly coloured, oddly shaped jigsaw puzzle pieces on a wooden desk, a leather notebook "
+                   "and a pencil beside them, warm lamplight. The pieces are abstract shapes, not any map. No lettering.", '4:3'),
+    'game-sunclock': ("A stone sundial in a garden at sunset casting a long shadow, the sun low on the horizon on one side while the other half of the sky turns deep "
+                      "blue with the first stars and a thin crescent moon — day and night meeting in one sky. The sundial face is plain, no numbers, no lettering.", '4:3'),
+}
+# Trade Winds: an age's card and a port's view, one per climate band — places and ships, no people, no flags, no lettering
+GAMES.update({
+    'game-tw-era-sail': ("A great wooden sailing ship with every sail set, heeling in a strong steady wind on a deep blue ocean, foam at the bow, "
+                         "a long line of puffy trade-wind clouds marching across the sky. No people visible, no flags, no lettering.", '16:9'),
+    'game-tw-era-steam': ("A handsome early steamship with a tall smoking funnel and paddle wheels, also carrying some sails, crossing a grey-green ocean "
+                          "against the wind with a white wake, a trail of dark smoke. No people visible, no flags, no lettering.", '16:9'),
+    'game-tw-era-suez': ("A long straight canal cutting through golden desert sand, a steamship gliding along it so it seems to sail across the dunes, "
+                         "palm trees and a low town in the far distance, clear blue sky. No people visible, no flags, no lettering, no signs.", '16:9'),
+    'game-tw-era-panama': ("Great canal locks with high concrete walls and giant steel gates stepping a ship up through green tropical jungle hills, "
+                           "water pouring between the chambers, misty rainforest beyond. No people visible, no flags, no lettering, no signs.", '16:9'),
+    'game-tw-port-trop': ("A sleepy tropical harbour at dawn: wooden jetties, small sailing boats, palm trees, piles of pineapples, bananas and mangoes in "
+                          "baskets on the quay, warm turquoise water, a lantern on a post just lit. No people, no lettering.", '16:9'),
+    'game-tw-port-sub': ("A warm, dry harbour town of whitewashed flat-roofed houses by a calm blue sea, bales of soft white cotton stacked on the stone "
+                         "quay, a few palm trees, a lantern on the harbour wall just lit. No people, no lettering, no signs.", '16:9'),
+    'game-tw-port-temp': ("A green temperate harbour with stone warehouses and a lighthouse, sacks of golden grain and wheat sheaves on the quay, "
+                          "rolling fields of wheat on the hills behind, a soft cloudy sky, a lantern just lit. No people, no lettering, no signs.", '16:9'),
+    'game-tw-port-cold': ("A cold northern harbour among pine-covered mountains with a little snow, stacks of cut timber logs on a wooden quay, a sturdy "
+                          "sailing ship at anchor in dark blue water, a lantern glowing warm. No people, no lettering, no signs.", '16:9'),
+})
+for k, v in GAMES.items(): JOBS[k] = (v[0] + ' ' + STYLE + (' Wide landscape composition.' if v[1] == '16:9' else ' Landscape tile composition.'), v[1], *v[2:])
+GROUPS = {'games': 'game-', 'mascot': 'mascot-', 'day': 'wd-', 'night': 'wn-', 'postcards': 'pc-', 'landmarks': 'lm-', 'eras': 'era-', 'history': 'hist-', 'avatars': 'av-', 'courses': 'crs-', 'worlds': 'w-', 'library': 'lib-'}
 
 
 def call(model, prompt, ratio, ref=None):

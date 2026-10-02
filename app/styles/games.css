@@ -1,0 +1,198 @@
+/* games.css — the Play tab and its games (family standard §10: a title card, motion on every
+   answer, a finish card). Map marks scale with zoom through mapui's scaleMarks. */
+
+/* ---------------------------------------------------------------- the Play tab */
+.play-hero{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);padding:0;overflow:hidden;width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;margin-bottom:16px;border:2px solid color-mix(in srgb,var(--action) 40%,transparent)}
+.play-hero:hover{transform:translateY(-2px)}
+.play-hero-art{min-height:260px;background:var(--surface2) center/cover}
+.play-hero-t{display:flex;flex-direction:column;gap:8px;padding:22px;justify-content:center}
+.play-hero-t b{font:800 clamp(22px,2.6vw,30px)/1.1 var(--display)}
+.play-hero-t .chip{align-self:flex-start}
+.play-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.play-card{display:flex;flex-direction:column;padding:0;overflow:hidden;text-align:left;font:inherit;color:inherit;cursor:pointer;margin:0}
+.play-card:hover{transform:translateY(-2px)}
+.play-art{position:relative;aspect-ratio:4/3;background:var(--surface2) center/cover}
+.play-g{position:absolute;left:12px;bottom:-16px;width:44px;height:44px;border-radius:12px;background:var(--surface);box-shadow:var(--sh-raised);display:grid;place-items:center;font-size:24px}
+.play-t{display:flex;flex-direction:column;gap:4px;padding:22px 16px 14px}
+.play-t b{font:800 18px var(--display)} .play-t span{font-size:14px;color:var(--muted);line-height:1.35}
+.play-t .chip{align-self:flex-start;font-style:normal;margin-top:4px}
+@media (max-width:760px){.play-hero{grid-template-columns:1fr}.play-hero-art{min-height:170px}.play-hero-t{padding:16px}}
+
+/* ---------------------------------------------------------------- title and finish cards */
+.gm-title{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);padding:0;overflow:hidden;max-width:1000px;margin:0 auto}
+.gm-art{position:relative;min-height:300px;background:var(--surface2) center/cover}
+.gm-glyph{position:absolute;left:16px;top:16px;width:56px;height:56px;border-radius:16px;background:var(--surface);display:grid;place-items:center;font-size:30px;box-shadow:var(--sh-raised)}
+.gm-body{padding:22px 24px;display:flex;flex-direction:column;gap:10px;position:relative}
+.gm-body h2{margin:0}
+.gm-body > .read-btn{position:absolute;top:18px;right:18px}
+.gm-how{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.gm-how li{display:flex;gap:10px;align-items:flex-start;line-height:1.45}
+.gm-how li > b{flex:none;width:28px;height:28px;border-radius:50%;background:var(--action);color:var(--action-ink);display:grid;place-items:center;font-size:14px;animation:popIn .4s ease-out both}
+.gm-how li:nth-child(2) > b{animation-delay:.15s} .gm-how li:nth-child(3) > b{animation-delay:.3s}
+.gm-starts{margin-top:6px}
+@media (max-width:760px){.gm-title{grid-template-columns:1fr}.gm-art{min-height:150px}.gm-body{padding:16px}}
+.gm-end{text-align:center;max-width:720px;margin:0 auto}
+.gm-end p{line-height:1.5}
+
+/* ---------------------------------------------------------------- inside a game */
+.gm-hud{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}
+.gm-chip{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-pill);padding:5px 12px;font-size:14px}
+.gm-prompt{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;margin-bottom:8px}
+.gm-prompt .long-q{margin:0;flex:1;text-align:left}
+.c-start{color:var(--action)} .c-goal{color:var(--quick,#2e7bb4)}
+.game-page .gmap svg{max-height:62vh}
+.gmap .ct.start{fill:var(--action)} .gmap .ct.goal{fill:var(--quick,#2e7bb4)}
+.gmap .ct.pick{animation:fillIn .35s ease-out}
+.gm-chain{display:flex;flex-wrap:wrap;gap:6px;list-style:none;padding:0;margin:10px 0}
+.gm-chain li{background:var(--surface2);border-radius:var(--r-pill);padding:4px 10px;font-size:14px;animation:popIn .3s ease-out}
+.gm-chain li + li::before{content:"→ ";color:var(--muted)}
+.gm-chain li.start{background:var(--action);color:var(--action-ink)} .gm-chain li.goal{background:var(--mastered);color:#fff}
+.gm-ctl{margin:10px 0}
+.gm-nb{margin-top:8px}
+.gm-res{margin-top:12px;text-align:center}
+.gm-trail{display:flex;flex-wrap:wrap;gap:6px;list-style:none;padding:0;margin:10px 0;font-size:14px}
+.gm-trail li{background:var(--surface2);border-radius:10px;padding:4px 10px}
+.gm-trail li:last-child{background:var(--action-tint);font-weight:700;animation:popIn .3s ease-out}
+.gmap .pin.old circle{fill:var(--muted);opacity:.6}
+.gmap .pin.goal circle{fill:var(--quick,#2e7bb4)}
+/* Bigger or Smaller? */
+.bg-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:12px}
+.bg-pick{display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px;font:inherit;color:inherit;cursor:pointer;margin:0;border:2px solid transparent}
+.bg-pick b{font:800 20px var(--display)} .bg-pick img{border-radius:6px;box-shadow:0 0 0 1px var(--line)}
+.bg-pick:not(:disabled):hover{border-color:var(--action)}
+.bg-pick.right{border-color:var(--mastered);animation:popIn .4s ease-out} .bg-pick.wrong{border-color:var(--fix);animation:shake .4s ease-out}
+.shape{width:100%;max-width:260px;height:auto}
+.shape path{fill:var(--land-hl,var(--action));stroke:var(--land-edge);stroke-width:1.5;animation:fillIn .5s ease-out}
+/* Shape Detective */
+.sd-board{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}
+.sd-shape{display:grid;place-items:center;margin:0;background:var(--sea)}
+.shape.big{max-width:320px}
+.sd-clues{margin:0 0 10px;padding-left:20px;line-height:1.6}
+.sd-clues li{animation:popIn .3s ease-out}
+.sd-opts{margin-top:12px}
+@media (max-width:760px){.sd-board{grid-template-columns:1fr}.shape.big{max-width:240px}}
+/* Sun Clock */
+.gmap .sc-night{fill:#0b1430;opacity:.42;animation:fadeIn .7s ease-out}
+.gmap .sc-line{fill:none;stroke:#f6c84c;stroke-width:calc(2px * var(--s,1));stroke-dasharray:calc(6px * var(--s,1)) calc(4px * var(--s,1))}
+@keyframes fadeIn{from{opacity:0}}
+
+/* ---------------------------------------------------------------- Shelly's Trade Winds
+   A sea chart: deep gradient sea with a wave texture, parchment land with a shallow-water
+   halo, flowing wind streaks, lantern ports, drawn ships. Wider than the page column. */
+.tw{--twW:min(1440px,calc(100vw - 32px));width:var(--twW);margin-left:calc((100% - var(--twW)) / 2)}
+.tw-bar{display:grid;grid-template-columns:auto minmax(220px,1.4fr) minmax(150px,1fr) auto;gap:10px;align-items:stretch;margin:0 0 10px}
+.tw-bar > div{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:8px 12px;box-shadow:0 2px 0 rgba(0,0,0,.05);display:flex;align-items:center;gap:10px;min-width:0}
+.tw-when{flex-direction:column;justify-content:center;gap:0!important;background:linear-gradient(160deg,#173f63,#22789c)!important;color:#fff;border:none!important;min-width:86px;text-align:center}
+.tw-when .tw-m{font:800 17px/1.1 var(--display,var(--ui))} .tw-when .tw-y{font-size:13px;opacity:.85;font-variant-numeric:tabular-nums}
+.tw-era img{width:64px;height:44px;object-fit:cover;border-radius:10px;flex:none;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.tw-era > div,.tw-lit{flex-direction:column;align-items:stretch!important;gap:3px!important}
+.tw-era b{font-size:15px;line-height:1.15} .tw-era small,.tw-lit small{color:var(--muted);font-size:12.5px;display:flex;gap:4px;align-items:center}
+.tw-lit{justify-content:center} .tw-lit > b{font:800 22px/1 var(--display,var(--ui));color:#b7791f}
+.tw-lit{display:grid!important;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:8px!important;row-gap:4px!important}
+.tw-lit > b{grid-row:1} .tw-lit small{grid-row:1;align-self:end} .tw-lit .tw-meter{grid-column:1/-1}
+.tw-fleet{font-size:14px;white-space:nowrap}
+.tw-meter{display:block;height:8px;border-radius:99px;background:color-mix(in srgb,var(--ink) 10%,transparent);overflow:hidden}
+.tw-meter i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#2a9d8f,#4cc9b0);transition:width .6s ease}
+.tw-meter.gold i{background:linear-gradient(90deg,#e9a23b,#ffd25e);box-shadow:0 0 8px #ffd25e}
+.tw-main{display:grid;grid-template-columns:minmax(0,2.25fr) minmax(320px,1fr);gap:14px;align-items:start}
+.tw-map{position:relative}
+.tw-zoom{position:absolute;top:18px;right:18px;display:flex;flex-direction:column;gap:6px;z-index:2}.tw-zoom .btn{min-width:44px;min-height:44px;padding:0;justify-content:center;background:rgba(255,253,248,.92)}
+.tw-map .gmap{background:radial-gradient(ellipse at 50% 40%,#f7ecd2,#e6d1a4 80%,#d8bd86);border-radius:20px;padding:10px;box-shadow:inset 0 0 0 2px #c9a86a,inset 0 0 0 6px #f3e6c8,inset 0 0 0 7px #b8935a,0 10px 30px rgba(20,40,60,.25)}
+.tw-map .gmap svg{max-height:calc(100dvh - 230px);min-height:340px;display:block;width:100%}
+.tw-map .gmap .sea{fill:#1d6b8f}
+.tw-map .gmap .tw-sea{fill:url(#tw-sea-g)} .tw-map .gmap .tw-waves{fill:url(#tw-wave);animation:twWaves 9s linear infinite}
+.tw-map .gmap .tw-grat{fill:none;stroke:#e9d8a6;stroke-opacity:.18;stroke-width:.5}
+.tw-map .gmap .tw-bandline{fill:none;stroke:#ffe9a8;stroke-opacity:.38;stroke-width:.8;stroke-dasharray:2 5}
+.tw-map .gmap .tw-equator{fill:none;stroke:#ffd25e;stroke-opacity:.6;stroke-width:1.1;stroke-dasharray:7 4}
+.tw-map .gmap .tw-bandname{font:italic 600 9.5px var(--ui);fill:#fff;fill-opacity:.55;letter-spacing:.06em;text-anchor:start;pointer-events:none}
+.tw-map .gmap .lands{filter:url(#tw-coast)}
+.tw-map .gmap .ct{fill:url(#tw-land-g);stroke:#a98a57;stroke-width:.45}
+.tw-map .gmap.tap .ct:hover{fill:#f9edd2}
+.tw-map .gmap .ct.twlit{fill:#f8d98b;stroke:#b8862f;animation:fillIn .8s ease-out}
+.tw-map .gmap .tw-storm{fill:#e05a47;opacity:.2}
+.tw-map .gmap .tw-cyc{opacity:.55} .tw-map .gmap .tw-cyc use{transform-box:fill-box;transform-origin:center;animation:twSpin 4s linear infinite}
+.tw-map .gmap .tw-ice{fill:#e9f8ff;opacity:.5} .tw-map .gmap .tw-floe path{fill:#fff;stroke:#a9d6ea;stroke-width:.8;opacity:.9}
+.tw-map .gmap .tw-wind path{fill:none;stroke:#fff;stroke-linecap:round;stroke-linejoin:round}
+.tw-map .gmap .tw-wind .st{stroke-width:1.5;stroke-opacity:.38}
+.tw-map .gmap .tw-wind .fl{stroke-width:2;stroke-opacity:.95;stroke-dasharray:9 26;animation:twFlow 2.2s linear infinite}
+.tw-map .gmap .tw-wind .hd{stroke-width:1.6;stroke-opacity:.8}
+.tw-map .gmap .tw-wind.d1 .fl{animation-delay:-.7s} .tw-map .gmap .tw-wind.d2 .fl{animation-delay:-1.4s}
+.tw-map .gmap .tw-wind.mon path{stroke:#9bffd9} .tw-map .gmap .tw-wind.mon .st{stroke-width:2;stroke-opacity:.55} .tw-map .gmap .tw-wind.mon .fl{stroke-width:2.6}
+.tw-map .gmap .tw-voy{fill:none;stroke:#fff;stroke-width:calc(1.5px * var(--s,1));stroke-dasharray:calc(2px * var(--s,1)) calc(4px * var(--s,1));stroke-linecap:round;opacity:.85}
+.tw-map .gmap .tw-plan-glow{fill:none;stroke:#ffd25e;stroke-width:calc(8px * var(--s,1));opacity:.35;stroke-linecap:round;filter:blur(2px)}
+.tw-map .gmap .tw-plan{fill:none;stroke:#ffd25e;stroke-width:calc(3px * var(--s,1));stroke-dasharray:calc(9px * var(--s,1)) calc(6px * var(--s,1));stroke-linecap:round;animation:march 1s linear infinite}
+.tw-map .gmap .tw-port .core{fill:#5d6b7e;stroke:#e8eef5;stroke-width:1.2}
+.tw-map .gmap .tw-port .ring{fill:none;stroke:none}
+.tw-map .gmap .tw-port.awake .core{fill:#ffd25e;stroke:#7a4a12;stroke-width:1.3}
+.tw-map .gmap .tw-port .halo{fill:url(#tw-glow);transform-box:fill-box;transform-origin:center;animation:twLamp 2.8s ease-in-out infinite}
+.tw-map .gmap .tw-port.home .core{fill:#e4572e;stroke:#fff;stroke-width:1.6}
+.tw-map .gmap .tw-port.sel .ring{stroke:#fff;stroke-width:2;stroke-dasharray:4 3;transform-box:fill-box;transform-origin:center;animation:twSpin 6s linear infinite}
+.tw-map .gmap .tw-port.dest .ring{stroke:#ffd25e;stroke-width:2.6;animation:twPing 1.3s ease-out infinite;transform-box:fill-box;transform-origin:center}
+.tw-map .gmap .tw-port.asks .ring{stroke:#ff6b8b;stroke-width:2.4;transform-box:fill-box;transform-origin:center;animation:twPing 1.6s ease-out infinite}
+.tw-map .gmap .tw-port text{font:800 11.5px var(--ui);fill:#1d2433;stroke:#fff8e6;stroke-width:3.2px;paint-order:stroke;stroke-linejoin:round;text-anchor:middle;pointer-events:none}
+.tw-map .gmap .tw-port.sleep text{fill:#3b4658}
+.tw-map .gmap .tw-ship use{filter:drop-shadow(0 1.5px 1px rgba(0,20,40,.45))}
+.tw-map .gmap .tw-count circle{fill:#e4572e;stroke:#fff;stroke-width:1.4} .tw-map .gmap .tw-count text{font:800 8.5px var(--ui);fill:#fff;text-anchor:middle;dominant-baseline:central}
+.tw-map .gmap .tw-ship .wake{fill:none;stroke:#fff;stroke-width:1.2;stroke-linecap:round;opacity:.75}
+.tw-map .gmap .tw-ship.sea .bob{animation:twBob 1.8s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:center bottom}
+.tw-map .gmap .tw-ship.on use{filter:drop-shadow(0 0 3px #ffd25e) drop-shadow(0 0 2px #fff)}
+.tw-map .gmap .tw-smoke{animation:twSmoke 2.4s ease-out infinite;transform-box:fill-box;transform-origin:center} .tw-map .gmap .tw-smoke.s2{animation-delay:-1.2s}
+.tw-map .gmap .tw-rose{pointer-events:none}
+.tw-map .gmap .tw-rose .ring{fill:#f6ead0;stroke:#a98a57;stroke-width:1.2} .tw-map .gmap .tw-rose .ring2{fill:none;stroke:#a98a57;stroke-width:.6;stroke-dasharray:2 2}
+.tw-map .gmap .tw-rose .ma{fill:#c0392b;stroke:#6b1d14;stroke-width:.5} .tw-map .gmap .tw-rose .ma2{fill:#1d4e6e;stroke:#0d2c40;stroke-width:.5} .tw-map .gmap .tw-rose .mi{fill:#e9c46a;stroke:#8a6a2b;stroke-width:.4}
+.tw-map .gmap .tw-rose .hub{fill:#e9c46a;stroke:#6b4a12}
+.tw-map .gmap .tw-rose text{font:800 10px var(--display,var(--ui));fill:#5b3b12;text-anchor:middle;dominant-baseline:middle}
+.tw-legend{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 0}
+.tw-lg{display:inline-flex;align-items:center;gap:6px;border-radius:var(--r-pill);padding:3px 11px;background:#1d5f82;color:#fff;font-weight:600}
+.tw-lg.m{background:#1f8f78} .tw-lg.s{background:#c4453c} .tw-lg.i{background:#d9eef8;color:#21445c}
+.tw-lg.p{background:#fff3cf;color:#6b4a12} .tw-lg.p::before{content:"";width:10px;height:10px;border-radius:50%;background:#ffd25e;box-shadow:0 0 6px 2px #ffd25e}
+/* the era card: a painting and the history, over the chart */
+.tw-pop{position:absolute;inset:0;display:grid;place-items:center;background:rgba(8,30,48,.45);border-radius:20px;backdrop-filter:blur(2px);animation:fadeIn .3s ease-out;z-index:3;padding:12px}
+.tw-pop-card{background:var(--surface);border-radius:20px;overflow:hidden;max-width:560px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.4);animation:popIn .45s cubic-bezier(.2,1.4,.4,1) both}
+.tw-pop-art{aspect-ratio:16/8;background:center/cover}
+.tw-pop-body{padding:14px 18px 16px} .tw-pop-body h2{margin:2px 0 6px}
+/* the side panel */
+.tw-side{display:flex;flex-direction:column;gap:10px;max-height:calc(100dvh - 190px);overflow:auto;padding:2px 4px 2px 2px}
+.tw-side .card{margin:0}
+.tw-side .tw-news{position:relative;border-left:5px solid #f6c84c;background-color:color-mix(in srgb,#ffd25e 9%,var(--surface))}
+.tw-news ul{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.tw-n{line-height:1.4;animation:popIn .35s ease-out both} .tw-n.wake{font-weight:600}
+.tw-n.wake,.tw-n.era{display:flex;gap:10px;align-items:flex-start} .tw-n.era{background:var(--action-tint);border-radius:12px;padding:8px}
+.tw-thumb{width:72px;height:50px;object-fit:cover;border-radius:10px;flex:none;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.tw-shelly{float:right;margin:0 0 4px 6px}
+.tw-port-card{padding:0;overflow:hidden} .tw-port-card > :not(.tw-banner){margin-left:16px;margin-right:16px} .tw-port-card > :last-child{margin-bottom:14px}
+.tw-banner{height:118px;background:center/cover;position:relative;display:flex;align-items:flex-end;margin-bottom:8px}
+.tw-banner > div{width:100%;padding:22px 14px 8px;background:linear-gradient(transparent,rgba(10,25,40,.82));color:#fff}
+.tw-banner .chip{background:#e4572e;color:#fff;border:0;font-size:12px;padding:2px 9px} .tw-banner .kicker{color:#ffe7a8;margin:0} .tw-banner h3{color:#fff;margin:0;display:flex;gap:6px;align-items:center}
+.tw-port-card.dim .tw-banner{filter:saturate(.35) brightness(.8)}
+.tw-plan-card h3{margin:2px 0 4px}
+.tw-docked{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.tw-docked .btn{justify-content:flex-start;text-align:left}
+.tw-good{color:var(--mastered)} .tw-bad{color:var(--fix)}
+.tw-dests{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:4px;max-height:260px;overflow:auto}
+.tw-dests button{width:100%;display:flex;gap:6px;align-items:center;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:7px 10px;font:inherit;color:inherit;cursor:pointer;min-height:44px}
+.tw-dests button span{margin-left:auto;color:var(--muted);font-size:13px}
+.tw-dests button.on,.tw-dests button:hover{border-color:var(--action);background:var(--action-tint)}
+.tw-ships ul,.tw-asks ul{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:14px}
+.tw-asks{border-left:5px solid #ff6b8b}
+.tw-log ul{font-size:13px;color:var(--muted);padding-left:18px}
+.tw-actions{position:sticky;bottom:0;padding:8px 0 4px;background:linear-gradient(transparent,var(--paper) 30%)}
+.tw-help p{display:flex;gap:10px;align-items:center;margin:0}
+/* the title: four ages */
+.tw-ages{list-style:none;padding:0;margin:12px 0 4px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.tw-ages li{display:flex;flex-direction:column;gap:2px;font-size:12.5px;line-height:1.2}
+.tw-ages img{width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.tw-ages small{color:var(--muted)}
+@keyframes twFlow{to{stroke-dashoffset:-34}}
+@keyframes twWaves{to{transform:translateX(34px)}}
+@keyframes twSpin{to{transform:rotate(-360deg)}}
+@keyframes twLamp{0%,100%{transform:scale(.85);opacity:.8}50%{transform:scale(1.15);opacity:1}}
+@keyframes twPing{0%{transform:scale(.7);opacity:1}100%{transform:scale(1.5);opacity:0}}
+@keyframes twBob{from{transform:translateY(-1px) rotate(-3deg)}to{transform:translateY(1px) rotate(3deg)}}
+@keyframes twSmoke{0%{transform:translate(0,0) scale(.6);opacity:.7}100%{transform:translate(-5px,-6px) scale(1.5);opacity:0}}
+@media (max-width:980px){.tw-main{grid-template-columns:1fr}.tw-side{max-height:none}.tw-map .gmap svg{max-height:none;min-height:0}
+  .tw-bar{grid-template-columns:auto 1fr;}.tw-fleet{grid-column:1/-1;justify-content:center}.tw-lit{grid-column:1/-1}}
+@media (max-width:600px){.tw{--twW:100vw}.tw-bar{grid-template-columns:auto 1fr;gap:6px}.tw-bar > div{padding:6px 10px;border-radius:12px}.tw-lit{grid-column:auto!important}.tw-when{grid-row:span 2;min-width:70px}.tw-era{grid-column:2}.tw-lit,.tw-fleet{grid-column:1/-1!important}
+  .tw-bar .tw-lit{display:flex!important;flex-direction:row!important;align-items:center!important}.tw-lit .tw-meter{flex:1}.tw-fleet{display:none!important}.tw-map .gmap{border-radius:0;padding:4px}.tw-bar{padding:0 12px}.tw-side,.tw-legend{padding:0 12px}.tw-era img{width:48px;height:34px}.tw-ages{grid-template-columns:repeat(2,1fr)}.tw-pop{position:fixed;border-radius:0;z-index:80;background:rgba(8,30,48,.6)}.tw-pop-card{max-height:calc(100dvh - 24px);overflow:auto}.tw-zoom{top:10px;right:10px}}
+@media (prefers-reduced-motion:reduce){.tw-map .gmap *,.gm-how li > b{animation:none!important}}
+:root[data-motion=reduced] .tw-map .gmap *{animation:none!important}

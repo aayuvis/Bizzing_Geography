@@ -125,7 +125,7 @@ Inherited from the family, and it holds here:
 
 ## The shape of the app (the family's, harmonised)
 
-- **Tabs: Home · Atlas · Expeditions · Library.** "My road" is the Atlas's second tab,
+- **Tabs: Home · Atlas · Expeditions · Library · Play.** "My road" is the Atlas's second tab,
   **Your journey** (the ten levels as a strip, then the level's stations) — the road only ever
   explained the map.
 - **Home is Bizzing Bee's and India's shape**: greeting card (avatar + speech bubble), **Today's
@@ -173,6 +173,37 @@ Inherited from the family, and it holds here:
   the Satellite globe is painted from the app's own map data. Scene classes are prefixed `s-`/`scn`
   because the app already owns `.sky`, `.bubble` and `.sc`.
 
+## Play (the games)
+
+Seven games on the **Play** tab, each a Library-contract file in `src/games/` (`TOOL`, `view`,
+`act`, `key`, `selftest`), routed at `#/game/<id>` (an old `#/lib/geoguess` link lands there).
+`games/meta.js` names them; `games/kit.js` is the shared title card, finish card and HUD.
+Every fact a game asks comes from the data, and each proves its puzzles before showing them:
+
+- **Shelly's Trade Winds** (the flagship; `tradewinds.js` screen, `tw-engine.js` rules,
+  `tw-data.js` facts, `TRADEWINDS_NEEDS_REVIEW`): sixty real ports sleep; each grows its
+  **climate band's** cargo; a ship that brings a port something it cannot grow wakes it. One
+  month a turn, and nothing moves until **Next month** (Sabhyata's Sochna). Wind belts and the
+  monsoon change leg times by month; cyclone season makes a ship wait; winter ice closes the
+  far north (so Reykjavík is iced in for a January start — by design). Goodwill opens four
+  ages (sail 1800, steam, Suez 1869, Panama 1914), each with its painting and history.
+  **The sea lanes are measured from the app's own map** (`tools/geo/sealanes.mjs` →
+  `data/sealanes.js`: a 0.5° grid, straits carved from sourced coordinates, canals by era,
+  and a canal never makes a voyage longer). `test/games.mjs` proves every start can light all
+  sixty ports in 1–5 game-years, every port is reachable, and no lane crosses land away from a
+  port, strait or canal — each watched to fail first.
+  **The chart is drawn, not painted**: `worldSVG`'s `under` layer puts the sea, climate bands,
+  storms, ice and winds beneath the land; ports are lanterns, ships are SVG ships of their age
+  (sail, then steam). Paintings (`art/game-tw-*`) are places and ships only — never a map.
+  On a phone the chart opens on the selected port's ocean (`phoneView`) with zoom buttons.
+- **Neighbour Chain** (land borders counted only when BOTH countries list them),
+  **Hot & Cold Compass** (found = inside the country or within 150 km of the capital),
+  **Bigger or Smaller?** (main-shape area; "foolers" are ≥15° further from the equator),
+  **Shape Detective** (true-shape outlines, clues from the data), **Sun Clock** (sun time from
+  longitude; the night side drawn only after the answer), and **Where on Earth?**, moved here
+  from the Library.
+- Medals for play (`rewards.js`) come from what each game recorded, never from time played.
+
 ## The family layer (Bizzing_Schedule docs/family/FAMILY-STANDARD.md)
 
 The shared spec every Bizzing app follows. Here it lives in five files:
@@ -201,7 +232,7 @@ The shared spec every Bizzing app follows. Here it lives in five files:
 - **Weight**: Where on Earth? and Earth Through Time load on demand (`library/index.js loadTool`,
   prefetched when idle so they work offline). The browser check holds initial JS ≤ 400 KB gzipped
   and the phone's first screen ≤ 1.5 MB.
-- **Tabs stay Home · Atlas · Expeditions · Library** (the owner kept "Expeditions"): a tab row under the top bar
+- **Tabs are Home · Atlas · Expeditions · Library · Play** (the owner kept "Expeditions", and asked for Play): a tab row under the top bar
   at ≥900px, a bottom bar below. Everything else is in the **☰ drawer** (`src/chrome.js`): My page · Shop ·
   Collection · Medals · Your journey · My mistakes · Search · Where on Earth? · Settings · Grown-ups · Help ·
   Privacy · Back to the Hive, with a one-tap mute.

@@ -10,7 +10,7 @@
    crosshair all live in one coordinate space. Paths are computed once and
    kept; a render only chooses classes. */
 
-import { geoNaturalEarth1, geoPath, geoContains, geoGraticule10, geoAlbersUsa, geoConicConformal, geoMercator, geoBounds } from 'd3-geo';
+import { geoNaturalEarth1, geoPath, geoContains, geoGraticule10, geoAlbersUsa, geoConicConformal, geoMercator, geoBounds, geoAzimuthalEqualArea, geoCentroid, geoArea, geoInterpolate, geoDistance } from 'd3-geo';
 import { feature } from 'topojson-client';
 import { WORLD } from './data/world.js';
 import { REGIONS } from './data/regions.js';
@@ -40,6 +40,36 @@ function world(rot = 0) {
   };
   return WM[rot];
 }
+
+/* For the games: a path in the world frame for any GeoJSON (a lane, a route), and a
+   point part-way along a polyline of [lat,lng] (a ship at sea), both on the same map. */
+export const worldPath = (geo, rot = 0) => world(rot).path(geo);
+export function alongLine(pts, t) {
+  const segs = []; let total = 0;
+  for (let i = 0; i + 1 < pts.length; i++) { const d = geoDistance([pts[i][1], pts[i][0]], [pts[i + 1][1], pts[i + 1][0]]); segs.push(d); total += d; }
+  let want = Math.max(0, Math.min(1, t)) * total;
+  for (let i = 0; i < segs.length; i++) { if (want <= segs[i] || i === segs.length - 1) { const f = segs[i] ? Math.min(1, want / segs[i]) : 0, p = geoInterpolate([pts[i][1], pts[i][0]], [pts[i + 1][1], pts[i + 1][0]])(f); return [p[1], p[0]]; } want -= segs[i]; }
+  return pts[pts.length - 1];
+}
+/* A country's TRUE shape: an equal-area projection centred on it, so nothing far from the
+   equator is stretched. shapesAtOneScale draws several at the SAME scale — their sizes on
+   screen are their sizes on Earth (Bigger or Smaller?'s reveal). */
+function shapeOf(cc) { const x = world().byId[cc]; if (!x) return null; const f = { type: 'FeatureCollection', features: world().feats.filter((y) => y.id === cc).map((y) => y.f) }; return { f, c: geoCentroid(x.f) }; }
+export function shapeSVG(cc, size = 300, cls = 'shape') {
+  const s = shapeOf(cc); if (!s) return '';
+  const proj = geoAzimuthalEqualArea().rotate([-s.c[0], -s.c[1]]).fitExtent([[10, 10], [size - 10, size - 10]], s.f);
+  return `<svg class="${cls}" viewBox="0 0 ${size} ${size}" role="img" aria-label="A country’s outline"><path d="${geoPath(proj).digits(1)(s.f)}"/></svg>`;
+}
+export function shapesAtOneScale(ccs, size = 260) {
+  const S = ccs.map(shapeOf); if (S.some((x) => !x)) return ccs.map(() => '');
+  const ps = S.map((s) => geoAzimuthalEqualArea().rotate([-s.c[0], -s.c[1]]).fitExtent([[10, 10], [size - 10, size - 10]], s.f));
+  const k = Math.min(...ps.map((p) => p.scale()));            // the scale that fits the biggest
+  return S.map((s) => { const p = geoAzimuthalEqualArea().rotate([-s.c[0], -s.c[1]]).scale(k).translate([size / 2, size / 2]);
+    return `<svg class="shape" viewBox="0 0 ${size} ${size}" role="img" aria-label="A country’s outline at true scale"><path d="${geoPath(p).digits(1)(s.f)}"/></svg>`; });
+}
+/* how big a country's main shape is DRAWN on the world map (square px) */
+export const drawnArea = (cc) => { const x = world().byId[cc]; return x ? world().path.area(x.f) : 0; };
+export const sphereArea = (cc) => { const s = shapeOf(cc); return s ? geoArea(s.f) : 0; };
 
 /* [lat, lng] ↔ [x, y] in the world frame */
 export const project = ([lat, lng], rot = 0) => world(rot).proj([lng, lat]);
@@ -99,7 +129,7 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
      zones:  [{ at, km, name, cls }] — a SOFT ZONE of influence, blurred, never a
              line (Bizzing India's rule for anything before modern borders)
      borders: false — no country lines at all, for an age before them */
-export function worldSVG({ fill = {}, pins = [], lines = [], view = null, key = 'w', tap = false, grat = true, label = 'World map', arcs = [], zones = [], borders = true, rot = 0, drag = false } = {}) {
+export function worldSVG({ fill = {}, pins = [], lines = [], view = null, key = 'w', tap = false, grat = true, label = 'World map', arcs = [], zones = [], borders = true, rot = 0, drag = false, extra = '', under = '' } = {}) {
   const M = world(rot);
   const vb = (view || [0, 0, W, H]).join(' ');
   const scale = view ? view[2] / W : 1;
@@ -107,6 +137,7 @@ export function worldSVG({ fill = {}, pins = [], lines = [], view = null, key = 
     <svg viewBox="${vb}" preserveAspectRatio="xMidYMid meet" style="--s:${scale.toFixed(3)}">
       <path class="sea" d="${M.sphere}"/>
       ${grat ? `<path class="grat" d="${M.grat}"/>` : ''}
+      ${under}
       <g class="lands">${M.feats.map((x) => `<path class="ct${fill[x.id] ? ' ' + fill[x.id] : ''}" data-cc="${x.id}" d="${x.d}"/>`).join('')}</g>
       ${zones.length ? `<defs><filter id="zblur-${esc(key)}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="${(6 * scale).toFixed(2)}"/></filter></defs>
       <g class="zones" filter="url(#zblur-${esc(key)})">${zones.map((z, i) => { const c = zoneCircle(z.at, z.km, rot); return c ? `<circle class="zone z${z.cls ?? i % 6}" cx="${c[0]}" cy="${c[1]}" r="${c[2]}"/>` : ''; }).join('')}</g>
@@ -114,6 +145,7 @@ export function worldSVG({ fill = {}, pins = [], lines = [], view = null, key = 
       ${lines.map((l) => `<path class="gl gl-${l}" d="${M.lines[l]}"/>`).join('')}
       ${arcs.map((a) => `<path class="arc" d="${M.path({ type: 'LineString', coordinates: [[a[0][1], a[0][0]], [a[1][1], a[1][0]]] })}"/>`).join('')}
       ${pins.map((p) => { const xy = M.proj([p.at[1], p.at[0]]); return xy ? `<g class="pin ${p.cls || ''}" transform="translate(${xy[0].toFixed(1)} ${xy[1].toFixed(1)}) scale(${scale.toFixed(3)})">${p.shape ? `<path class="pin-shape" d="${p.shape}"/>` : `<circle r="${p.r || 6}"/>`}${p.label ? `<text y="-11">${esc(p.label)}</text>` : ''}</g>` : ''; }).join('')}
+      ${extra}
       ${tap ? `<g class="cross" transform="translate(-99 -99) scale(${scale.toFixed(3)})"><circle r="9"/><path d="M-15 0H-5M5 0H15M0 -15V-5M0 5V15"/></g>` : ''}
     </svg></div>`;
 }

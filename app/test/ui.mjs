@@ -589,6 +589,104 @@ async function run(vp, tag) {
   await page.evaluate(() => { window.__bzg.go('lib', 'time'); scrollTo(0, 0); }); await page.waitForTimeout(150);
   ok(await page.evaluate(() => { const b = document.querySelector('.t-ov h2').getBoundingClientRect(); return b.bottom <= innerHeight; }), 'Earth Through Time: the step’s title is on screen without scrolling');
   if (!phone) ok(await page.evaluate(() => { const b = document.querySelector('.t-split').getBoundingClientRect(); return b.bottom <= innerHeight + 1; }), 'Earth Through Time: on a desktop the painting and its card fit one screen');
+  /* ---------------- PLAY: the tab, every game played by touch and keyboard ---------------- */
+  const tapXY = async (x, y) => { if (phone) await page.touchscreen.tap(x, y); else await page.mouse.click(x, y); await page.waitForTimeout(150); };
+  const tapLL = async (lat, lng) => {   // a real tap on the map at a latitude/longitude (a medal pop-up is closed first)
+    if (await page.locator('.mp-card').count()) { await page.click('[data-act=medalOk]'); await page.waitForTimeout(100); }
+    await page.evaluate(() => document.querySelector('main .gmap svg').scrollIntoView({ block: 'center' })); await page.waitForTimeout(60);
+    const xy = await page.evaluate(([lat, lng]) => { const svg = document.querySelector('main .gmap svg'), b = svg.getBoundingClientRect(), [vx, vy, vw, vh] = svg.getAttribute('viewBox').split(' ').map(Number);
+      const s = Math.min(b.width / vw, b.height / vh), ox = b.left + (b.width - vw * s) / 2, oy = b.top + (b.height - vh * s) / 2;
+      const p = window.__bzg.project([lat, lng]); return p ? [ox + (p[0] - vx) * s, oy + (p[1] - vy) * s] : null; }, [lat, lng]);
+    if (xy) await tapXY(xy[0], xy[1]); return xy;
+  };
+  await page.evaluate(() => { window.__bzg.R.ui.medalPop = []; }); await nav('play'); await page.waitForSelector('.play-hero');
+  ok(await page.locator('.play-card').count() === 6 && (await page.locator('.play-hero').innerText()).includes('Trade Winds'), 'the Play tab: Trade Winds as the big card, then six games');
+  ok(await page.locator(phone ? '[data-bz=tabbar] a[href="#/play"][aria-current=page]' : '[data-bz=tabs] a[href="#/play"][aria-current=page]').count() === 1, 'the Play tab is lit');
+  await page.waitForTimeout(300); await shot('30-play'); await noSideways('play');
+  ok(!(await page.evaluate(() => window.__bzg.SHELF.map((t) => t.id))).includes('geoguess'), 'Where on Earth? has moved off the Library shelf…');
+  await page.evaluate(() => window.__bzg.go('lib', 'geoguess')); await page.waitForTimeout(300);
+  ok(await page.evaluate(() => window.__bzg.R.ui.nav === 'game' && location.hash === '#/game/geoguess'), '…and an old link to it lands on Play');
+
+  // Neighbour Chain: tap a real neighbour, a wrong country holds, Undo, finish by keyboard (the hint list)
+  await page.evaluate(() => window.__bzg.go('play')); await page.waitForSelector('.play-card');
+  await page.click('.play-card[data-arg=chain]'); await page.waitForSelector('[data-arg="chain|start"]'); await shot('31-chain-title');
+  await page.click('[data-arg="chain|start"]'); await page.waitForSelector('.gm-chain');
+  const P = await page.evaluate(() => window.__bzg.R.ui.lib.chain.g.list[0]);
+  const far = P.b;   // the goal is always in view and never touches the start (the shortest chain is 2+)
+  if (far) { await tapLL(...(await page.evaluate((c) => window.__bzg.byCc[c].at, far))); ok((await page.locator('.fb.bad').count()) === 1 && await page.evaluate(() => window.__bzg.R.ui.lib.chain.g.chain.length) === 1, 'a country that does not touch the chain is held, and explained'); }
+  const nb = P.path[1]; await tapLL(...(await page.evaluate((c) => window.__bzg.byCc[c].at, nb)));
+  ok(await page.evaluate((nb) => window.__bzg.R.ui.lib.chain.g.chain[1] === nb, nb), 'tapping a real neighbour adds it to the chain');
+  await shot('32-chain');
+  await page.keyboard.press('u'); ok(await page.evaluate(() => window.__bzg.R.ui.lib.chain.g.chain.length) === 1, 'U undoes a step');
+  await page.keyboard.press('h'); await page.waitForSelector('.gm-nb');
+  for (const c of P.path.slice(1)) { const i = await page.evaluate((c) => { const g = window.__bzg.R.ui.lib.chain.g; return window.__bzg.NB(g.chain[g.chain.length - 1]).indexOf(c); }, c); if (i >= 9 || i < 0) await page.evaluate((c) => window.__bzg.fire('lib', 'chain|step|' + c), c); else { await page.keyboard.press('h'); await page.keyboard.press(String(i + 1)); } }
+  ok(await page.evaluate(() => { const g = window.__bzg.R.ui.lib.chain.g; return g.done[0] && g.done[0].stars === 3; }), 'walking the shortest chain earns ★★★');
+  await page.keyboard.press('Enter');
+  await page.evaluate(() => { window.__bzg.R.ui.lib.chain.g = null; });
+
+  // Hot & Cold Compass: a guess far away tells distance and a direction; a tap on the capital finds it
+  await page.evaluate(() => window.__bzg.go('game', 'compass')); await page.click('[data-arg="compass|start"]'); await page.waitForSelector('.gmap.tap');
+  const cc0 = await page.evaluate(() => window.__bzg.R.ui.lib.compass.g.list[0]), cap = await page.evaluate((c) => window.__bzg.byCc[c].capAt[0], cc0);
+  await tapLL(cap[0] > 0 ? cap[0] - 25 : cap[0] + 25, cap[1]);
+  const g1 = await page.evaluate(() => window.__bzg.R.ui.lib.compass.g.guesses[0]);
+  ok(g1 && g1.km > 1000 && ['north', 'north-east', 'north-west', 'south', 'south-east', 'south-west'].includes(['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'][g1.p]) && /km away, to the/.test(await page.locator('#gm-q').innerText()), `a guess south of the capital is told “${['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'][g1 && g1.p]}”, and how far`);
+  await shot('33-compass');
+  await tapLL(cap[0], cap[1]);
+  ok(await page.evaluate(() => !!(window.__bzg.R.ui.lib.compass.g.done[0] || {}).found), 'a tap on the capital finds it');
+  await page.evaluate(() => { window.__bzg.R.ui.lib.compass.g = null; });
+
+  // Bigger or Smaller?: keys 1/2 answer; the reveal draws both at one true scale
+  await page.evaluate(() => window.__bzg.go('game', 'bigger')); await page.click('[data-arg="bigger|start"]'); await page.waitForSelector('.bg-pick');
+  await page.keyboard.press('1'); await page.waitForSelector('.gm-res');
+  ok(await page.locator('.bg-pick svg.shape').count() === 2, 'after an answer both countries are drawn at one true scale');
+  await shot('34-bigger'); await noSideways('bigger');
+  await page.evaluate(() => { window.__bzg.R.ui.lib.bigger.g = null; });
+
+  // Shape Detective: a clue costs a point; a wrong pick holds; the right one by number key
+  await page.evaluate(() => window.__bzg.go('game', 'shape')); await page.click('[data-arg="shape|start"]'); await page.waitForSelector('.sd-shape svg');
+  await page.keyboard.press('c'); ok(await page.locator('.sd-clues li').count() === 1, 'C shows a clue');
+  const sp = await page.evaluate(() => { const P = window.__bzg.R.ui.lib.shape.g.list[0]; return { ans: P.opts.indexOf(P.cc), wrong: P.opts.findIndex((x) => x !== P.cc) }; });
+  await page.keyboard.press(String(sp.wrong + 1)); ok(await page.locator('.sd-opts .opt.wrong').count() === 1, 'a wrong pick holds');
+  await page.keyboard.press(String(sp.ans + 1)); await page.waitForSelector('.gm-res');
+  ok(await page.evaluate(() => window.__bzg.R.ui.lib.shape.g.done[0].pts) === 3, 'one clue and one wrong pick: 5 − 2 = 3 points');
+  await shot('35-shape');
+  await page.evaluate(() => { window.__bzg.R.ui.lib.shape.g = null; });
+
+  // Sun Clock: a tap question answered on the right longitude; night is drawn only after
+  await page.evaluate(() => window.__bzg.go('game', 'sunclock')); await page.click('[data-arg="sunclock|start"]'); await page.waitForSelector('#gm-q');
+  await page.evaluate(() => { const g = window.__bzg.R.ui.lib.sunclock.g; g.list[0] = { k: 'rise', A: { n: 'New Delhi', at: [28.6, 77.2] }, target: -12.8 }; window.__bzg.R.render(); });
+  ok(await page.locator('.sc-night').count() === 0, 'night is not drawn before the answer');
+  await tapLL(10, -13);
+  ok(await page.evaluate(() => window.__bzg.R.ui.lib.sunclock.g.done[0].right) && await page.locator('.sc-night').count() === 1, 'sunrise when it is noon in Delhi: 90° west, near 13° W — then night is drawn');
+  await shot('36-sunclock');
+  await page.evaluate(() => { window.__bzg.R.ui.lib.sunclock.g = null; });
+
+  // Shelly's Trade Winds: start from Mumbai, plan by tapping, set sail by Enter, N months on, a port wakes
+  await page.evaluate(() => window.__bzg.go('game', 'tradewinds')); await page.waitForSelector('[data-arg="tradewinds|new|indian"]'); await shot('37-tw-title');
+  await page.click('[data-arg="tradewinds|new|indian"]'); await page.waitForSelector('.tw-map .gmap');
+  ok(await page.locator('.tw-pop').count() === 1 && /Age of Sail/.test(await page.locator('.tw-pop').innerText()), 'the voyage opens on its age: a painting and the history');
+  await page.waitForTimeout(300); await shot('37b-tw-age');
+  await page.keyboard.press('Enter'); await page.waitForSelector('.tw-pop', { state: 'detached' });
+  ok(await page.locator('.tw-port').count() === 60 && await page.locator('.tw-port.awake').count() === 1 && await page.locator('.tw-ship').count() === 1 && (await page.locator('.tw-count').textContent()) === '3', 'sixty ports, one awake, three ships at home (drawn as one, counted)');
+  ok(await page.evaluate(() => { const r = document.querySelector('.tw-ship use').getBoundingClientRect(); return r.width >= 14; }), 'a ship is big enough to see on this screen');
+  ok(await page.locator('.tw-wind').count() > 20, 'this month’s winds are drawn');
+  const tw = await page.evaluate(() => { const S = window.__bzg.R.ui.lib, d = window.__bzg.R.h.kids[0].lib.tradewinds.save; return { ship: window.__bzg.R.ui.lib.tradewinds.ship, home: d.home }; });
+  ok(!!tw.ship, 'a ship is chosen in the home port');
+  const tgt = await page.evaluate(() => window.__bzg.TW.PORTS.find((p) => p.n === 'Karachi').at);
+  await tapLL(tgt[0], tgt[1]);
+  await page.waitForFunction(() => { const u = window.__bzg.R.ui.lib.tradewinds; return u.dest != null && !!u.plan; }, null, { timeout: 5000 }).catch(() => {});
+  ok(await page.evaluate(() => { const u = window.__bzg.R.ui.lib.tradewinds; return u.dest != null && !!u.plan && window.__bzg.TW.PORTS[u.dest].n === 'Karachi'; }), 'a tap on Karachi plans the voyage');
+  ok(/will wake/.test(await page.locator('.tw-plan-card').innerText()), 'the plan says Karachi will wake (it does not grow tropical fruit)');
+  await shot('38-tw-plan'); await noSideways('trade winds');
+  await page.evaluate(() => document.activeElement && document.activeElement.blur());   // focus on the map, Enter means "choose here"
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => window.__bzg.R.h.kids[0].lib.tradewinds.save.ships.some((s) => s.voyage), null, { timeout: 5000 }).catch(() => {});
+  ok(await page.evaluate(() => window.__bzg.R.h.kids[0].lib.tradewinds.save.ships.some((s) => s.voyage)), 'Enter sets sail');
+  for (let i = 0; i < 4 && !(await page.evaluate(() => window.__bzg.R.h.kids[0].lib.tradewinds.save.ports.some((p, j) => p.awake && j !== window.__bzg.R.h.kids[0].lib.tradewinds.save.home))); i++) { await page.keyboard.press('n'); await page.waitForTimeout(700); }
+  ok(await page.evaluate(() => { const S = window.__bzg.R.h.kids[0].lib.tradewinds.save; return S.ports.filter((p) => p.awake).length === 2; }), 'N moves the months on, and Karachi wakes');
+  ok(/wakes!/.test(await page.locator('.tw-news').innerText()), 'Shelly brings the news, with the port’s own fact');
+  await page.waitForTimeout(300); await shot('39-tw-wake');
+
   /* B6: the back button never leaves the app */
   await page.evaluate(() => window.__bzg.go('home')); await nav('atlas'); await page.waitForSelector('.map-board');
   await nav('library'); await page.waitForSelector('.lib-grid');

@@ -18,9 +18,9 @@ import { newHousehold, newKid, kid, AVATARS, tick, session, GOALS, stopRec, scor
 import { byCc } from './geo.js';
 import { shuffle, rnd } from './rand.js';
 import * as V from './views.js';
-import { toolById, SHELF, loadTool } from './library/index.js';
+import { toolById, SHELF, loadTool, GAMES, GAME_IDS, metaOf } from './library/index.js';
 import { bindMaps, restoreMaps, zoomMap, resetMap } from './mapui.js';
-import { shapeName } from './map.js';
+import { shapeName, project } from './map.js';
 import { regionsOf } from './library/states.js';
 import { GKEY, photosOn } from './photos.js';
 import { THEMES, themeOf, isTheme, applyTheme, syncThemeColor } from './themes.js';
@@ -107,7 +107,9 @@ function go(nav, arg = null, fromHash = false) {
   /* a link to something that is not there lands on its shelf AND says so in the address (#/lib/nope was the audit's trap) */
   const asked = nav;
   if (nav === 'stop' && !byId[arg]) { nav = 'atlas'; arg = null; }
+  if (nav === 'lib' && GAME_IDS.has(arg)) nav = 'game';     // a game is on the Play shelf, wherever it was linked from
   if (nav === 'lib' && !SHELF.some((t) => t.id === arg)) { nav = 'library'; arg = null; }
+  if (nav === 'game' && !GAME_IDS.has(arg)) { nav = 'play'; arg = null; }
   if (nav === 'world' && !worldOf(arg)) { nav = 'atlas'; arg = null; }
   if (nav !== asked) fromHash = false;
   if (nav === 'grownups' && R.ui.nav !== 'grownups') { R.ui.gate = false; R.ui.gateIn = ''; }
@@ -138,11 +140,12 @@ function screen() {
     case 'expd': return X.viewExpedition(k, R.ui.arg, V, { part: R.ui.part });
     case 'proj': return X.viewProject(k, R.ui.arg, V);
     case 'library': return libraryView();
-    case 'lib': {
+    case 'play': return playView();
+    case 'lib': case 'game': {
       if (toolById[R.ui.arg]) return toolView(toolById[R.ui.arg]);
-      const meta = SHELF.find((t) => t.id === R.ui.arg); if (!meta) return libraryView();
-      loadTool(meta.id).then(() => { if (R.ui.nav === 'lib' && R.ui.arg === meta.id) render(); });
-      return `<section class="tool-page">${V.pageHead(`${gi(meta.glyph)} ${meta.name}`, '', V.back('nav', 'Library', 'library'))}<div class="card center-card"><p class="muted">Opening ${V.esc(meta.name)}…</p></div></section>`;
+      const meta = metaOf(R.ui.arg); if (!meta) return n === 'game' ? playView() : libraryView();
+      loadTool(meta.id).then(() => { if (isTool() && R.ui.arg === meta.id) render(); });
+      return `<section class="tool-page">${V.pageHead(`${gi(meta.glyph)} ${meta.name}`, '', n === 'game' ? V.back('nav', 'Play', 'play') : V.back('nav', 'Library', 'library'))}<div class="card center-card"><p class="muted">Opening ${V.esc(meta.name)}…</p></div></section>`;
     }
     case 'me': return C.viewMe();
     case 'settings': return C.viewSettings();
@@ -155,12 +158,25 @@ function screen() {
     default: return V.viewHome();
   }
 }
+/* the Play tab: the flagship as a big painted card, then every game */
+const isTool = () => R.ui.nav === 'lib' || R.ui.nav === 'game';
+const playView = () => {
+  const k = kid(R.h), best = (id) => { const d = (k.lib || {})[id] || {}; return d.best != null ? `Best: ${typeof d.best === 'number' ? d.best.toLocaleString('en-US') : d.best}` : d.plays ? `${d.plays} played` : 'New'; };
+  const [flag, ...rest] = GAMES;
+  return `<section class="play-page">${V.pageHead('Play')}
+    <button class="card play-hero" data-act="openGame" data-arg="${flag.id}"><span class="play-hero-art" style="background-image:url(art/${flag.art}.webp)"></span>
+      <span class="play-hero-t"><span class="kicker">The big game</span><b>${gi(flag.glyph)} ${V.esc(flag.name)}</b><span>${V.esc(flag.blurb)}</span><span class="chip">${best(flag.id)}</span></span></button>
+    <div class="play-grid">${rest.map((g) => `<button class="card play-card" data-act="openGame" data-arg="${g.id}"><span class="play-art" style="background-image:url(art/${g.art}.webp)"><span class="play-g" aria-hidden="true">${gi(g.glyph)}</span></span>
+      <span class="play-t"><b>${V.esc(g.name)}</b><span>${V.esc(g.blurb)}</span><i class="chip">${best(g.id)}</i></span></button>`).join('')}</div></section>`;
+};
 const libraryView = () => `<section>${V.pageHead('The Explorer’s Library')}
   <div class="lib-grid">${SHELF.map(V.libTile).join('')}</div></section>`;
+on('openGame', (id) => go('game', id));
 function toolView(tool) {
   let body;
   try { body = tool.view(libCtx(tool.TOOL.id)); } catch (e) { console.error(e); body = oops('Something went wrong in this tool. It is not your fault — try it again.', `<button class="btn primary" data-act="openTool" data-arg="${tool.TOOL.id}">Try again</button>`); }
-  return `<section class="tool-page tool-${tool.TOOL.id}">${V.pageHead(`${gi(tool.TOOL.glyph)} ${tool.TOOL.name}`, '', V.back('nav', 'Library', 'library'))}${body}</section>`;
+  const game = GAME_IDS.has(tool.TOOL.id);
+  return `<section class="tool-page tool-${tool.TOOL.id}${game ? ' game-page' : ''}">${V.pageHead(`${gi(tool.TOOL.glyph)} ${tool.TOOL.name}`, '', game ? V.back('nav', 'Play', 'play') : V.back('nav', 'Library', 'library'))}${body}</section>`;
 }
 
 let focusId = null, woPic = {}, autoReadAt = '', lastLoopTheme = null;
@@ -181,7 +197,7 @@ function render() {
   setCalm(!!Store.loadDevice('calm', false));
   if (kk) setSayRate((kk.prefs || {}).rate || 1);
   /* music: the world's loop, home's, or the games' (a run is a game) */
-  const nav = R.ui.nav, loop = nav === 'run' || (nav === 'lib' && R.ui.arg === 'geoguess' && ((R.ui.lib || {}).geoguess || {}).g) ? 'game' : nav === 'home' || nav === 'welcome' ? 'home' : th;
+  const nav = R.ui.nav, loop = nav === 'run' || (isTool() && C.inGame()) ? 'game' : nav === 'home' || nav === 'welcome' ? 'home' : th;
   M.want(loop, { on: !!Store.loadDevice('music', true), calm: !!Store.loadDevice('calm', false), vol: Store.loadDevice('vol', 40), sting: loop === th && lastLoopTheme !== th && lastLoopTheme != null });
   if (loop === th) lastLoopTheme = th;
   if (R.ui.coinToast) { const c = R.ui.coinToast; R.ui.coinToast = 0; setTimeout(() => toast(`+${c} Bizzing ${c === 1 ? 'coin' : 'coins'} for learning`), 0); }
@@ -361,7 +377,7 @@ on('startDrill', (id) => startDrill(id));
 on('trial', () => startRun('trial', 'Try one question', drill(byId['find-continent'], 1, 1), { sub: 'No explorer needed yet' }));
 /* the timed round of Where on Earth? (E2): a clock per card, ticking on screen only */
 setInterval(() => {
-  const g = R.ui.nav === 'lib' && R.ui.arg === 'geoguess' && ((R.ui.lib || {}).geoguess || {}).g;
+  const g = isTool() && R.ui.arg === 'geoguess' && ((R.ui.lib || {}).geoguess || {}).g;
   if (!g || !g.timed || g.i >= g.cards.length || g.done[g.i]) return;
   const left = Math.max(0, Math.ceil((g.deadline - Date.now()) / 1000)), el = root.querySelector('.wo-clock');
   if (el) { el.textContent = `${left}s`; el.classList.toggle('low', left <= 10); }
@@ -473,7 +489,7 @@ function mapTap(t) {
     return;
   }
   if (R.ui.nav === 'proj') { fire('proj', 'tap|' + JSON.stringify(t)); return; }
-  if (R.ui.nav === 'lib' && toolById[R.ui.arg]) { toolById[R.ui.arg].act('tap', JSON.stringify(t), libCtx(R.ui.arg)); buzz(12); render(); }
+  if (isTool() && toolById[R.ui.arg]) { toolById[R.ui.arg].act('tap', JSON.stringify(t), libCtx(R.ui.arg)); buzz(12); render(); }
 }
 /* a small, gentle buzz where the device has one (never on a wrong answer) */
 const buzz = (ms) => { try { if (R.sound && navigator.vibrate) navigator.vibrate(ms); } catch (_) {} };
@@ -669,7 +685,7 @@ addEventListener('keydown', (e) => {
     return;
   }
   if (R.run && R.run.over && e.key === 'Enter' && !typing) { e.preventDefault(); fire('endRun'); return; }
-  if (R.ui.nav === 'lib' && toolById[R.ui.arg] && toolById[R.ui.arg].key) {
+  if (isTool() && toolById[R.ui.arg] && toolById[R.ui.arg].key) {
     if ((!typing || e.key === 'Enter' || e.key === 'Escape') && toolById[R.ui.arg].key(e, libCtx(R.ui.arg))) { e.preventDefault(); render(); }
   }
 });
@@ -713,7 +729,8 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
 
 /* the family's activity feed: active minutes for the Hive, per child, never sent anywhere */
 const act = trackActivity(APP, () => (kid(R.h) || {}).name);
-window.__bzg = { R, go, fire, music: M.musicState, next: nextStep };   // for test/ui.mjs, which drives the built app
+window.__bzg = { R, go, fire, music: M.musicState, next: nextStep, project, byCc, SHELF,
+  NB: (cc) => toolById.chain.NB[cc], get TW() { return toolById.tradewinds; } };   // for test/ui.mjs, which drives the built app
 /* the tools kept out of the first download arrive once the app is idle, so they work offline too */
 setTimeout(() => (window.requestIdleCallback || ((f) => setTimeout(f, 1)))(() => { loadTool('geoguess'); loadTool('time'); }), 4000);
 R.ui.nav = kid(R.h) ? 'home' : 'welcome';

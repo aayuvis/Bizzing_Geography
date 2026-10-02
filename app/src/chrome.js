@@ -30,13 +30,14 @@ export const TABS = [
   { k: 'atlas', n: 'Atlas', icon: 'map' },
   { k: 'exp', n: 'Expeditions', icon: 'flag' },
   { k: 'library', n: 'Library', icon: 'book' },
+  { k: 'play', n: 'Play', icon: 'play' },
 ];
-const NAV_OF = { lib: 'library', stop: 'atlas', world: 'atlas', road: 'atlas', expd: 'exp', proj: 'exp', run: null, me: null, grownups: null, privacy: null, settings: null, shop: null, collection: null, medals: null, help: null, search: null, mistakes: null };
+const NAV_OF = { lib: 'library', game: 'play', stop: 'atlas', world: 'atlas', road: 'atlas', expd: 'exp', proj: 'exp', run: null, me: null, grownups: null, privacy: null, settings: null, shop: null, collection: null, medals: null, help: null, search: null, mistakes: null };
 
 /* ------------------------------------------------------------------ the top bar (§3) */
 const HEX = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3l11.3 6.5v13L16 29 4.7 22.5v-13z" class="hx"/><path d="M16 10.5l5 2.9v5.8l-5 2.9-5-2.9v-5.8z" class="hx2"/></svg>';
 export function topBar(k) {
-  const inRun = R.ui.nav === 'run' || (R.ui.nav === 'lib' && R.ui.arg === 'geoguess' && !!((R.ui.lib || {}).geoguess || {}).g);
+  const inRun = inGame();
   const coins = k ? balance(k.name) : 0;
   return `<header class="top">
     ${inRun ? '' : `<a class="hive" href="${HIVE}" aria-label="Back to the Bizzing Hive" title="The Bizzing Hive — your day">${HEX}</a>`}
@@ -238,7 +239,7 @@ export const viewHelp = () => `<section class="narrow prose">${head('Help')}
   <div class="card">${shelly('point', 110, 'help-shelly')}
     <p><b>Hello — I’m Shelly.</b> My shell is a globe, and I know the way round it. Here is how Bizzing Geography works.</p>
     <p><b>Continue</b> on Home always takes you to the next stop on your journey. A <b>stop</b> is one small idea with ten questions; seven right passes it.</p>
-    <p><b>The Atlas</b> is the island of ten places; <b>Expeditions</b> are 20–30 day journeys where you make things; <b>the Library</b> has Where on Earth?, capitals, flags, landmarks and more.</p>
+    <p><b>The Atlas</b> is the island of ten places; <b>Expeditions</b> are 20–30 day journeys where you make things; <b>the Library</b> has capitals, flags, landmarks, Earth Through Time and more; <b>Play</b> has the games — Shelly’s Trade Winds, Where on Earth? and five more.</p>
     <p><b>Bizzing coins</b> are earned for learning — the same coins in every Bizzing app — and spent in the <b>Shop</b> at printed prices on avatars, worlds and map looks. Nothing is ever random.</p>
     <p><b>Hints</b> (the bulb on a question) take one wrong choice away or name the continent; a right answer after a hint pays no coin. <b>My mistakes</b> brings back what you missed, a day or more later.</p>
     <p>Every map is drawn by the app from open data, with India’s official depiction. Every painting says it is a painting.</p>
@@ -261,7 +262,14 @@ function firstPop(k) {
    byte for byte): top bar, tab row, phone tab bar and ☰ drawer. This app gives it its words,
    its mascot, its tabs and its routes — never its geometry. */
 const NAV_ACTIVE = (n) => (NAV_OF[n] !== undefined ? NAV_OF[n] : n) || '';
-export function inGame() { return R.ui.nav === 'run' || (R.ui.nav === 'lib' && R.ui.arg === 'geoguess' && !!((R.ui.lib || {}).geoguess || {}).g); }
+/* in a game: a quiz run, or any Play game (and the Library's tools that play) between its title and finish cards.
+   Every game keeps its live state in ui.g and marks it over (or runs past its last card) at the end. */
+export function inGame() {
+  if (R.ui.nav === 'run') return true;
+  if (R.ui.nav !== 'lib' && R.ui.nav !== 'game') return false;
+  const g = ((R.ui.lib || {})[R.ui.arg] || {}).g;
+  return !!g && !g.over && !(g.cards && g.i >= g.cards.length);
+}
 export const FOOT = () => `Bizzing Geography · part of the Bizzing family with
     <a href="https://www.bizzingbee.com/" rel="noopener">Bizzing Bee</a>,
     <a href="https://aayuvis.github.io/bizzingindia.com/" rel="noopener">Bizzing India</a>,
@@ -277,13 +285,15 @@ export function shell(body, { home = false } = {}) {
   const out = famShell({
     app: 'geography', name: 'Geography', mascot: 'mascot/shelly-head.webp', search: 'Search places, stops, words',
     tabs: [{ id: 'home', label: 'Home', icon: 'home', href: '#/home' }, { id: 'atlas', label: 'Atlas', icon: 'map', href: '#/atlas' },
-      { id: 'exp', label: 'Expeditions', icon: 'compass', href: '#/exp' }, { id: 'library', label: 'Library', icon: 'book', href: '#/library' }],
+      { id: 'exp', label: 'Expeditions', icon: 'compass', href: '#/exp' }, { id: 'library', label: 'Library', icon: 'book', href: '#/library' },
+      { id: 'play', label: 'Play', icon: 'play', href: '#/play' }],
     active: NAV_ACTIVE(R.ui.nav), coins: k ? balance(k.name) : 0, dark: dark(), query: R.ui.nav === 'search' ? (R.ui.q || '') : '',
     kid: k ? { name: k.name, avatar: `avatars/${k.avatar}.webp` } : { name: 'Explorer' }, inRun: run,
     drawer: { sub: k ? `Level ${k.road.level} · ${rankOf(k.xp).n}` : 'Welcome',
       app: [{ icon: 'path', label: 'Your journey', sub: 'the ten levels, stop by stop', href: '#/road' },
         { icon: 'star', label: 'My mistakes', sub: due ? `${due} ready to try again` : 'misses come back after a gap', href: '#/mistakes' },
-        { icon: 'globe', label: 'Where on Earth?', sub: 'pin a real place on the map', href: '#/lib/geoguess' },
+        { icon: 'play', label: 'Shelly’s Trade Winds', sub: 'sail the real winds, wake the world’s ports', href: '#/game/tradewinds' },
+        { icon: 'globe', label: 'Where on Earth?', sub: 'pin a real place on the map', href: '#/game/geoguess' },
         { icon: 'search', label: 'Search', sub: 'places, stops, words and tools', href: '#/search' }] },
     content: `${pre}${body}${home ? '' : `<footer class="foot">${FOOT()}</footer>`}`,
   });
