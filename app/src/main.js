@@ -17,19 +17,31 @@ import { GKEY, photosOn } from './photos.js';
 import { THEMES, themeOf, isTheme, applyTheme, syncThemeColor } from './themes.js';
 import { syncScene } from './scenes.js';
 import * as X from './expeditions.js';
+import { APP, trackActivity, trackMilestone, familyOff } from './family.js';
+import { nextStep } from './next.js';
+import { demoHousehold } from './demo.js';
+import { expeditionById } from './data/expeditions.js';
+import { dayKey } from './rand.js';
 
 const root = document.getElementById('app');
 
 /* ------------------------------------------------------------- boot */
 
-R.h = Store.loadHousehold() || newHousehold();
+/* ?demo: a sample explorer with weeks of made-up progress, held in memory only —
+   never saved, never written to the family's shared feeds (standard §14).
+   ?from=hive: the child came from the Hive; a chip goes back to their day. */
+const QS = new URLSearchParams(location.search);
+R.demo = QS.has('demo');
+try { if (QS.get('from') === 'hive') sessionStorage.setItem('bzg.fromHive', '1'); R.fromHive = sessionStorage.getItem('bzg.fromHive') === '1'; } catch (_) { R.fromHive = QS.get('from') === 'hive'; }
+familyOff(R.demo);
+R.h = R.demo ? demoHousehold() : Store.loadHousehold() || newHousehold();
 R.sound = Store.loadDevice('sound', true); setSound(R.sound);
 const mode = Store.loadDevice('mode', null);
 const sysDark = matchMedia('(prefers-color-scheme: dark)');
 document.documentElement.setAttribute('data-mode', mode || (sysDark.matches ? 'dark' : 'light'));
 sysDark.addEventListener && sysDark.addEventListener('change', (e) => { if (!Store.loadDevice('mode', null)) document.documentElement.setAttribute('data-mode', e.matches ? 'dark' : 'light'); });
 
-function save() { Store.saveHousehold(R.h); }
+function save() { if (!R.demo) Store.saveHousehold(R.h); }
 
 /* The Library's context: everything a tool may touch, and no more. */
 function libCtx(id) {
@@ -54,7 +66,10 @@ function writeHash() {
   const h = '#/' + nav + (arg ? '/' + encodeURIComponent(arg) : '');
   if (location.hash !== h) { selfHash = true; location.hash = h; }
 }
+/* #/continue (from the Hive): straight to the Continue card's target */
+function doContinue() { const k = kid(R.h); if (!k) return go(R.h.kids.length ? 'home' : 'welcome'); const n = nextStep(k); fire(n.act, n.arg); }
 function readHash() {
+  if (/^#\/continue\b/.test(location.hash || '')) { R.ui.nav = 'home'; return doContinue(); }
   const m = /^#\/([a-z]+)(?:\/(.+))?$/.exec(location.hash || '');
   if (m) go(m[1], m[2] ? decodeURIComponent(m[2]) : null, true); else render();
 }
@@ -65,7 +80,7 @@ function go(nav, arg = null, fromHash = false) {
   if (nav !== 'run' && R.run) R.run = null;
   if (nav === 'stop' && !byId[arg]) nav = 'atlas';
   if (nav === 'grownups' && R.ui.nav !== 'grownups') { R.ui.gate = false; R.ui.gateIn = ''; }
-  R.ui.nav = nav; R.ui.arg = arg; R.ui.confirm = null;
+  R.ui.nav = nav; R.ui.arg = arg; R.ui.confirm = null; R.ui.menu = false;
   hush();
   if (!fromHash) writeHash();
   render();
@@ -78,8 +93,8 @@ function screen() {
   const k = kid(R.h), n = R.ui.nav;
   if (n === 'privacy') return V.viewPrivacy();
   if (n === 'grownups') return V.viewGrownups();
-  if (!k || n === 'welcome') return V.viewWelcome();
   if (n === 'run' && R.run) return V.viewRun();
+  if (!k || n === 'welcome') return V.viewWelcome();
   switch (n) {
     case 'atlas': return V.viewAtlas();
     case 'world': return worldOf(R.ui.arg) ? V.viewWorld(R.ui.arg) : V.viewAtlas();
@@ -142,7 +157,7 @@ function answer(given) {
   run.fb = { right, given, givenName };
   if (q.kind === 'map' && !q.targetName) q.targetName = byCc[q.target] ? byCc[q.target].name : q.target;
   run.results.push({ right });
-  tick(k, right, 1);
+  if (k && run.kind !== 'trial') tick(k, right, 1);
   if (run.kind === 'lib' && toolById[run.lib] && toolById[run.lib].answered) toolById[run.lib].answered(q, right, libCtx(run.lib));
   save();
   right ? sfx.good() : sfx.bad();
@@ -159,6 +174,7 @@ function nextQ() {
 function finish(run) {
   run.over = true;
   const k = kid(R.h), right = run.results.filter((r) => r.right).length, n = run.results.length;
+  if (run.kind === 'trial') { R.trial = { right, n }; run.summary = { lines: [right ? 'That is how it works: read, think, answer. Make your explorer and the journey starts here.' : 'Not this time — that is how you learn. Make your explorer and the journey starts here.'], buttons: [] }; return; }
   if (n) session(k);   // one notch on Today’s ring
   if (run.kind === 'drill') {
     const res = scoreRun(k, run.stop, run.lv, right, n);
@@ -167,13 +183,21 @@ function finish(run) {
     if (res.passed && rd.next) run.summary.buttons = [V.btn(`Next station: ${byId[rd.next.stop].title} →`, 'openStop', rd.next.stop, 'big')];
     if (res.passed && rd.all) run.summary.lines.push(`Every station on Level ${rd.L.n} is done. Take the level check to open the next level.`);
     if (res.gained) { sfx.level(); confetti(30); }
+    k.last = { k: res.passed ? 'stop' : 'try', title: byId[run.stop].title, at: Date.now() };
+    if (res.passed && res.gained) trackMilestone(APP, k.name, 'stop', `Passed ${byId[run.stop].title}`);
   } else if (run.kind === 'check') {
     const pass = right / n >= CHECK_PASS;
-    if (pass) { const L = passLevel(k); run.summary = { stars: 3, lines: [`Level check passed. Welcome to Level ${L}: ${levelOf(L).name}.`] }; sfx.level(); confetti(60); }
+    if (pass) { const L = passLevel(k); k.last = { k: 'check', title: `Level ${L}`, at: Date.now() }; trackMilestone(APP, k.name, 'band', `Reached Level ${L}: ${levelOf(L).name}`); run.summary = { stars: 3, lines: [`Level check passed. Welcome to Level ${L}: ${levelOf(L).name}.`] }; sfx.level(); confetti(60); }
     else run.summary = { stars: right / n >= 0.6 ? 1 : 0, lines: [`Ten right opens the next level. Walk a few more stations on your road, then try again.`] };
   } else if (run.kind === 'sprint') {
     run.summary = X.finishDay(k, run, right, n);
+    k.last = { k: 'exp', title: (expeditionById[run.exp] || {}).name || run.title, at: Date.now() };
     if (run.summary.big) { sfx.level(); confetti(40); }
+  } else if (run.kind === 'trip') {
+    k.trips = k.trips || {}; k.trips[dayKey()] = { n, right };
+    const ks = Object.keys(k.trips).sort(); while (ks.length > 30) delete k.trips[ks.shift()];
+    run.summary = { lines: [`You practised ${[...new Set(run.items.map((q) => q.from).filter(Boolean))].join(', ')}.`, 'That is today’s trip done. Nothing more is needed — and another is always here.'] };
+    if (right >= n - 1) { sfx.level(); confetti(25); }
   } else if (run.kind === 'lib') {
     const t = toolById[run.lib];
     run.summary = t && t.done ? t.done(run, libCtx(run.lib)) : null;
@@ -197,6 +221,7 @@ on('proj', (a) => { const i = String(a).indexOf('|'), msg = X.projAct(kid(R.h), 
 on('projDone', () => {
   const k = kid(R.h), msg = X.projAct(k, R.ui.arg, 'done');
   if (msg !== 'made') { toast(msg); return; }
+  k.last = { k: 'made', title: (X.projOf(...String(R.ui.arg).split('|')) || { d: {} }).d.name || 'your project', at: Date.now() };
   session(k); save(); sfx.level(); confetti(50); toast('Made! It is in your expedition gallery.');
   go('expd', String(R.ui.arg).split('|')[0]);
 });
@@ -210,7 +235,24 @@ on('expDay', (arg) => {
   if (r.go) go(r.go[0], r.go[1]); else render();
 });
 on('learned', (id) => { const r = stopRec(kid(R.h), id); if (!r.learned) { r.learned = true; r.stars = Math.max(r.stars, 1); save(); sfx.coin(); } render(); });
-on('startDrill', (id) => { const s = byId[id], k = kid(R.h), lv = lvFor(k, id); startRun('drill', s.title, drill(s, lv, 10), { stop: id, lv, sub: `${s.glyph} ${['', 'First look', 'Deeper', 'Stretch'][lv]}` }); });
+function startDrill(id, extra = {}) { const s = byId[id], k = kid(R.h), lv = lvFor(k, id); startRun('drill', s.title, drill(s, lv, 10), { stop: id, lv, sub: `${s.glyph} ${['', 'First look', 'Deeper', 'Stretch'][lv]}`, ...extra }); }
+on('startDrill', (id) => startDrill(id));
+/* try one question before making an explorer (A5): nothing is saved until sign-up */
+on('trial', () => startRun('trial', 'Try one question', drill(byId['find-continent'], 1, 1), { sub: '🌍 No explorer needed yet' }));
+/* the 5-minute trip (E1): three from what you have passed, one new, one on the map — then it ends */
+on('trip', () => {
+  const k = kid(R.h), passed = shuffle(Object.keys(k.stops).filter((id) => byId[id] && k.stops[id].stars >= 2), rnd), rd = road(k), items = [];
+  const tag = (qs, id) => qs.map((q) => ({ ...q, from: byId[id].title }));
+  for (const id of passed.slice(0, 3)) items.push(...tag(drill(byId[id], lvFor(k, id), 1), id));
+  const nx = rd.next ? rd.next.stop : rd.steps[0].stop;
+  items.push(...tag(drill(byId[nx], lvFor(k, nx), 1), nx));
+  const mapStop = shuffle([...passed, nx], rnd).find((id) => drill(byId[id], lvFor(k, id), 6).some((q) => q.kind === 'map'));
+  if (mapStop) { const q = drill(byId[mapStop], lvFor(k, mapStop), 12).find((x) => x.kind === 'map'); if (q) items.push({ ...q, from: byId[mapStop].title }); }
+  while (items.length < 5) items.push(...tag(drill(byId[nx], lvFor(k, nx), 1), nx));
+  startRun('trip', '5-minute trip', items.slice(0, 5), { sub: '⏱️ Review · one new · one map' });
+});
+on('openWord', (w) => { libCtx('dictionary').ui.q = w; go('lib', 'dictionary'); });
+on('menu', () => { R.ui.menu = !R.ui.menu; render(); if (R.ui.menu) { const f = root.querySelector('.who-menu button'); if (f) f.focus(); } });
 on('levelCheck', () => {
   const k = kid(R.h), L = levelOf(k.road.level), items = [];
   for (const s of shuffle(L.steps, rnd)) items.push(...drill(byId[s.stop], s.lv, 1));
@@ -220,8 +262,8 @@ on('levelCheck', () => {
 on('lvShow', (n) => { R.ui.lvShow = +n; render(); });
 on('choose', (a) => answer(a));
 on('nextQ', () => nextQ());
-on('quitRun', () => { const r = R.run; R.run = null; if (r && r.kind === 'sprint') return go('expd', r.exp); if (r && r.kind === 'lib') return go('lib', r.lib); if (r && r.kind === 'drill') return go('stop', r.stop); go(r && r.kind === 'check' ? 'road' : 'home'); });
-on('endRun', () => { const r = R.run; R.run = null; if (r && r.kind === 'sprint') return go('expd', r.exp); if (r && r.kind === 'lib') return go('lib', r.lib); if (r && r.kind === 'drill') return go('stop', r.stop); go(r && r.kind === 'check' ? 'road' : 'home'); });
+on('quitRun', () => { const r = R.run; R.run = null; if (r && r.kind === 'trial') return go('welcome'); if (r && r.kind === 'sprint') return go('expd', r.exp); if (r && r.kind === 'lib') return go('lib', r.lib); if (r && r.kind === 'drill') return go('stop', r.stop); go(r && r.kind === 'check' ? 'road' : 'home'); });
+on('endRun', () => { const r = R.run; R.run = null; if (r && r.kind === 'trial') { R.ui.draft = { step: 0, name: '', band: '', avatar: V.STARTER_AVATARS[0], theme: 'atlas' }; return go('welcome'); } if (r && r.kind === 'sprint') return go('expd', r.exp); if (r && r.kind === 'lib') return go('lib', r.lib); if (r && r.kind === 'drill') return go('stop', r.stop); go(r && r.kind === 'check' ? 'road' : 'home'); });
 on('mapZoom', (a) => { const [key, how] = a.split('|'); zoomMap(root, key, how); });
 on('lib', (a) => {
   const [id, name, ...rest] = a.split('|'), tool = toolById[id];
@@ -285,9 +327,14 @@ on('createKid', () => {
   const d = R.ui.draft; if (!d || !d.name.trim() || !d.band) return;
   const k = newKid(d.name, d.band, d.avatar);
   if (d.theme) k.prefs.theme = d.theme;
-  R.h.kids.push(k); R.h.active = k.id; R.ui.draft = null; save(); sfx.level(); confetti(40); go('home');
+  R.h.kids.push(k); R.h.active = k.id; R.ui.draft = null;
+  if (R.trial) { tick(k, R.trial.right > 0, 1); R.trial = null; }   // the question tried first counts
+  save(); sfx.level(); confetti(40);
+  /* the welcome ends IN the first station's first question (A3), with its lesson as a why-card above it */
+  const st = road(k).next; if (st) return startDrill(st.stop, { intro: true });
+  go('home');
 });
-on('switchKid', (id) => { R.h.active = id; R.ui.lib = {}; save(); go('home'); });
+on('switchKid', (id) => { if (!R.h.kids.some((x) => x.id === id)) return; R.h.active = id; R.ui.lib = {}; R.ui.menu = false; save(); go('home'); });
 on('setAv', (a) => { if (AVATARS.includes(a)) { kid(R.h).avatar = a; save(); render(); } });
 on('goal', (n) => { const k = kid(R.h); if (GOALS.includes(+n)) { k.prefs.goal = +n; save(); render(); } });
 on('still', () => { Store.saveDevice('still', !Store.loadDevice('still', false)); render(); });
@@ -305,6 +352,8 @@ on('themes', () => {
 
 /* chrome */
 on('sound', () => { R.sound = !R.sound; setSound(R.sound); Store.saveDevice('sound', R.sound); render(); });
+/* the menu closes on a tap outside it, or Escape */
+root.addEventListener('click', (e) => { if (R.ui.menu && !e.target.closest('.who-menu, .who')) { R.ui.menu = false; render(); } }, true);
 on('mode', () => {
   const m = document.documentElement.getAttribute('data-mode') === 'dark' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-mode', m); Store.saveDevice('mode', m); syncThemeColor();
@@ -361,6 +410,7 @@ root.addEventListener('change', (e) => { if (e.target.dataset.act === 'tester') 
 
 addEventListener('keydown', (e) => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (R.ui.menu && e.key === 'Escape') { R.ui.menu = false; render(); const w = root.querySelector('.who'); if (w) w.focus(); return; }
   const typing = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA');
   if (R.ui.nav === 'grownups' && e.key === 'Enter' && e.target.id === 'pin') { fire('gate'); return; }
   if (e.key === 'Enter' && e.target.id === 'kname') { fire('obNext'); return; }
@@ -416,6 +466,8 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
   navigator.serviceWorker.addEventListener('controllerchange', () => { if (!reloaded) { reloaded = true; location.reload(); } });
 }
 
-window.__bzg = { R, go, fire };   // for test/ui.mjs, which drives the built app
+/* the family's activity feed: active minutes for the Hive, per child, never sent anywhere */
+const act = trackActivity(APP, () => (kid(R.h) || {}).name);
+window.__bzg = { R, go, fire, activityTick: act.tick };   // for test/ui.mjs, which drives the built app
 R.ui.nav = kid(R.h) ? 'home' : 'welcome';
 if (location.hash) readHash(); else render();

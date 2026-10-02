@@ -72,7 +72,13 @@ async function run(vp, tag) {
   await page.goto(`http://127.0.0.1:${port}/Bizzing_Geography/`);
   await page.waitForSelector('.welcome');
   await shot('01-welcome'); await noSideways('landing');
-  await page.click('[data-act=obStart]');
+  /* A5: try one question before any explorer exists; nothing is saved until sign-up */
+  await page.click('[data-act=trial]'); await page.waitForSelector('.qcard');
+  await page.evaluate(() => { const q = window.__bzg.R.run.items[0]; window.__bzg.fire('choose', q.kind === 'map' ? q.ok[0] : q.ans); });
+  await page.waitForTimeout(1700); await page.evaluate(() => { const r = window.__bzg.R.run; if (r && !r.over) window.__bzg.fire('nextQ'); });
+  ok(await page.evaluate(() => window.__bzg.R.run && window.__bzg.R.run.over && window.__bzg.R.h.kids.length === 0), 'a question can be tried before making an explorer, and makes none');
+  ok(await page.evaluate(() => !(JSON.parse(localStorage.getItem('bzg_household') || '{}').kids || []).length), 'trying first saves no child');
+  await page.click('[data-act=endRun]'); await page.waitForSelector('#kname');
   ok(await page.locator('[data-act=obNext]').isDisabled(), 'Next waits for a name');
   await page.fill('#kname', 'Ahana'); await page.press('#kname', 'Enter');
   await page.waitForSelector('[data-act=draftBand]'); await shot('01b-age');
@@ -85,9 +91,24 @@ async function run(vp, tag) {
   await shot('01c-world'); await noSideways('welcome');
   await page.click('[data-act=draftTheme][data-arg="atlas"]');
   await page.click('[data-act=createKid]');
+  /* A3: the welcome ends IN the first station's first question, its lesson as a why-card above it */
+  await page.waitForSelector('.runner .qcard');
+  ok(await page.locator('.why-card').count() === 1, 'the first question arrives with zero taps after setup, and its "why" above it');
+  ok(await page.evaluate(() => window.__bzg.R.run.kind === 'drill'), 'it is a station drill');
+  ok(await page.evaluate(() => window.__bzg.R.h.kids[0].days && Object.values(window.__bzg.R.h.kids[0].days).some((d) => d.q >= 1)), 'the question tried first is counted on the new explorer');
+  await page.click('[data-act=quitRun]'); await page.evaluate(() => window.__bzg.go('home'));
   await page.waitForSelector('.home');
   await page.waitForTimeout(300); await shot('02-home'); await noSideways('home');
   ok(await page.evaluate(() => window.__bzg.R.h.kids[0].road.level) === 3, 'an 8–10 starts on Level 3');
+  /* B2: exactly one filled primary button on home — the Continue card, chosen by next.js */
+  ok(await page.evaluate(() => [...document.querySelectorAll('.btn.primary')].filter((b) => b.offsetParent).length) === 1, 'home has exactly one primary button');
+  ok(await page.evaluate(() => { const b = document.querySelector('.hm-cta'); return b && b.getBoundingClientRect().bottom <= innerHeight; }), 'Continue is above the fold');
+  ok(await page.evaluate(() => { const b = document.querySelector('.hm-cta'); return b.dataset.act === 'openStop' && !!b.dataset.arg; }), 'Continue opens the next station');
+  ok(await page.locator('.hm-ways > *').count() <= 6, 'six ways in at most');
+  ok(await page.locator('.top .hive').getAttribute('href') === 'https://aayuvis.github.io/Bizzing_Schedule/', 'the top bar goes back to the Hive');
+  /* the activity feed (O3): an active minute is written for this child */
+  await page.mouse.click(5, 300); await page.evaluate(() => window.__bzg.activityTick());
+  ok(await page.evaluate(() => { const f = JSON.parse(localStorage.getItem('bizzing.activity') || '{}'); return (f.s || []).some((x) => x.a === 'geography' && x.who === 'Ahana' && x.m >= 1); }), 'bizzing.activity gets an active minute for this child');
 
   await nav('atlas'); await page.waitForSelector('.map-board');
   await page.waitForTimeout(400); await shot('03-atlas'); await noSideways('atlas');
@@ -322,11 +343,11 @@ async function run(vp, tag) {
   ok(await page.evaluate(() => window.__bzg.R.ui.lib.capitals.ask.state) === 'picked', 'picking Buenos Aires is right');
   ok(await page.evaluate(() => (window.__bzg.R.h.kids[0].lib.capitals.box || {}).AR) === 1, 'a right pick climbs the capital’s box');
 
-  // themes: the chip on home opens the picker; a choice restyles the page AND the map, and belongs to the child
-  await page.evaluate(() => window.__bzg.go('home')); await page.waitForSelector('.theme-chip');
+  // themes: the top bar's theme button opens the picker; a choice restyles the page AND the map, and belongs to the child
+  await page.evaluate(() => window.__bzg.go('home')); await page.waitForSelector('.top .tool[data-act=themes]');
   ok(await page.evaluate(() => document.documentElement.dataset.theme) === 'atlas', 'a new child starts in Old Atlas');
   ok(await page.locator('#scene .scn').count() >= 40 && !(await page.evaluate(() => document.documentElement.classList.contains('sc-calm'))), 'home shows a full, moving scene');
-  await page.click('.theme-chip'); await page.waitForSelector('.theme-card[aria-checked="true"]');
+  await page.click('.top .tool[data-act=themes]'); await page.waitForSelector('.theme-card[aria-checked="true"]');
   ok(await page.locator('.theme-card').count() === 6, 'the picker offers six themes');
   const seaBefore = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--sea').trim());
   await page.click('#theme-ocean'); await page.waitForTimeout(150);
@@ -341,7 +362,7 @@ async function run(vp, tag) {
   ok(await page.locator('.av-packs .av-pick').count() === 40, 'the avatar picker offers 40 faces');
   await page.click('#theme-atlas'); await page.waitForTimeout(100);
   // above the fold: on every key screen the core content starts in the top half of the first screen
-  for (const [nav, arg, sel, what] of [['home', null, '.h-ring [data-act]', 'the Start button'], ['home', null, '.h-journey', 'the journey card'], ['atlas', null, '.map-board', 'the island map'], ['road', null, '.jsteps', 'the road'],
+  for (const [nav, arg, sel, what] of [['home', null, '.hm-go', 'the Continue card'], ['atlas', null, '.map-board', 'the island map'], ['road', null, '.jsteps', 'the road'],
     ['exp', null, '.crs-card', 'the first expedition'], ['expd', 'capitals', '.crs-board', 'the expedition board'], ['library', null, '.lib-tile', 'the first tool'], ['lib', 'capitals', '.gmap', 'the map'], ['lib', 'time', '.t-stage', 'the painting'], ['lib', 'geoguess', '.t-geo-intro .btn, .wo', 'Play or the game'], ['lib', 'dictionary', '#t-dictionary-q', 'the search box']]) {
     await page.evaluate(([n, a]) => { window.__bzg.go(n, a); scrollTo(0, 0); }, [nav, arg]); await page.waitForTimeout(120);
     const top = await page.evaluate((sel) => { const e = document.querySelector(sel); return e ? e.getBoundingClientRect().top : 1e9; }, sel);
@@ -358,6 +379,32 @@ async function run(vp, tag) {
   ok(await page.evaluate(() => [...document.querySelectorAll('[data-act=tester], [data-act=streetview]')].map((i) => i.closest('label')).every((l) => l && l.getBoundingClientRect().width > 240)), 'grown-ups settings: every switch label has room to read (was squeezed into 50px)');
   ok(await page.evaluate((W) => [...document.querySelectorAll('.top button, .top a')].filter((b) => b.offsetParent).every((b) => { const r = b.getBoundingClientRect(); return r.left >= 0 && r.right <= W; }), W), 'the top bar fits the device: every button, the lock included, is whole on screen');
   ok((await page.locator('.report').innerText()).includes('Ahana'), 'the grown-ups page reports the child');
+  /* B7: a second explorer, switched from the top bar; switching never mixes their data */
+  await page.evaluate(() => window.__bzg.go('welcome')); await page.waitForSelector('#kname');
+  await page.fill('#kname', 'Kabir'); await page.press('#kname', 'Enter'); await page.click('[data-act=draftBand][data-arg="6-7"]');
+  await page.click('[data-act=obNext]'); await page.click('[data-act=createKid]'); await page.waitForSelector('.runner');
+  await page.click('[data-act=quitRun]'); await page.evaluate(() => window.__bzg.go('home')); await page.waitForSelector('.hm');
+  await page.click('.top .who'); await page.waitForSelector('.who-menu');
+  ok(await page.locator('.who-menu .wm-kid').count() === 2, 'the top bar menu lists both explorers');
+  await shot('26-who-menu'); await noSideways('who menu');
+  const xpA = await page.evaluate(() => window.__bzg.R.h.kids.find((k) => k.name === 'Ahana').xp);
+  await page.click('.who-menu .wm-kid:has-text("Ahana")'); await page.waitForSelector('.hm');
+  ok(await page.evaluate(() => { const R = window.__bzg.R; return R.h.kids.find((k) => k.id === R.h.active).name; }) === 'Ahana', 'one tap switches explorer');
+  ok(await page.evaluate(() => window.__bzg.R.h.kids.find((k) => k.name === 'Kabir').xp) <= 1 && xpA > 1 && (await page.locator('.hm-say').innerText()).includes('Ahana'), 'switching never mixes their progress');
+  await page.keyboard.press('Escape');
+  /* #/continue from the Hive goes straight to the Continue target */
+  const want = await page.evaluate(() => document.querySelector('.hm-cta').dataset.arg);
+  await page.goto(`http://127.0.0.1:${port}/Bizzing_Geography/?from=hive#/continue`); await page.waitForSelector('.content');
+  ok(await page.evaluate((w) => window.__bzg.R.ui.nav === 'stop' && window.__bzg.R.ui.arg === w, want), '#/continue opens the Continue card’s target');
+  ok(await page.locator('.hive-chip').count() === 1, '?from=hive shows “back to my day”');
+  /* ?demo: a labelled sample with weeks of progress that never touches the real household or the shared feeds */
+  const before = await page.evaluate(() => [localStorage.getItem('bzg_household'), localStorage.getItem('bizzing.activity'), localStorage.getItem('bizzing.wallet')]);
+  await page.goto(`http://127.0.0.1:${port}/Bizzing_Geography/?demo`); await page.waitForSelector('.hm');
+  ok(await page.locator('.demo-bar').count() === 1 && (await page.locator('.hm-say').innerText()).includes('Sample'), '?demo opens a labelled sample explorer');
+  ok(await page.evaluate(() => Object.keys(window.__bzg.R.h.kids[0].days).length >= 10 && window.__bzg.R.h.kids[0].xp > 50), 'the sample has weeks of progress');
+  await shot('27-demo');
+  await page.evaluate(() => { window.__bzg.fire('goal', '5'); window.__bzg.activityTick(); }); await page.waitForTimeout(1200);   // the store writes on a short delay
+  ok(JSON.stringify(await page.evaluate(() => [localStorage.getItem('bzg_household'), localStorage.getItem('bizzing.activity'), localStorage.getItem('bizzing.wallet')])) === JSON.stringify(before), 'the sample saves nothing and writes no shared feed');
   await page.close();
 }
 

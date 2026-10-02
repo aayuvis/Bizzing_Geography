@@ -18,6 +18,8 @@ import { POSTCARDS } from './data/postcards.js';
 import { dayKey, seeded, pick } from './rand.js';
 import { SHELF } from './library/index.js';
 import { GKEY } from './photos.js';
+import { HIVE, balance } from './family.js';
+import { nextStep, homeExpedition } from './next.js';
 
 /* ------------------------------------------------------------- helpers */
 
@@ -64,33 +66,52 @@ export function icon(k) {
     sound: '<path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" class="i2"/>',
     mute: '<path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path d="m16 9.5 5 5M21 9.5l-5 5" class="i2"/>',
     moon: '<path d="M19.5 14.5A8 8 0 0 1 9.5 4.5a8 8 0 1 0 10 10z"/>',
+    palette: '<path d="M12 3a9 9 0 1 0 0 18c1.4 0 2-.9 2-1.8 0-1.3-1.2-1.6-1.2-2.8 0-1 .8-1.6 1.9-1.6H17a4 4 0 0 0 4-4C21 6.6 17 3 12 3z"/><circle cx="7.5" cy="11" r="1.4" class="i2"/><circle cx="10.5" cy="7" r="1.4" class="i2"/><circle cx="15" cy="7.5" r="1.4" class="i2"/>',
+    star: '<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9 6.8 19.6l1-5.8-4.3-4.1 5.9-.9z"/>',
     flag: '<path d="M5 21V4"/><path d="M5 4.5c4-2 7 2 11 0l3-1v10l-3 1c-4 2-7-2-11 0" class="i2"/>',
   }[k] || '';
   return `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">${p}</svg>`;
 }
 
+const HEX = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3l11.3 6.5v13L16 29 4.7 22.5v-13z" class="hx"/><path d="M16 10.5l5 2.9v5.8l-5 2.9-5-2.9v-5.8z" class="hx2"/></svg>';
+/* The avatar menu (family standard §3): every child in the household, their own
+   page, and the device's sound and light. Switching never mixes data. */
+function whoMenu(k) {
+  const dark = document.documentElement.getAttribute('data-mode') === 'dark';
+  return `<div class="who-menu" role="menu" aria-label="Explorers and settings">
+    <p class="wm-h">Who is exploring?</p>
+    ${R.h.kids.map((x) => `<button role="menuitemradio" aria-checked="${x.id === k.id}" class="wm-kid${x.id === k.id ? ' on' : ''}" data-act="switchKid" data-arg="${x.id}">${av(x.avatar, 32)}<b>${esc(x.name)}</b>${x.id === k.id ? '<i>✓</i>' : ''}</button>`).join('')}
+    ${R.demo ? '' : '<button role="menuitem" class="wm-i" data-act="nav" data-arg="welcome">＋ Add an explorer</button>'}
+    <hr>
+    <button role="menuitem" class="wm-i" data-act="nav" data-arg="me">${icon('star')} ${esc(k.name)}’s page — faces, medals, worlds</button>
+    <button role="menuitemcheckbox" aria-checked="${R.sound}" class="wm-i" data-act="sound">${icon(R.sound ? 'sound' : 'mute')} Sound ${R.sound ? 'on' : 'off'}</button>
+    <button role="menuitemcheckbox" aria-checked="${dark}" class="wm-i" data-act="mode">${icon('moon')} ${dark ? 'Dark' : 'Light'} — switch</button>
+  </div>`;
+}
+
 export function shell(body) {
   const h = R.h, k = kid(h);
   const nav = NAV_OF[R.ui.nav] !== undefined ? NAV_OF[R.ui.nav] : R.ui.nav;
-  const rk = k ? rankOf(k.xp) : null;
   const tabs = (cl) => TABS.map((t) => `<button class="${cl}${nav === t.k ? ' on' : ''}" data-act="nav" data-arg="${t.k}" ${nav === t.k ? 'aria-current="page"' : ''}>${icon(t.icon)}<span>${t.n}</span></button>`).join('');
+  const inRun = R.ui.nav === 'run';
   return `
   <a class="skip" href="#main">Skip to the content</a>
   <header class="top">
+    ${inRun ? '' : `<a class="hive" href="${HIVE}" aria-label="Back to Bizzing Hive" title="Bizzing Hive — the family’s day planner">${HEX}</a>`}
     <button class="brand" data-act="nav" data-arg="home" aria-label="Bizzing Geography — home">
       <svg viewBox="0 0 40 40" class="brand-mark" aria-hidden="true"><rect width="40" height="40" rx="11" class="bm-bg"/><circle cx="20" cy="20" r="11.5" class="bm-globe"/><path d="M8.5 20h23M20 8.5c-5 6-5 17 0 23M20 8.5c5 6 5 17 0 23" class="bm-lines"/><path d="M28 7l3 5-5 1z" class="bm-star"/></svg>
       <span class="brand-t">Bizzing <em>Geography</em></span>
     </button>
     ${k ? `<nav class="tabs" aria-label="Main">${tabs('tab')}</nav>` : '<span class="grow"></span>'}
     <div class="tools">
-      ${k ? `<button class="rank-pill" data-act="nav" data-arg="me" aria-label="Your rank: ${rk.n}. ${k.xp} points.">
-        <span class="rp-ico" aria-hidden="true">${rk.i + 1}</span><span class="rp-t"><b>${esc(rk.n)}</b><i style="--p:${rk.pct}%"></i></span></button>
-        <button class="who" data-act="nav" data-arg="me" aria-label="${esc(k.name)}'s page">${av(k.avatar, 34, '')}</button>` : ''}
-      <button class="tool" data-act="sound" aria-label="Sound ${R.sound ? 'on' : 'off'}">${icon(R.sound ? 'sound' : 'mute')}</button>
-      <button class="tool" data-act="mode" aria-label="Light or dark">${icon('moon')}</button>
+      ${k ? `<button class="tool" data-act="themes" aria-label="Theme: ${esc(THEMES.find((t) => t.id === themeOf(k)).name)}" title="Your world">${icon('palette')}</button>` : `<button class="tool" data-act="mode" aria-label="Light or dark">${icon('moon')}</button>`}
       <button class="tool" data-act="nav" data-arg="grownups" aria-label="Grown-ups" title="Grown-ups">${icon('lock')}</button>
+      ${k ? `<button class="who" data-act="menu" aria-haspopup="menu" aria-expanded="${!!R.ui.menu}" aria-label="${esc(k.name)} — switch explorer, your page, sound">${av(k.avatar, 34, '')}<span class="who-v" aria-hidden="true">▾</span></button>` : ''}
     </div>
   </header>
+  ${k && R.ui.menu ? whoMenu(k) : ''}
+  ${R.demo ? '<div class="demo-bar" role="note"><b>Sample explorer</b> — a few weeks of made-up progress to look round. Nothing here is saved. <a href="./">Leave the sample</a></div>' : ''}
+  ${R.fromHive && !inRun ? `<a class="hive-chip" href="${HIVE}">← back to my day</a>` : ''}
   ${h.parent.tester ? '<div class="tester" role="note">TESTER MODE — every stop is open. Nothing about the child changes. <button data-act="testerOff">Turn off</button></div>' : ''}
   <main id="main" class="content" tabindex="-1">${body}</main>
   ${k ? `<nav class="tabbar" aria-label="Main">${tabs('tb')}</nav>` : ''}
@@ -122,6 +143,7 @@ export function viewWelcome() {
       <h1 class="display">Know the world — <em>and know how you know.</em></h1>
       <p class="lead">Maps and compasses, continents and capitals, rivers, weather and the restless Earth — for explorers aged 6 to 14.</p>
       ${btn('Start exploring →', 'obStart', '', 'primary big wide')}
+      ${btn('Try one question first', 'trial', '', 'big wide ghost')}
       <div class="ob-counts">${[[STOPS.length, 'stops on the Atlas'], [EXPEDITIONS.length, 'expeditions'], [195, 'countries'], [SHELF.length, 'Library tools']].map(([n, l]) => `<div><b>${n}</b><span>${l}</span></div>`).join('')}</div>
       <div class="card ob-promises">${[['🗺️', 'One map, drawn with care', 'Every map is drawn by the app from open data — never by an AI.'], ['🔒', 'Nothing about your child leaves this device', 'A first name and an age band. No email, no photo, no tracking, no ads.'], ['📚', 'Every fact says where it is checked', 'And a grown-up’s page that reports what was learned, not how long.']].map(([g, t, x]) => `<div><span>${g}</span><p><b>${t}</b><br><span class="muted small">${x}</span></p></div>`).join('')}</div>
       <p class="muted small center-t">Part of the Bizzing family, with Bizzing Bee, India, Finance and Maths.</p></div>`);
@@ -162,68 +184,77 @@ function sayLine(k) {
   const L = SAY[pack] || SAY.kit;
   return L[Math.floor(seeded('say' + dayKey() + k.id)() * L.length)].replace('{n}', k.name);
 }
-/* the expedition to show: the one worked on most recently, else one for the child's age */
-function homeExpedition(k) {
-  const on = EXPEDITIONS.filter((e) => (k.exp || {})[e.id]).map((e) => ({ e, last: Object.values(k.exp[e.id].seen || {}).sort().pop() || k.exp[e.id].at }));
-  if (on.length) return on.sort((a, b) => (a.last < b.last ? 1 : -1))[0].e;
-  const age = { '6-7': 6, '8-10': 8, '11-14': 11 }[k.band] || 8;
-  return EXPEDITIONS.find((e) => age >= e.ages[0] && age <= e.ages[1]) || EXPEDITIONS[0];
-}
 const ring = (n, goal) => { const r = 34, c = 2 * Math.PI * r, f = Math.min(1, n / goal);
   return `<svg class="h-ring-svg" viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="${r}" class="rb"/><circle cx="40" cy="40" r="${r}" class="rf" stroke-dasharray="${(f * c).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 40 40)"/></svg>`; };
 
-/* The home, in the family's shape (Bizzing Bee's and Bizzing India's homes):
-   a hero row — you, today's ring, the word of the day — then two journey cards,
-   then two small things of the day. Everything above the fold is something to do. */
+/* What the companion says: about the last thing this child actually did, when
+   there is one (k.last, written when a station, day, round or project ends). */
+function greetLine(k) {
+  const L = k.last;
+  if (L && Date.now() - L.at < 7 * 864e5) {
+    const t = esc(L.title);
+    return { stop: `Last time you passed “${t}”. The next station is ready, ${esc(k.name)}.`, try: `You had a go at “${t}”. Shall we try it again, ${esc(k.name)}?`,
+      exp: `Day done on ${t}! The next day is waiting.`, geo: `You pinned five places, ${esc(k.name)}. Your best is ${L.n ? L.n.toLocaleString('en-US') : ''} points.`,
+      made: `You made “${t}”. It is in your gallery.`, check: `Level check done — welcome to a new road, ${esc(k.name)}!` }[L.k] || esc(sayLine(k));
+  }
+  return esc(sayLine(k));
+}
+
+/* THE HOME (family standard §2, Bizzing Bee's template): greeting with the daily
+   ring and the place of the hour; ONE Continue card — the only filled button on
+   the screen, chosen by next.js; the expedition as a second, outline card;
+   today's three; ways in. On a phone it reaches Continue above the fold. */
 export function viewHome() {
-  const k = kid(R.h), rd = road(k);
-  const nx = rd.next ? byId[rd.next.stop] : null, nw = nx ? worldOf(nx.world) : worldOf(byId[rd.steps[0].stop].world);
+  const k = kid(R.h), n = nextStep(k), rk = n.rank;
   const pc = todaysCard(), gd = (k.lib.geoguess || {}).daily || {}, doneToday = gd[dayKey()];
   const done = sessionsToday(k), goal = goalOf(k);
   const [tw, td] = todaysWord();
   const e = homeExpedition(k), es = expStats(k, e), ed = es.next;
-  const edStop = ed ? (ed.stop || (ed.stops || [])[0]) : null;
-  const eArt = edStop ? `w-${byId[edStop].world}` : `w-${nw.id}`;
   const lm = pick(LANDMARKS, seeded('lm' + dayKey()));
-  const startAct = nx ? ['openStop', nx.id, nx.title] : ed ? ['expDay', `${e.id}|${ed.n}`, `${e.name}, day ${ed.n}`] : ['openTool', 'geoguess', 'Where on Earth?'];
-  return `<section class="home">
-    <div class="home-top">
-      <div class="card h-hello">
-        ${av(k.avatar, 128, '')}
-        <div class="h-hello-t"><p class="muted">${greet()},</p><h1>${esc(k.name)}</h1><p class="h-say">“${esc(sayLine(k))}”</p>
-          <button class="theme-chip" data-act="themes" aria-label="Choose a theme"><i aria-hidden="true"></i>${esc(THEMES.find((t) => t.id === themeOf(k)).name)}</button></div>
-      </div>
-      <div class="card h-ring">
+  const known = Object.entries((k.lib.capitals || {}).box || {}).filter(([, b]) => b >= 2).map(([cc]) => cc);
+  const coins = balance(k.name);
+  const trip = (k.trips || {})[dayKey()];
+  return `<section class="home hm">
+    <div class="card hm-hello">
+      <div class="hm-me">${av(k.avatar, 96, '')}<div class="hm-say"><p class="muted small">${greet()}, <b>${esc(k.name)}</b></p><p class="hm-bub">${greetLine(k)}</p></div></div>
+      <div class="hm-ring" role="group" aria-label="Today’s ring: ${done} of ${goal}">
         <div class="h-ring-c">${ring(done, goal)}<span><b>${done}/${goal}</b><i>today</i></span></div>
-        <div class="h-ring-t"><h3>Today’s ring</h3><p class="muted small h-ring-why">A station, a quiz, an expedition day or a Where on Earth? round — each fills one notch.</p>
-          <p class="small h-ring-next">Next: <b>${esc(startAct[2])}</b></p>
-          <div class="row gap wrap h-ring-go">${btn(done >= goal ? '✓ Full — keep going' : '▶ Start', startAct[0], startAct[1], 'primary')}
-            <span class="h-goal" role="group" aria-label="How many a day">${GOALS.map((g) => `<button class="${g === goal ? 'on' : ''}" data-act="goal" data-arg="${g}" aria-pressed="${g === goal}">${g}</button>`).join('')}<i>a day</i></span></div></div>
-      </div>
-      <button class="card h-word" data-act="openTool" data-arg="dictionary">
-        <span class="kicker">Word of the day</span><b>${esc(tw)}</b><span class="muted small">${esc(td)}.</span><span class="h-link">Dictionary →</span>
-      </button>
-    </div>
-    <div class="home-two">
-      <div class="card h-journey">
-        <div class="h-art" style="background-image:url(art/w-${nw.id}.webp)"><span class="h-badge">${nx ? nx.glyph : '🏁'}</span><span class="h-chip">Level ${rd.L.n} · ${rd.done} of ${rd.steps.length}</span></div>
-        <div class="h-body"><p class="muted small">Next on your journey</p>
-          <h2>${nx ? esc(nx.title) : 'Road complete'}</h2><p class="muted small">${nx ? `${esc(nw.name)} · ${esc(nx.hook)}` : `Every station on Level ${rd.L.n} is done — take the level check.`}</p>
-          <div class="row gap h-go">${nx ? btn('▶ Start', 'openStop', nx.id, 'primary') : btn('Take the level check', 'nav', 'road', 'primary')}<span class="h-bar"><i style="width:${Math.round((100 * rd.done) / rd.steps.length)}%"></i></span></div></div>
-      </div>
-      <div class="card h-journey">
-        <div class="h-art" style="background-image:url(art/${eArt}.webp)"><span class="h-badge">${e.glyph}</span><span class="h-chip">${es.started ? `Day ${ed ? ed.n : es.days} of ${es.days}` : `${es.days} days`}</span></div>
-        <div class="h-body"><p class="muted small">${es.started ? 'Your expedition' : 'An expedition for you'}</p>
-          <h2>${esc(e.name)}</h2><p class="muted small">${ed ? `Day ${ed.n}: ${esc(ed.name || (ed.stop ? byId[ed.stop].title : ed.k === 'c' ? 'the check' : 'practice'))}` : 'Every day done.'}</p>
-          <div class="row gap h-go">${ed ? btn(es.started ? '▶ Continue' : '▶ Begin', 'expDay', `${e.id}|${ed.n}`, es.started ? 'primary' : '') : ''}${btn('All expeditions', 'nav', 'exp', 'small')}<span class="h-bar"><i style="width:${Math.round((100 * es.done) / es.days)}%"></i></span></div></div>
+        <div><p class="small"><b>Today’s ring</b><br><span class="muted">each finished quiz, day or round fills a notch</span></p>
+          <span class="h-goal" role="group" aria-label="How many a day">${GOALS.map((g) => `<button class="${g === goal ? 'on' : ''}" data-act="goal" data-arg="${g}" aria-pressed="${g === goal}">${g}</button>`).join('')}<i>a day</i></span></div>
       </div>
     </div>
-    <div class="home-two small">
-      <button class="card h-mini" data-act="openTool" data-arg="geoguess"><img src="art/${pc.id}.webp" alt="" loading="lazy" width="1280" height="720">
-        <span><span class="kicker">Today’s place</span><b>Where in the world is this?</b><span class="muted small">${doneToday ? `You scored ${doneToday.toLocaleString('en-US')} today.` : 'Tap the map where you think it is.'}</span></span></button>
-      <button class="card h-mini" data-act="openLandmark" data-arg="${lm.id}"><img src="art/lm-${lm.id}.webp" alt="" loading="lazy" width="960" height="720">
-        <span><span class="kicker">Landmark of the day</span><b>${esc(lm.name)}</b><span class="muted small">${esc(lm.where)}</span></span></button>
+    <div class="card hm-go">
+      <div class="hm-art" style="background-image:url(art/${n.art}.webp)"><span class="h-badge">${n.glyph}</span></div>
+      <div class="hm-body">
+        <p class="kicker">Next on your journey · ${esc(n.kicker)}</p>
+        <h2>${n.html ? n.title : esc(n.title)}</h2>
+        <p class="muted small hm-sub">${esc(n.sub)}</p>
+        <div class="hm-prog">
+          <span class="hm-bar" aria-label="Level ${n.level}: ${n.done} of ${n.total} stations"><i style="width:${Math.round((100 * n.done) / Math.max(1, n.total))}%"></i></span>
+          <span class="small"><b>Level ${n.level}</b> · ${n.done} of ${n.total} stations · <span title="${esc(rk.why)}">${esc(rk.n)}</span>${rk.next ? ` <span class="hm-rk"><i style="width:${rk.pct}%"></i></span>` : ''}</span>
+        </div>
+        <button class="btn primary big hm-cta" data-act="${n.act}" data-arg="${esc(n.arg)}">Continue ▶</button>
+      </div>
     </div>
+    <div class="card hm-exp">
+      <div class="hm-exp-art" style="background-image:url(art/crs-${e.id}.webp)"><span class="h-badge">${e.glyph}</span></div>
+      <div><p class="kicker">${es.started ? 'Your expedition' : 'An expedition for you'} · ${es.started ? `day ${ed ? ed.n : es.days} of ${es.days}` : `${es.days} days`}</p>
+        <h3>${esc(e.name)}</h3><span class="hm-bar thin"><i style="width:${Math.round((100 * es.done) / es.days)}%"></i></span>
+        <div class="row gap wrap">${btn(es.started ? 'Open the expedition' : 'Have a look', 'expOpen', e.id, 'small')}${btn('All expeditions', 'nav', 'exp', 'small ghost')}</div></div>
+    </div>
+    <div class="hm-three" aria-label="Today’s three">
+      <button class="card hm-t" data-act="trip"><span class="hm-tg">⏱️</span><span><span class="kicker">5-minute trip</span><b>${trip ? `Done today — ${trip.right} of ${trip.n}` : 'Review, one new thing, one map'}</b><span class="muted small">${trip ? 'Another one any time.' : 'Ends by itself. Nothing lost for skipping.'}</span></span></button>
+      <button class="card hm-t" data-act="openTool" data-arg="geoguess"><img src="art/${pc.id}.webp" alt="" loading="lazy" width="1280" height="720"><span><span class="kicker">Place of the hour</span><b>Where on Earth is this?</b><span class="muted small">${doneToday ? `You scored ${doneToday.toLocaleString('en-US')} today.` : 'Pin it on the map.'}</span></span></button>
+      <button class="card hm-t" data-act="openLandmark" data-arg="${lm.id}"><img src="art/lm-${lm.id}.webp" alt="" loading="lazy" width="960" height="720"><span><span class="kicker">Landmark of the day</span><b>${esc(lm.name)}</b><span class="muted small">${esc(lm.where)}</span></span></button>
+    </div>
+    <nav class="hm-ways" aria-label="Ways in">
+      <button class="hm-w" data-act="nav" data-arg="atlas"><span>🗺️</span><b>Atlas</b><i>★ ${starsTotal(k)} / ${maxStars()}</i></button>
+      <button class="hm-w" data-act="nav" data-arg="exp"><span>🧭</span><b>Expeditions</b><i>${EXPEDITIONS.length} journeys</i></button>
+      <button class="hm-w" data-act="nav" data-arg="library"><span>📚</span><b>Library</b><i>${SHELF.length} tools</i></button>
+      <button class="hm-w hm-known" data-act="openTool" data-arg="capitals" aria-label="Countries you know: ${known.length} of 195">${worldSVG({ key: 'home-known', fill: Object.fromEntries(known.map((c) => [c, 'kn'])), grat: false, label: 'Countries whose capitals you know' })}<b>Countries you know</b><i>${known.length} of 195</i></button>
+      <button class="hm-w" data-act="nav" data-arg="me"><span>🏅</span><b>My page</b><i>🪙 ${coins} · medals</i></button>
+      <button class="hm-w" data-act="openWord" data-arg="${esc(tw)}"><span>📖</span><b>${esc(tw)}</b><i>word of the day</i></button>
+    </nav>
   </section>`;
 }
 export const libTile = (t) => `<button class="lib-tile" data-act="openTool" data-arg="${t.id}">
@@ -365,6 +396,8 @@ export function viewRun() {
   return `<section class="runner narrow ${fb ? (fb.right ? 'is-right' : 'is-wrong') : ''}">
     ${pageHead(esc(run.title), esc(run.sub || ''), back('quitRun', 'Stop'))}
     <div class="dots" aria-label="Question ${run.i + 1} of ${run.items.length}">${run.items.map((_, i) => `<i class="${i < run.results.length ? (run.results[i].right ? 'r' : 'w') : i === run.i ? 'c' : ''}"></i>`).join('')}</div>
+    ${run.intro && run.i === 0 && byId[run.stop] ? `<details class="card why-card" open><summary><b>${byId[run.stop].glyph} First, the idea</b> <span class="muted small">— ${esc(byId[run.stop].title)}</span></summary>
+      <p class="ns-hook">${esc(byId[run.stop].hook)}</p>${byId[run.stop].idea.slice(0, 2).map((x) => `<p>${x}</p>`).join('')}<p class="why-line"><b>Why it matters:</b> ${esc(byId[run.stop].why)}</p></details>` : ''}
     <div class="card qcard">
       ${questionBody(q, fb, 'q' + run.i)}
       ${fb ? feedback(q, fb) : ''}

@@ -169,6 +169,7 @@ export function act(name, arg, ctx) {
     if (g.i >= g.cards.length) {
       const tot = g.done.reduce((a, x) => a + x.pts, 0), d = ctx.data;
       if (ctx.session) ctx.session();   // a round is one notch on Today’s ring
+      if (ctx.kid) ctx.kid.last = { k: 'geo', title: 'Where on Earth?', n: Math.max(tot, d.best || 0), at: Date.now() };
       if (g.daily) { d.daily = d.daily || {}; d.daily[dayKey()] = tot; const ks = Object.keys(d.daily).sort(); while (ks.length > 30) delete d.daily[ks.shift()]; }
       else { d.rounds = (d.rounds || 0) + 1; if (tot > (d.best || 0)) { d.best = tot; ctx.confetti(40); ctx.sfx.level(); } }
       ctx.save();

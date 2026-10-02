@@ -1061,3 +1061,89 @@ div.jcard{cursor:default}
 .crs-mast{justify-content:center}
 .crs-tally{justify-content:center}
 .content .t-ov h2,.content .t-ov p,.content .t-ov .kicker{text-shadow:0 1px 3px rgb(0 0 0 / .55)}
+
+/* ---------------------------------------------------------------- family top bar (standard §3) */
+.top{min-height:56px}
+.hive{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;flex:none;color:var(--treasure)}
+.hive svg{width:30px;height:30px}
+.hive .hx{fill:var(--treasure);stroke:color-mix(in srgb,var(--treasure) 60%,#000);stroke-width:1.2}
+.hive .hx2{fill:color-mix(in srgb,var(--treasure) 55%,#fff)}
+.hive:hover{background:var(--action-tint)}
+.who{display:flex;align-items:center;gap:2px;padding:2px 4px 2px 2px;border-radius:var(--r-pill)}
+.who-v{font-size:11px;color:var(--muted)}
+.who-menu{position:fixed;top:60px;right:12px;z-index:60;width:min(320px,calc(100vw - 24px));background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--sh-overlay);padding:10px;display:flex;flex-direction:column;gap:2px}
+.who-menu hr{border:0;border-top:1px solid var(--line-soft);margin:6px 0;width:100%}
+.wm-h{margin:2px 8px 6px;font:700 11px var(--ui);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.wm-kid,.wm-i{display:flex;align-items:center;gap:10px;min-height:44px;padding:6px 10px;border:0;border-radius:10px;background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.wm-kid:hover,.wm-i:hover,.wm-kid:focus-visible,.wm-i:focus-visible{background:var(--action-tint)}
+.wm-kid.on{background:var(--action-tint)} .wm-kid b{flex:1} .wm-kid i{font-style:normal;color:var(--action);font-weight:800}
+.wm-kid .av{border-radius:50%}
+.demo-bar{background:var(--treasure);color:#2b1d00;text-align:center;font:600 13px var(--ui);padding:6px 12px}
+.demo-bar a{color:#2b1d00;font-weight:800;margin-left:6px}
+.hive-chip{display:inline-block;margin:10px 0 0 20px;padding:6px 12px;border-radius:var(--r-pill);background:var(--surface);border:1px solid var(--line);font-weight:700;color:var(--action);text-decoration:none}
+@media (max-width:760px){
+  .brand-t{font-size:0} .brand-t em{font-size:17px}
+  .top{gap:6px}
+  .hive-chip{margin-left:12px}
+}
+
+/* ---------------------------------------------------------------- the home (standard §2) */
+.hm{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:14px;align-items:start}
+.hm > .card{margin:0}
+.hm-hello{grid-column:1/-1;display:flex;gap:18px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.hm-me{display:flex;gap:14px;align-items:center;min-width:0;flex:1 1 360px}
+.hm-me .av{width:96px;height:96px;flex:none}
+.hm-say{flex:1;min-width:0}
+.hm-say p{margin:0}
+.hm-bub{position:relative;margin-top:6px!important;background:var(--action-tint);border-radius:16px;padding:10px 14px;font-weight:600;line-height:1.4}
+.hm-bub::before{content:"";position:absolute;left:-7px;top:16px;border:8px solid transparent;border-right-color:var(--action-tint);border-left:0}
+.hm-ring{display:flex;gap:12px;align-items:center}
+.hm-ring .h-ring-c{width:78px;height:78px}
+.hm-ring p{margin:0 0 6px}
+.hm-go{grid-row:span 2;padding:0;overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);border:2px solid color-mix(in srgb,var(--action) 35%,transparent)}
+.hm-art{background:var(--surface2) center/cover no-repeat;min-height:240px;position:relative}
+.hm-art .h-badge,.hm-exp-art .h-badge{top:10px;left:10px;bottom:auto}
+.hm-body{padding:18px 20px;display:flex;flex-direction:column;gap:6px}
+.hm-body h2{margin:0;font-size:26px;line-height:1.15}
+.hm-body .kicker{margin:0}
+.hm-sub{margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hm-prog{display:flex;flex-direction:column;gap:6px;margin:6px 0 4px}
+.hm-bar{display:block;height:10px;border-radius:99px;background:var(--surface2);overflow:hidden}
+.hm-bar.thin{height:6px;margin:6px 0 10px}
+.hm-bar i{display:block;height:100%;background:var(--action);border-radius:99px}
+.hm-rk{display:inline-block;width:70px;height:5px;border-radius:9px;background:var(--line);vertical-align:middle;overflow:hidden}
+.hm-rk i{display:block;height:100%;background:var(--treasure)}
+.hm-cta{align-self:flex-start;min-width:220px;justify-content:center;font-size:19px}
+.hm-exp{display:flex;gap:14px;align-items:center}
+.hm-exp h3{margin:2px 0 0}
+.hm-exp-art{width:96px;height:96px;border-radius:14px;background:var(--surface2) center/cover;flex:none;position:relative}
+.hm-exp .kicker{margin:0}
+.hm-three{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.hm-t{display:flex;gap:12px;align-items:center;padding:10px;margin:0;text-align:left;cursor:pointer;font:inherit;color:inherit}
+.hm-t img{width:96px;height:64px;object-fit:cover;border-radius:10px;flex:none}
+.hm-t > span:last-child{display:flex;flex-direction:column;gap:2px;min-width:0}
+.hm-tg{width:64px;height:64px;border-radius:12px;background:var(--action-tint);display:grid;place-items:center;font-size:30px;flex:none}
+.hm-ways{grid-column:1/-1;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+.hm-w{display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 8px;border-radius:16px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font:inherit;color:var(--ink);min-height:44px;text-align:center}
+.hm-w:hover{border-color:var(--action)}
+.hm-w > span{font-size:26px} .hm-w i{font-style:normal;font-size:12px;color:var(--muted)}
+.hm-known .gmap{width:100%;pointer-events:none} .hm-known .gmap svg{max-height:52px}
+.hm-known .ct.kn{fill:var(--action)}
+.why-card{margin-bottom:12px}
+.why-card summary{cursor:pointer}
+@media (max-width:980px){.hm-ways{grid-template-columns:repeat(3,minmax(0,1fr))}.hm-three{grid-template-columns:1fr}}
+@media (max-width:760px){
+  .hm{grid-template-columns:1fr;gap:12px}
+  .hm-hello{padding:12px 14px;gap:10px}
+  .hm-me{flex-basis:auto}
+  .hm-me .av{width:56px;height:56px}
+  .hm-bub{font-size:14px;padding:8px 12px}
+  .hm-ring{width:100%}
+  .hm-ring .h-ring-c{width:56px;height:56px} .hm-ring .h-ring-c b{font-size:16px}
+  .hm-ring p .muted{display:none}
+  .hm-go{grid-row:auto;grid-template-columns:1fr}
+  .hm-art{min-height:110px}
+  .hm-body{padding:14px 16px}
+  .hm-body h2{font-size:21px}
+  .hm-cta{align-self:stretch}
+}
