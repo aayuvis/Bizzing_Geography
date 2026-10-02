@@ -1214,3 +1214,30 @@ div.jcard{cursor:default}
 .wo-how span{background:var(--action-tint);border-radius:var(--r-pill);padding:6px 12px;font-size:14px}
 .wo-clock.low{background:#C4453C!important}
 @media (prefers-reduced-motion:reduce){.opt.right,.opt.wrong,.qcard .gmap .ct.ok,.qcard .gmap .ct.bad,.wo .gmap .ct.ok,.pin.guess > *,.pin.good > *,.gmap .arc{animation:none}}
+
+/* ---------------------------------------------------------------- the report card (Time · Progress · Mastery) */
+.rc3{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.45fr);gap:14px;margin:12px 0}
+.rc3 section{background:var(--surface2);border-radius:14px;padding:12px 14px;min-width:0}
+.rc3 h4{margin:0 0 4px}
+.rc-big{font:800 26px var(--display);margin:0 0 6px;line-height:1.1}
+.rc-big span{display:block;font:500 13px var(--ui);color:var(--muted)}
+.rc-trend{display:flex;gap:8px;align-items:flex-end;height:90px;margin-top:8px}
+.rc-trend span{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font-size:11px;color:var(--muted)}
+.rc-trend i{display:block;width:100%;height:var(--h);min-height:3px;background:var(--action);border-radius:6px 6px 2px 2px}
+.rc-trend b{color:var(--ink);font-size:12px} .rc-trend em{font-style:normal}
+.rc-worlds{list-style:none;padding:0;margin:6px 0;display:flex;flex-direction:column;gap:4px;font-size:13px}
+.rc-worlds li{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) auto;gap:8px;align-items:center}
+.rc-worlds li > span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rc-worlds .hm-bar.thin{margin:0}
+.rc-set{margin-top:10px} .rc-set summary{cursor:pointer;font-weight:700} .rc-set .row{margin:8px 0}
+.primary-o{border-color:var(--action)!important;color:var(--action);font-weight:800}
+@media (max-width:900px){.rc3{grid-template-columns:1fr}}
+
+/* ---------------------------------------------------------------- phone maps (L4) */
+@media (max-width:760px){
+  .qcard{padding:18px 12px 18px}
+  .runner .qcard .gmap{margin:8px -12px 4px;border-radius:0}
+  .runner .qcard .gmap svg{min-height:min(52vh,380px)}
+  .mp-t{display:flex;position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:2px;padding:1px 6px;border-radius:8px;white-space:nowrap}
+  .mp-t b{font-size:10.5px} .mp-t i{display:none}
+}

@@ -19,5 +19,9 @@ topojson-client draw the maps; nothing else is a dependency.
 | `src/figs.js` | Lesson drawings: map symbols, compass roses, plans, grids, scale bars, Earth's layers, the water cycle, the globe's lines, plate boundaries. |
 | `src/views.js` · `main.js` | Every screen; routing, the runner, actions, keys. |
 | `src/library/*.js` | The Library, one tool per file, to [../docs/LIBRARY-CONTRACT.md](../docs/LIBRARY-CONTRACT.md). |
-| `src/store.js` | The seam (schema v1). |
+| `src/family.js` | The family's shared keys: the activity feed and the coin wallet (FAMILY-STANDARD §1, §13). |
+| `src/next.js` | The one next step — home's Continue, `#/continue`, the end of the welcome. |
+| `src/rewards.js` | Rank only on learning, medals from evidence, the map shop. |
+| `src/demo.js` | `?demo`: the sample explorer, in memory only. |
+| `src/store.js` | The seam (schema v5). |
 | `public/art/` | Painted plates (110). `public/flags/` flag SVGs. `public/avatars/` 40 geography avatars (+ the family faces kept for children who chose them). |

@@ -165,6 +165,37 @@ Inherited from the family, and it holds here:
   the Satellite globe is painted from the app's own map data. Scene classes are prefixed `s-`/`scn`
   because the app already owns `.sky`, `.bubble` and `.sc`.
 
+## The family layer (Bizzing_Schedule docs/family/FAMILY-STANDARD.md)
+
+The shared spec every Bizzing app follows. Here it lives in five files:
+
+- **`src/family.js`** — the shared `localStorage` keys, to the standard's contract:
+  `bizzing.activity` (active minutes `{a,d,t,m,who}` and milestones `{…,m:0,ev,label}`) and
+  `bizzing.wallet` (one wallet per child by lower-case first name; `earn` pays only the standard
+  amounts — right 1 · station/day/round 5 · mastered 20 · level check 10 — capped at 100 a day per
+  app; `spend` at printed prices, never below zero; append-only ledger). Written to the contract
+  because the Schedule drop-ins could not be read from this session — **when they are vendored,
+  they replace these bodies**, and `test/family.mjs` holds the contract either way.
+- **`src/next.js`** — THE next step. Home's Continue, `#/continue` and the end of the welcome all ask
+  it. Home has exactly one primary button (asserted).
+- **`src/rewards.js`** — rank moves only on learning (`xpFor`: 1 per right answer while it is being
+  learned, 0 on an aced station, ≤15 a day per source; mastery bonuses on top); 30+ medals computed
+  from evidence, each celebrated once (`k.medals`; medals deserved before store v5 are recorded
+  quietly); the map shop (pins, frames) — a look, never content, never chance, never rank.
+- **`src/demo.js`** — `?demo`: a labelled sample with three weeks of progress, held in memory; it
+  saves nothing and writes no shared key (asserted).
+- **Top bar** (56px, the family order): ⬡ back to the Hive · name · theme · 🔒 · avatar ▾ (switch
+  explorer, own page, sound, light/dark). `?from=hive` shows "← back to my day".
+- **Read it to me**: 🔊 on every question, lesson and instruction, in the **device's own voice**
+  (an Indian English one first). **No recorded clips** (the owner's decision). 6–7 auto-reads.
+- **Report card**: Time (active minutes from the feed) · Progress (level, road, expeditions) ·
+  Mastery (worlds, capitals, flags, objectives learned). Per child: ring goal, read-aloud, delete.
+- **Weight**: Where on Earth? and Earth Through Time load on demand (`library/index.js loadTool`,
+  prefetched when idle so they work offline). The browser check holds initial JS ≤ 400 KB gzipped
+  and the phone's first screen ≤ 1.5 MB.
+- **Tabs stay Home · Atlas · Expeditions · Library** (the owner kept "Expeditions"); the standard's
+  five-tab naming (Practice, Play) is not adopted.
+
 ## Real photos — Google Street View, on by default (the owner's decision)
 
 Where on Earth? is **one journey**: every round mixes 3 real photos and 2 painted postcards, five
@@ -244,7 +275,8 @@ wholesale and refuses to publish if the staged file count differs from the build
    Needs merging first: Italy, Spain, France. **Not** China or Pakistan (their state lines contradict
    the India depiction) nor Nepal, Bangladesh, Kenya, Indonesia, Colombia (Natural Earth's divisions
    are out of date). Each capital list is checked by the build: every capital inside its own state.
-4. **Wire the Schedule writer** (`Bizzing_Schedule/integration/bizzing-activity.js`).
+4. **Vendor the family drop-ins** (`Bizzing_Schedule/integration/bizzing-activity.js`, `bizzing-wallet.js`)
+   into `src/family.js` — this app writes to their contract today, from its own code.
 
 ## Branch
 

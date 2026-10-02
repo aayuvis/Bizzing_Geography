@@ -24,7 +24,8 @@ import { seeded, shuffle, dayKey } from '../rand.js';
 import { svUrl, GKEY } from '../photos.js';
 import { PIN_PATH } from '../rewards.js';
 
-export const TOOL = { id: 'geoguess', name: 'Where on Earth?', glyph: '🌍', art: 'lib-geoguess', blurb: 'A real place somewhere on Earth. Read the land, the roads and the buildings — then pin where you think it is.' };
+import { GEOGUESS } from './meta.js';
+export const TOOL = GEOGUESS;
 
 const ROUND = 5;
 /* 5,000 for a perfect tap, halving about every 1,400 km. */

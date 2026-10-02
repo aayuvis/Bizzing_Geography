@@ -9,7 +9,7 @@ import { newHousehold, newKid, kid, AVATARS, tick, session, GOALS, stopRec, scor
 import { byCc } from './geo.js';
 import { shuffle, rnd } from './rand.js';
 import * as V from './views.js';
-import { toolById, SHELF } from './library/index.js';
+import { toolById, SHELF, loadTool } from './library/index.js';
 import { bindMaps, restoreMaps, zoomMap, resetMap } from './mapui.js';
 import { shapeName } from './map.js';
 import { regionsOf } from './library/states.js';
@@ -49,7 +49,7 @@ function checkMedals() {
   const k = kid(R.h); if (!k) return;
   const quiet = k.medalsQuiet; const got = newMedals(k);
   if (quiet) { delete k.medalsQuiet; return; }     // medals earned before medals existed: kept, not re-celebrated
-  if (got.length) { R.ui.medalPop = [...(R.ui.medalPop || []), ...got]; for (const m of got) trackMilestone(APP, k.name, 'mastery', `Medal: ${m.name}`); sfx.level(); confetti(70); }
+  if (got.length) { R.ui.medalPop = [...(R.ui.medalPop || []), ...got]; for (const m of got) trackMilestone(APP, k.name, m.id.startsWith('world-') ? 'world' : 'mastery', `Medal: ${m.name}`); sfx.level(); confetti(70); }
 }
 function save() { checkMedals(); if (!R.demo) Store.saveHousehold(R.h); }
 
@@ -116,7 +116,12 @@ function screen() {
     case 'expd': return X.viewExpedition(k, R.ui.arg, V, { part: R.ui.part });
     case 'proj': return X.viewProject(k, R.ui.arg, V);
     case 'library': return libraryView();
-    case 'lib': return toolById[R.ui.arg] ? toolView(toolById[R.ui.arg]) : libraryView();
+    case 'lib': {
+      if (toolById[R.ui.arg]) return toolView(toolById[R.ui.arg]);
+      const meta = SHELF.find((t) => t.id === R.ui.arg); if (!meta) return libraryView();
+      loadTool(meta.id).then(() => { if (R.ui.nav === 'lib' && R.ui.arg === meta.id) render(); });
+      return `<section class="tool-page">${V.pageHead(`${meta.glyph} ${meta.name}`, '', V.back('nav', 'Library', 'library'))}<div class="card center-card"><p class="muted">Opening ${V.esc(meta.name)}…</p></div></section>`;
+    }
     case 'me': return V.viewMe();
     default: return V.viewHome();
   }
@@ -245,7 +250,7 @@ on('openWorld', (w) => { R.ui.pick = null; go('world', w); });
 on('pickStop', (id) => { R.ui.pick = id; render(); });
 on('openStop', (id) => { if (!stopOpen(R.h, kid(R.h), id) && !X.expAllows(kid(R.h), id)) { toast('That stop opens on a later level.'); return; } go('stop', id); });
 on('openTool', (id) => go('lib', id));
-on('openLandmark', (id) => { toolById.landmarks.act('sel', id, libCtx('landmarks')); go('lib', 'landmarks'); });
+on('openLandmark', (id) => { loadTool('landmarks').then((t) => { t.act('sel', id, libCtx('landmarks')); go('lib', 'landmarks'); }); });
 /* expeditions: the engine decides what a day is; the host only goes, runs or toasts */
 on('expOpen', (id) => { R.ui.part = null; go('expd', id); });
 on('expPart', (j) => { R.ui.part = +j; render(); });
@@ -312,6 +317,7 @@ function readOut(sel) {
 }
 on('read', (sel) => readOut(sel));
 on('readAuto', () => { const k = kid(R.h); k.prefs.readAuto = !V.autoRead(k); save(); render(); });
+on('listMode', () => { Store.saveDevice('listMode', !Store.loadDevice('listMode', false)); render(); const f = root.querySelector('.map-list .opt'); if (f) f.focus(); });
 on('openWord', (w) => { libCtx('dictionary').ui.q = w; go('lib', 'dictionary'); });
 on('menu', () => { R.ui.menu = !R.ui.menu; render(); if (R.ui.menu) { const f = root.querySelector('.who-menu button'); if (f) f.focus(); } });
 on('levelCheck', () => {
@@ -445,6 +451,16 @@ on('restore', () => {
   i.click();
 });
 on('wipe', () => { R.ui.confirm = 'wipe'; render(); });
+/* per child, behind the PIN: the ring goal, reading aloud, and deleting one child (with a confirm) */
+on('kidGoal', (a) => { const [id, n] = String(a).split('|'), k = R.h.kids.find((x) => x.id === id); if (k && GOALS.includes(+n)) { k.prefs.goal = +n; save(); render(); } });
+on('kidRead', (id) => { const k = R.h.kids.find((x) => x.id === id); if (k) { k.prefs.readAuto = !V.autoRead(k); save(); render(); } });
+on('delKid', (id) => { R.ui.confirm = 'del:' + id; render(); });
+on('delKidYes', (id) => {
+  if (!R.ui.gate) return;
+  R.h.kids = R.h.kids.filter((x) => x.id !== id);
+  if (R.h.active === id) R.h.active = R.h.kids[0] ? R.h.kids[0].id : null;
+  R.ui.confirm = null; R.ui.lib = {}; save(); toast('Deleted.'); render();
+});
 on('wipeYes', () => { Store.wipe(); R.h = newHousehold(); R.ui = { nav: 'welcome', arg: null }; go('welcome'); });
 
 /* ------------------------------------------------------------- inputs & keys */
@@ -485,6 +501,10 @@ addEventListener('keydown', (e) => {
     if (q.kind === 'mc' && !typing) {
       const n = parseInt(e.key, 10);
       if (n >= 1 && n <= q.opts.length) { e.preventDefault(); answer(q.opts[n - 1]); }
+    }
+    if (q.kind === 'map' && !typing) {          // list mode: 1–6 choose, as for any list
+      const n = parseInt(e.key, 10), b = root.querySelectorAll('.map-list .opt')[n - 1];
+      if (b) { e.preventDefault(); answer(b.dataset.arg); }
     }
     return;
   }
@@ -533,5 +553,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
 /* the family's activity feed: active minutes for the Hive, per child, never sent anywhere */
 const act = trackActivity(APP, () => (kid(R.h) || {}).name);
 window.__bzg = { R, go, fire, activityTick: act.tick };   // for test/ui.mjs, which drives the built app
+/* the tools kept out of the first download arrive once the app is idle, so they work offline too */
+setTimeout(() => (window.requestIdleCallback || ((f) => setTimeout(f, 1)))(() => { loadTool('geoguess'); loadTool('time'); }), 4000);
 R.ui.nav = kid(R.h) ? 'home' : 'welcome';
 if (location.hash) readHash(); else render();

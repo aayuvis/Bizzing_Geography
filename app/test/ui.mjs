@@ -5,6 +5,7 @@
    → every Library tool → Where on Earth? → state capitals → grown-ups. Any page
    error, 404 or sideways scroll on a phone fails it. Screenshots in .shots/. */
 import { createRequire } from 'node:module';
+import { gzipSync } from 'node:zlib';
 import { spawn } from 'node:child_process';
 import { mkdirSync, existsSync, symlinkSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -223,6 +224,19 @@ async function run(vp, tag) {
   await page.click('[data-act=medalOk]');
   await page.evaluate(() => { window.__bzg.R.run = null; window.__bzg.go('home'); });
 
+  /* L4: on a phone a find-one-country question starts on that country's continent. L5: the same
+     question as a list of six named places, answerable by number keys */
+  await page.evaluate(() => { const R = window.__bzg.R; R.run = { kind: 'drill', title: 'List test', items: [{ kind: 'map', text: 'Tap Belgium on the map.', ok: ['BE'], why: '', target: 'BE', stop: 'cap-europe', lv: 2 }], i: 0, results: [], fb: null, over: false, stop: 'cap-europe', lv: 2 }; window.__bzg.go('run'); });
+  await page.waitForSelector('.gmap.tap');
+  const vbw = await page.evaluate(() => +document.querySelector('.qcard .gmap svg').getAttribute('viewBox').split(' ')[2]);
+  ok(phone ? vbw < 500 : vbw >= 990, phone ? `on a phone the map opens on Europe, not the whole world (${Math.round(vbw)} of 1000 wide)` : 'on a desktop the whole world shows');
+  await page.click('[data-act=listMode]'); await page.waitForSelector('.map-list');
+  const names = await page.locator('.map-list .opt span').allInnerTexts();
+  ok(names.length === 6 && names.filter((n) => n === 'Belgium').length === 1 && new Set(names).size === 6, `list mode offers six places, Belgium once (${names.join(', ')})`);
+  await page.keyboard.press(String(names.indexOf('Belgium') + 1)); await page.waitForTimeout(150);
+  ok(await page.evaluate(() => window.__bzg.R.run.fb && window.__bzg.R.run.fb.right), 'a number key answers from the list');
+  await page.evaluate(() => { window.__bzg.R.run = null; localStorage.setItem('bzg_device', JSON.stringify({ ...JSON.parse(localStorage.getItem('bzg_device') || '{}'), listMode: false })); });
+
   // every Library tool renders
   await nav('library'); await page.waitForSelector('.lib-grid');
   await page.waitForTimeout(300); await shot('10-library');
@@ -408,13 +422,23 @@ async function run(vp, tag) {
   await page.evaluate(() => { window.__bzg.go('lib', 'time'); scrollTo(0, 0); }); await page.waitForTimeout(150);
   ok(await page.evaluate(() => { const b = document.querySelector('.t-ov h2').getBoundingClientRect(); return b.bottom <= innerHeight; }), 'Earth Through Time: the step’s title is on screen without scrolling');
   if (!phone) ok(await page.evaluate(() => { const b = document.querySelector('.t-split').getBoundingClientRect(); return b.bottom <= innerHeight + 1; }), 'Earth Through Time: on a desktop the painting and its card fit one screen');
-  // grown-ups
+  /* B6: the back button never leaves the app */
+  await page.evaluate(() => window.__bzg.go('home')); await nav('atlas'); await page.waitForSelector('.map-board');
+  await nav('library'); await page.waitForSelector('.lib-grid');
+  await page.goBack(); await page.waitForTimeout(200);
+  ok(page.url().includes('/Bizzing_Geography/') && await page.evaluate(() => window.__bzg.R.ui.nav) === 'atlas', 'back returns to the previous screen inside the app');
+  // grown-ups: behind the PIN
   await page.evaluate(() => window.__bzg.go('grownups'));
+  ok(await page.locator('#pin').count() === 1 && await page.locator('.report').count() === 0, 'the grown-ups area asks for the PIN first');
+
   await page.fill('#pin', '1234'); await page.click('[data-act=gate]'); await page.waitForSelector('.report');
   await shot('14-grownups'); await noSideways('grown-ups');
   ok(await page.evaluate(() => [...document.querySelectorAll('[data-act=tester], [data-act=streetview]')].map((i) => i.closest('label')).every((l) => l && l.getBoundingClientRect().width > 240)), 'grown-ups settings: every switch label has room to read (was squeezed into 50px)');
   ok(await page.evaluate((W) => [...document.querySelectorAll('.top button, .top a')].filter((b) => b.offsetParent).every((b) => { const r = b.getBoundingClientRect(); return r.left >= 0 && r.right <= W; }), W), 'the top bar fits the device: every button, the lock included, is whole on screen');
   ok((await page.locator('.report').innerText()).includes('Ahana'), 'the grown-ups page reports the child');
+  ok(await page.locator('.report .rc3 section').count() === 3 && /Time[\s\S]*Progress[\s\S]*Mastery/.test(await page.locator('.report .rc3').innerText()), 'the report card is Time · Progress · Mastery');
+  ok(/\d+\s+active minutes this week/.test(await page.locator('.report').innerText()), 'Time is active minutes from the family feed');
+  ok(await page.locator('.report .rc-worlds li').count() === 10, 'Mastery shows every world, from passed stations');
   /* B7: a second explorer, switched from the top bar; switching never mixes their data */
   await page.evaluate(() => window.__bzg.go('welcome')); await page.waitForSelector('#kname');
   await page.fill('#kname', 'Kabir'); await page.press('#kname', 'Enter'); await page.click('[data-act=draftBand][data-arg="6-7"]');
@@ -430,6 +454,17 @@ async function run(vp, tag) {
   ok(await page.evaluate(() => { const R = window.__bzg.R; return R.h.kids.find((k) => k.id === R.h.active).name; }) === 'Ahana', 'one tap switches explorer');
   ok(await page.evaluate(() => window.__bzg.R.h.kids.find((k) => k.name === 'Kabir').xp) <= 1 && xpA > 1 && (await page.locator('.hm-say').innerText()).includes('Ahana'), 'switching never mixes their progress');
   await page.keyboard.press('Escape');
+  /* M3: one child deleted, behind the PIN and a confirm; the other untouched */
+  await page.evaluate(() => window.__bzg.go('grownups'));
+  await page.fill('#pin', '9999'); await page.click('[data-act=gate]'); await page.waitForTimeout(150);
+  ok(await page.locator('.report').count() === 0, 'a wrong PIN does not open the grown-ups area');
+  await page.fill('#pin', '1234'); await page.click('[data-act=gate]'); await page.waitForSelector('.report');
+  const kab = await page.evaluate(() => window.__bzg.R.h.kids.find((k) => k.name === 'Kabir').id);
+  await page.evaluate((id) => { document.querySelectorAll('.rc-set').forEach((d) => { d.open = true; }); window.__bzg.fire('delKid', id); }, kab);
+  ok(await page.evaluate(() => window.__bzg.R.h.kids.length) === 2, 'delete asks first');
+  await page.evaluate((id) => window.__bzg.fire('delKidYes', id), kab);
+  ok(await page.evaluate(() => window.__bzg.R.h.kids.length === 1 && window.__bzg.R.h.kids[0].name === 'Ahana' && window.__bzg.R.h.kids[0].xp > 1), 'deleting Kabir leaves Ahana exactly as she was');
+  await page.evaluate(() => window.__bzg.go('home'));
   /* #/continue from the Hive goes straight to the Continue target */
   const want = await page.evaluate(() => document.querySelector('.hm-cta').dataset.arg);
   await page.goto(`http://127.0.0.1:${port}/Bizzing_Geography/?from=hive#/continue`); await page.waitForSelector('.content');
@@ -440,6 +475,20 @@ async function run(vp, tag) {
   await page.goto(`http://127.0.0.1:${port}/Bizzing_Geography/?demo`); await page.waitForSelector('.hm');
   ok(await page.locator('.demo-bar').count() === 1 && (await page.locator('.hm-say').innerText()).includes('Sample'), '?demo opens a labelled sample explorer');
   ok(await page.evaluate(() => Object.keys(window.__bzg.R.h.kids[0].days).length >= 10 && window.__bzg.R.h.kids[0].xp > 50), 'the sample has weeks of progress');
+  /* N2 — the first-screen budget (family standard §11): what the home pulls before anything is
+     tapped, with JS and CSS counted gzipped as GitHub Pages serves them */
+  if (phone) {
+    const got = await page.evaluate(() => [...performance.getEntriesByType('navigation'), ...performance.getEntriesByType('resource')].map((e) => ({ u: e.name, n: e.decodedBodySize || 0 })));
+    let js = 0, total = 0;
+    for (const { u, n } of got) {
+      if (!u.startsWith(`http://127.0.0.1:${port}/`)) continue;
+      if (/\.(js|css|html)(\?|$)|\/$|\?demo$/.test(u)) { const body = Buffer.from(await (await fetch(u)).arrayBuffer()); const gz = gzipSync(body).length; total += gz; if (/\.js(\?|$)/.test(u)) js += gz; }
+      else total += n;
+    }
+    ok(js <= 400 * 1024, `initial JavaScript ≤ 400 KB gzipped (${Math.round(js / 1024)} KB)`);
+    ok(total <= 1.5 * 1024 * 1024, `first screen ≤ 1.5 MB on a phone (${(total / 1048576).toFixed(2)} MB)`);
+    ok(!got.some((x) => /geoguess-|time-/.test(x.u)), 'the heavy tools are not in the first screen');
+  }
   await shot('27-demo');
   await page.evaluate(() => { window.__bzg.fire('goal', '5'); window.__bzg.activityTick(); }); await page.waitForTimeout(1200);   // the store writes on a short delay
   ok(JSON.stringify(await page.evaluate(() => [localStorage.getItem('bzg_household'), localStorage.getItem('bizzing.activity'), localStorage.getItem('bizzing.wallet')])) === JSON.stringify(before), 'the sample saves nothing and writes no shared feed');

@@ -17,7 +17,8 @@ import { worldSVG, viewFor, countryAt } from '../map.js';
 import { mc } from '../chapters/kit.js';
 import { shuffle, rnd } from '../rand.js';
 
-export const TOOL = { id: 'time', name: 'Earth Through Time', glyph: '⏳', art: 'lib-time', blurb: 'From a molten young planet to today — and the story of every continent since the first farmers: civilisations, empires and great events.' };
+import { TIME } from './meta.js';
+export const TOOL = TIME;
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 /* each continent's ages in time order, "today" always last */
