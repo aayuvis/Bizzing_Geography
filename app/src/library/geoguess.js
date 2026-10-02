@@ -14,6 +14,7 @@
 
    Never the device's location. Scoring is by distance only — it rewards
    reading the picture, and there is nothing to buy, spin or win back. */
+import { ico } from '../icons.js';
 import { POSTCARDS, postcardById } from '../data/postcards.js';
 import { PLACES } from '../data/places.js';
 import { SV_OK, SV_PANO } from '../data/sv-ok.js';
@@ -118,11 +119,11 @@ export function view(ctx) {
     return `<div class="card t-geo-intro">
       <div class="row gap wrap">
         <button class="btn primary big" data-act="lib" data-arg="geoguess|start">Play a round of ${ROUND}</button>
-        <button class="btn big" data-act="lib" data-arg="geoguess|timed">⏱ Against the clock</button>
+        <button class="btn big" data-act="lib" data-arg="geoguess|timed">${ico('timer')} Against the clock</button>
         <button class="btn big" data-act="lib" data-arg="geoguess|daily" ${today != null ? 'disabled' : ''}>${today != null ? `Today’s place: ${pts(today)}` : 'Today’s place'}</button>
         ${d.best ? `<span class="muted small">Best round <b>${d.best.toLocaleString('en-US')}</b> · ${d.rounds || 0} played</span>` : ''}
       </div>
-      <div class="wo-how" id="wo-how" aria-label="How to play"><button class="read-btn" data-act="read" data-arg="#wo-how" aria-label="Read how to play" title="Read how to play">🔊</button><span>👀 <b>Look</b> at the place</span><span>🗺️ <b>Open</b> the map</span><span>📍 <b>Pin</b> it, then Guess</span></div>
+      <div class="wo-how" id="wo-how" aria-label="How to play"><button class="read-btn" data-act="read" data-arg="#wo-how" aria-label="Read how to play" title="Read how to play">${ico('sound')}</button><span>${ico('eye')} <b>Look</b> at the place</span><span>${ico('map')} <b>Open</b> the map</span><span>${ico('pin')} <b>Pin</b> it, then Guess</span></div>
       <p class="muted small">Look at the place, open the map in the corner and drop your pin where you think it is — up to 5,000 points a card. ${on ? `Rounds mix <b>real Street View photos</b> (${photoPool('11-14').length.toLocaleString('en-US')} places in ${new Set(photoPool('11-14').map((p) => p.cc)).size} countries, shot by Google) with <b>painted postcards</b> made with an AI image model; every card says which it is.`
         : `${POSTCARDS.length} painted postcards of real kinds of places, made with an AI image model.${ctx.photosReady ? ' Real photos are switched off on this device (grown-ups’ page).' : ''}`}</p>
     </div>`;
@@ -145,12 +146,12 @@ export function view(ctx) {
   return `<div class="wo${big ? ' big' : ''}${last ? ' res' : ''}">
     ${stagePic(c, g)}
     <div class="wo-hud"><span class="wo-chip">${g.daily ? 'Today’s place' : `Card ${g.i + 1} of ${g.cards.length}`} · ${c.k === 'photo' ? 'a real photo · Imagery © Google' : 'a painting, not a photo'}</span>
-      <span class="row gap">${g.timed && !last ? `<span class="wo-chip wo-clock" role="timer" aria-live="off">⏱ ${Math.max(0, Math.ceil((g.deadline - Date.now()) / 1000))}s</span>` : ''}${g.daily ? '' : `<span class="wo-chip wo-score">${pts(so)}</span>`}</span></div>
+      <span class="row gap">${g.timed && !last ? `<span class="wo-chip wo-clock" role="timer" aria-live="off">${Math.max(0, Math.ceil((g.deadline - Date.now()) / 1000))}s</span>` : ''}${g.daily ? '' : `<span class="wo-chip wo-score">${pts(so)}</span>`}</span></div>
     <div class="wo-map"${focus ? ' data-autofocus="1"' : ''}>
       ${big && !last ? `<div class="wo-bar"><button class="btn small" data-act="mapZoom" data-arg="${key}|in" aria-label="Zoom in">＋</button><button class="btn small" data-act="mapZoom" data-arg="${key}|out" aria-label="Zoom out">－</button><button class="btn small" data-act="mapZoom" data-arg="${key}|home" aria-label="Whole map">⟲</button>
         <span class="wo-tip">${g.guess ? 'Drag the pin, or tap somewhere else' : 'Tap or drag to drop your pin'}</span><button class="btn small" data-act="lib" data-arg="geoguess|map|0" aria-label="Close the map (Esc)">✕</button></div>` : ''}
       ${worldSVG({ key, tap: big && !last, drag: big && !last, pins, fill: last ? { [c.cc]: 'ok' } : {}, arcs: last && g.guess ? [[g.guess, c.at]] : [], label: 'Drop your pin where you think this is' })}
-      ${big ? '' : `<button class="wo-open" data-act="lib" data-arg="geoguess|map|1" aria-label="Open the map (M)"><span>🗺️ ${g.guess ? 'Your pin' : 'Open the map'} <kbd>M</kbd></span></button>`}
+      ${big ? '' : `<button class="wo-open" data-act="lib" data-arg="geoguess|map|1" aria-label="Open the map (M)"><span>${ico('map')} ${g.guess ? 'Your pin' : 'Open the map'} <kbd>M</kbd></span></button>`}
       ${last ? '' : `<button class="btn primary wo-guess" data-act="lib" data-arg="geoguess|guess" ${g.guess ? '' : 'disabled'}>${g.guess ? 'Guess' : 'Place your pin on the map'} <kbd>G</kbd></button>`}
     </div>
     ${last ? `<div class="card t-geo-res wo-res"><p class="kicker">${last.late ? 'Time ran out — no pin' : `${fmtKm(last.km)} away`} · <b data-count="${last.pts}">${last.pts.toLocaleString('en-US')}</b> ${last.pts === 1 ? 'point' : 'points'}</p><h3>${esc(c.place)}</h3>

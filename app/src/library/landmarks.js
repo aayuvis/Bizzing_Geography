@@ -3,6 +3,7 @@
    or built, search, or tap a country on the map to see its landmarks. Quiz:
    which country is it in, or tap it on the map. The shelf says, on screen, that it awaits a second
    reader — the Maths journeys' rule for anything written about the world. */
+import { ico } from '../icons.js';
 import { LANDMARKS, landmarkById, LANDMARK_NEEDS_REVIEW } from '../data/landmarks.js';
 import { byCc, QUIZ, CONTINENTS } from '../geo.js';
 import { worldSVG, viewOfCountry, nearCountry, viewFor } from '../map.js';
@@ -22,7 +23,7 @@ export function view(ctx) {
     return `<div class="t-lm-one">
       <button class="back" data-act="lib" data-arg="landmarks|sel|"><span aria-hidden="true">←</span> All landmarks</button>
       <figure class="t-lm-fig"><img src="art/lm-${l.id}.webp" alt="A painting of ${esc(l.name)}" width="960" height="720"><figcaption>A painting, made with an AI image model — not a photograph.</figcaption></figure>
-      <div class="card"><p class="kicker">${l.kind === 'natural' ? '🌿 Natural wonder' : '🏗️ Built by people'} · ${esc(l.where)}</p><h2>${esc(l.name)}</h2>
+      <div class="card"><p class="kicker">${l.kind === 'natural' ? ico('leaf') + ' Natural wonder' : ico('city') + ' Built by people'} · ${esc(l.where)}</p><h2>${esc(l.name)}</h2>
         <p class="lead">${esc(l.fact)}</p><p><b>${esc(l.when)}.</b></p>
         ${worldSVG({ key: 'lm-' + l.id, view: viewOfCountry(l.cc, 1.2), pins: [{ at: l.at, cls: 'red', r: 7, label: l.name }], fill: { [l.cc]: 'hl', ...(l.also ? { [l.also]: 'hl2' } : {}) }, label: `Where ${l.name} is` })}
         <details class="src"><summary>Where this is checked</summary><ul>${l.src.map((s) => `<li>${esc(s)}</li>`).join('')}</ul></details>
@@ -40,14 +41,14 @@ export function view(ctx) {
     <div class="seg" role="tablist" aria-label="Continent">${CONTS.map((c) => `<button role="tab" aria-selected="${c === cont}" class="${c === cont ? 'on' : ''}" data-act="lib" data-arg="landmarks|cont|${c}">${esc(c)}</button>`).join('')}</div>
     <div class="row gap wrap t-ex-bar">
       <input id="t-landmarks-q" class="inp" data-lib-input="q" value="${esc(u.q || '')}" placeholder="Search landmarks…" aria-label="Search landmarks" autocomplete="off">
-      ${[['', 'All'], ['built', '🏗️ Built by people'], ['natural', '🌿 Natural wonders']].map(([k, n]) => `<button class="chip-btn small${kind === k ? ' on' : ''}" aria-pressed="${kind === k}" data-act="lib" data-arg="landmarks|kind|${k}">${n}</button>`).join('')}
+      ${[['', 'All'], ['built', ico('city') + ' Built by people'], ['natural', ico('leaf') + ' Natural wonders']].map(([k, n]) => `<button class="chip-btn small${kind === k ? ' on' : ''}" aria-pressed="${kind === k}" data-act="lib" data-arg="landmarks|kind|${k}">${n}</button>`).join('')}
       ${cc ? `<button class="chip-btn small on" data-act="lib" data-arg="landmarks|cc|">${esc(byCc[cc].name)} ✕</button>` : ''}
     </div>
     ${worldSVG({ key: 'lm-all-' + cont, tap: true, view, pins, fill: cc ? { [cc]: 'hl' } : {}, label: 'Landmarks on the map: tap a country to see its landmarks' })}
     <p class="muted small center-t">Each dot is a landmark (green once you have opened it). Tap a country to see only its landmarks.</p>
     <p class="muted small">${list.length} landmark${list.length === 1 ? '' : 's'}</p>
     <div class="t-lm-grid">${list.map((x) => `<button class="t-lm-tile${seen[x.id] ? ' seen' : ''}" data-act="lib" data-arg="landmarks|sel|${x.id}">
-      <img src="art/lm-${x.id}.webp" alt="" loading="lazy" width="960" height="720"><span><b>${esc(x.name)}</b><i>${esc(byCc[x.cc].name)} · ${x.kind === 'natural' ? '🌿' : '🏗️'}</i></span></button>`).join('')}
+      <img src="art/lm-${x.id}.webp" alt="" loading="lazy" width="960" height="720"><span><b>${esc(x.name)}</b><i>${esc(byCc[x.cc].name)} · ${x.kind === 'natural' ? ico('leaf') : ico('city')}</i></span></button>`).join('')}
       ${list.length ? '' : '<p class="muted">No landmarks match — try another filter.</p>'}</div>
     ${note}`;
 }

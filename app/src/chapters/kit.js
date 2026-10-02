@@ -25,6 +25,23 @@ export function mapQ(text, ok, view, why = '', target = null) {
   return { kind: 'map', text, ok: [].concat(ok), view, why, target };
 }
 
+/* Two item types beyond choosing (E4):
+     { kind: 'type',  text, ans, accept[] }   type the answer (any accepted spelling)
+     { kind: 'order', text, items[], ans }     tap the items into order; ans = 'a|b|c'
+   The items are shown in an order from the question itself (seeded), never the answer's. */
+export function typeQ(text, ans, accept = [], why = '', html = '') {
+  return { kind: 'type', text, ans: String(ans), accept: [...new Set([String(ans), ...accept.map(String)])], why, html };
+}
+export function orderQ(text, inOrder, why = '') {
+  const r = seeded('order|' + text + '|' + inOrder.join());
+  let items = shuffle(inOrder, r);
+  for (let t = 0; t < 6 && items.join() === inOrder.join(); t++) items = shuffle(inOrder, r);
+  if (items.join() === inOrder.join()) items = inOrder.slice().reverse();
+  return { kind: 'order', text, items, ans: inOrder.join('|'), why };
+}
+/* typing is forgiving about accents, case, spaces and punctuation — never about letters */
+export const fold = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+
 /* A hand-written bank: [{ lv, q, a, w: [...], why, html }]. A question at
    level lv draws from items at lv or below, leaning on its own level. */
 export function bank(items) {

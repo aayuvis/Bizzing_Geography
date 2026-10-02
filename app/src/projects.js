@@ -19,6 +19,7 @@
    state that meets every goal (test/courses.mjs proves each project can be finished).
    Everything is keyboard AND touch: every control is a button; the map-maker has an
    arrow-key cursor. Nothing a child makes leaves the device. */
+import { gi, ico } from './icons.js';
 import { byCc, QUIZ, CONTINENTS } from './geo.js';
 import { worldSVG } from './map.js';
 import { LANDMARKS } from './data/landmarks.js';
@@ -79,7 +80,7 @@ const mapmaker = {
   view(cfg, st) {
     const W = cfg.w, H = cfg.h, cell = 40, used = [...new Set(Object.values(st.s))];
     const tileBtns = cfg.tiles.map((t, i) => `<button class="pj-sw${st.tool === t ? ' on' : ''}" ${A('tool', t)} aria-pressed="${st.tool === t}" title="${TILES[t].n} (${i + 1})"><i style="background:${TILES[t].c}"></i>${TILES[t].n}</button>`).join('');
-    const symBtns = (cfg.syms || []).map((s) => `<button class="pj-sw${st.tool === 's:' + s ? ' on' : ''}" ${A('tool', 's:' + s)} aria-pressed="${st.tool === 's:' + s}">${SYMS[s].g} ${SYMS[s].n}</button>`).join('');
+    const symBtns = (cfg.syms || []).map((s) => `<button class="pj-sw${st.tool === 's:' + s ? ' on' : ''}" ${A('tool', 's:' + s)} aria-pressed="${st.tool === 's:' + s}">${gi(SYMS[s].g)} ${SYMS[s].n}</button>`).join('');
     const svg = `<svg class="pj-map" viewBox="${cfg.grid ? -26 : 0} ${cfg.grid ? -26 : 0} ${W * cell + (cfg.grid ? 26 : 0)} ${H * cell + (cfg.grid ? 26 : 0)}" role="grid" aria-label="Your map. Arrow keys move the square, Space paints, F fills.">
       ${st.t.map((t, i) => `<rect x="${(i % W) * cell}" y="${Math.floor(i / W) * cell}" width="${cell}" height="${cell}" fill="${TILES[t].c}" ${A('paint', i)} class="pj-cell"/>`).join('')}
       ${Object.entries(st.s).map(([i, s]) => `<text x="${(+i % W) * cell + cell / 2}" y="${Math.floor(+i / W) * cell + cell / 2 + 8}" text-anchor="middle" font-size="24" pointer-events="none">${SYMS[s].g}</text>`).join('')}
@@ -89,8 +90,8 @@ const mapmaker = {
     </svg>`;
     const ask = cfg.goals.some((g) => g.k === 'gridAnswer') ? `<label class="pj-ask">Which square is your treasure in? <input class="inp" id="pj-ans" data-proj-input="ans" value="${esc(st.ans || '')}" maxlength="3" placeholder="e.g. C4" autocomplete="off"></label>` : '';
     return `<div class="pj-mm">
-      <div class="pj-tools" role="toolbar" aria-label="Paint with">${tileBtns}${symBtns}<button class="pj-sw${st.tool === 'erase' ? ' on' : ''}" ${A('tool', 'erase')}>🧽 Rub out symbol</button>
-        <button class="pj-sw${st.fill ? ' on' : ''}" ${A('fill')} aria-pressed="${st.fill}" title="Fill (F)">🪣 Fill</button><button class="pj-sw" ${A('reset')}>↺ Start again</button></div>
+      <div class="pj-tools" role="toolbar" aria-label="Paint with">${tileBtns}${symBtns}<button class="pj-sw${st.tool === 'erase' ? ' on' : ''}" ${A('tool', 'erase')}>${ico('cross')} Rub out symbol</button>
+        <button class="pj-sw${st.fill ? ' on' : ''}" ${A('fill')} aria-pressed="${st.fill}" title="Fill (F)">${ico('drop')} Fill</button><button class="pj-sw" ${A('reset')}>↺ Start again</button></div>
       <div class="pj-stage" id="pj-stage" tabindex="0" data-proj-keys="mm">${svg}</div>
       ${used.length ? `<div class="pj-key"><b>Key</b>${used.map((s) => `<span>${SYMS[s].g} ${SYMS[s].n}</span>`).join('')}</div>` : ''}
       ${ask}

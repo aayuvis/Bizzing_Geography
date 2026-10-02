@@ -11,8 +11,10 @@
    compete with an ocean.
    ================================================================ */
 :root{
-  --display:"Baloo 2","Nunito",system-ui,sans-serif;
-  --ui:"Nunito",system-ui,-apple-system,sans-serif;
+  --display:"Baloo 2","Hanken Grotesk",system-ui,sans-serif;
+  --ui:"Hanken Grotesk",system-ui,-apple-system,sans-serif;
+  --card:var(--surface); --bg:var(--paper);
+  --chrome:"Fraunces",Georgia,serif;   /* the family chrome headings: tabs, settings, shop, grown-ups */
   --mono:"Sono",ui-monospace,monospace;
   --fs-meta:12px; --fs-label:13px; --fs-body:15px; --fs-lead:17px;
   --fs-h3:20px; --fs-h2:24px; --fs-h1:30px;

@@ -26,8 +26,8 @@
 /* ================================================================ 1 · Old Atlas (default) */
 :root[data-theme="atlas"],[data-theme="atlas"]{
   --sw2:#2E7F8F;
-  --display:"Baloo 2","Nunito",system-ui,sans-serif;
-  --ui:"Nunito",system-ui,-apple-system,sans-serif;
+  --display:"Baloo 2","Hanken Grotesk",system-ui,sans-serif;
+  --ui:"Hanken Grotesk",system-ui,-apple-system,sans-serif;
   --mono:"Sono",ui-monospace,monospace;
   --tint:#FBF6EE; --tint-deep:#F2E9DB; --paper:#FFFDF8; --surface:#FFFFFF; --surface2:#F7F2EA;
   --line:#E6DACA; --line-soft:#F0E7DA;
@@ -51,9 +51,9 @@
 /* ================================================================ 2 · Ocean Deep */
 :root[data-theme="ocean"],[data-theme="ocean"]{
   --sw2:#F2785C;
-  --display:"Space Grotesk","Lexend",system-ui,sans-serif;
-  --ui:"Lexend",system-ui,sans-serif;
-  --mono:"JetBrains Mono",ui-monospace,monospace;
+  --display:"Space Grotesk","Hanken Grotesk",system-ui,sans-serif;
+  --ui:"Hanken Grotesk",system-ui,-apple-system,sans-serif;
+  --mono:"Sono",ui-monospace,monospace;
   --tint:#E6F4F8; --tint-deep:#D4EBF2; --paper:#F6FCFD; --surface:#FFFFFF; --surface2:#EBF6F9;
   --line:#C8E1E9; --line-soft:#DCEDF2;
   --ink:#0C2833; --muted:#476573;
@@ -75,9 +75,9 @@
 /* ================================================================ 3 · Rainforest */
 :root[data-theme="jungle"],[data-theme="jungle"]{
   --sw2:#E8742E;
-  --display:"Kalam","Atkinson Hyperlegible Next",cursive;
-  --ui:"Atkinson Hyperlegible Next",system-ui,sans-serif;
-  --mono:"Atkinson Hyperlegible Mono",ui-monospace,monospace;
+  --display:"Kalam","Hanken Grotesk",cursive;
+  --ui:"Hanken Grotesk",system-ui,-apple-system,sans-serif;
+  --mono:"Sono",ui-monospace,monospace;
   --tint:#ECF5E3; --tint-deep:#DDEBCF; --paper:#F9FDF5; --surface:#FFFFFF; --surface2:#EEF6E6;
   --line:#CFE1BE; --line-soft:#E1EDD5;
   --ink:#15280E; --muted:#4A6140;
@@ -103,9 +103,9 @@
 /* ================================================================ 4 · Desert Dunes */
 :root[data-theme="desert"],[data-theme="desert"]{
   --sw2:#E07A1F;
-  --display:"Yatra One","Mukta",system-ui,sans-serif;
-  --ui:"Mukta",system-ui,sans-serif;
-  --mono:"Red Hat Mono",ui-monospace,monospace;
+  --display:"Yatra One","Hanken Grotesk",system-ui,sans-serif;
+  --ui:"Hanken Grotesk",system-ui,-apple-system,sans-serif;
+  --mono:"Sono",ui-monospace,monospace;
   --tint:#FBF0DC; --tint-deep:#F4E0BE; --paper:#FFFBF2; --surface:#FFFFFF; --surface2:#FAF0DD;
   --line:#EAD3AD; --line-soft:#F2E3C8;
   --ink:#30200E; --muted:#6F5638;
@@ -129,9 +129,9 @@
 /* ================================================================ 5 · Polar Aurora */
 :root[data-theme="aurora"],[data-theme="aurora"]{
   --sw2:#1FA67A;
-  --display:"Exo 2","Archivo",system-ui,sans-serif;
-  --ui:"Archivo",system-ui,sans-serif;
-  --mono:"Azeret Mono",ui-monospace,monospace;
+  --display:"Exo 2","Hanken Grotesk",system-ui,sans-serif;
+  --ui:"Hanken Grotesk",system-ui,-apple-system,sans-serif;
+  --mono:"Sono",ui-monospace,monospace;
   --tint:#ECF2FA; --tint-deep:#DDE7F4; --paper:#F9FBFF; --surface:#FFFFFF; --surface2:#EDF3FA;
   --line:#CFDCEB; --line-soft:#E0E8F3;
   --ink:#0F1F33; --muted:#4A5D74;
@@ -155,9 +155,9 @@
 /* ================================================================ 6 · Satellite */
 :root[data-theme="orbit"],[data-theme="orbit"]{
   --sw2:#3F51D8;
-  --display:"Orbitron","Exo 2",system-ui,sans-serif;
-  --ui:"Exo 2",system-ui,sans-serif;
-  --mono:"Kode Mono",ui-monospace,monospace;
+  --display:"Orbitron","Hanken Grotesk",system-ui,sans-serif;
+  --ui:"Hanken Grotesk",system-ui,-apple-system,sans-serif;
+  --mono:"Sono",ui-monospace,monospace;
   --tint:#EEEFFA; --tint-deep:#E0E1F3; --paper:#FAFAFF; --surface:#FFFFFF; --surface2:#F0F1FB;
   --line:#D6D8EC; --line-soft:#E5E6F4;
   --ink:#16162E; --muted:#555677;

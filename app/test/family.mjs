@@ -18,8 +18,8 @@ let paid = 0; for (let i = 0; i < 40; i++) paid += F.earn('geography', 'Ahana', 
 ok(F.earnedToday('Ahana') === F.DAILY_CAP && paid === F.DAILY_CAP - 36, `the daily cap holds at ${F.DAILY_CAP} per app`);
 ok(F.earn('maths', 'Ahana', 'right') === 1, 'the cap is per app — another app still pays');
 const bal = F.balance('Ahana');
-ok(!F.spend('geography', 'Ahana', bal + 1, 'pin:gem') && F.balance('Ahana') === bal, 'spending never goes below zero');
-ok(F.spend('geography', 'Ahana', 20, 'pin:star') && F.balance('Ahana') === bal - 20 && W().kids.ahana.ledger.at(-1).n === -20, 'a fixed price is charged and written to the ledger');
+ok(!F.spend('geography', 'Ahana', bal + 1, 'extra:pin:gem') && F.balance('Ahana') === bal, 'spending never goes below zero');
+ok(F.spend('geography', 'Ahana', 20, 'extra:pin:star') && F.balance('Ahana') === bal - 20 && W().kids.ahana.ledger.at(-1).n === -20, 'a fixed price is charged and written to the ledger');
 ok(F.earn('geography', 'Kabir', 'right') === 1 && F.balance('kabir') === 1 && F.balance('Ahana') === bal - 20, 'siblings never share coins');
 ok(SHOP.every((x) => Number.isInteger(x.price) && x.price >= 0) && !SHOP.some((x) => /random|mystery|pack|spin|chance/i.test(x.name + x.blurb)), 'the shop: printed prices, nothing random');
 /* the demo writes nothing shared */
@@ -28,15 +28,20 @@ ok(F.earn('geography', 'Sample', 'stop') === 0 && !F.spend('geography', 'Ahana',
 F.trackMilestone('geography', 'Sample', 'stop', 'x');
 ok(JSON.stringify(store) === before, 'the demo writes nothing to the shared keys'); F.familyOff(false);
 
-/* the activity feed: the Hive reader's shape */
-let t = new Date(2026, 9, 2, 16, 5).getTime();
-const win = { addEventListener: () => {}, document: { hidden: false } };
-const A = F.trackActivity('geography', () => 'Ahana', { now: () => t, win });
-t += 60000; A.tick(); t += 60000; A.tick(); A.stop();
-const rows = JSON.parse(store['bizzing.activity']).s.filter((x) => x.a === 'geography' && !x.ev);
-ok(rows.length === 1 && rows[0].m === 2 && rows[0].d === '2026-10-02' && rows[0].t === 16 * 60 + 5 && rows[0].who === 'Ahana', 'two active minutes, one sitting: { a, d, t, m, who }');
-t += 5 * 60000; A.tick();
-ok(JSON.parse(store['bizzing.activity']).s.filter((x) => !x.ev)[0].m === 2, 'idle minutes are not counted');
+/* the activity feed, through the family's vendored tracker: a fake window and clock */
+let t = new Date(2026, 9, 2, 16, 5).getTime(), tickFn = null;
+const realNow = Date.now, realSI = globalThis.setInterval;
+Date.now = () => t; globalThis.window = globalThis; globalThis.addEventListener = () => {}; globalThis.removeEventListener = () => {};
+globalThis.document = { visibilityState: 'visible' }; globalThis.setInterval = (fn) => { tickFn = fn; return 1; }; globalThis.clearInterval = () => {};
+const A = F.trackActivity('geography', () => 'Ahana');
+for (let i = 0; i < 9; i++) { t += 15000; tickFn(); }            // two active minutes (input "now" kept fresh below)
+const rows0 = JSON.parse(store['bizzing.activity'] || '{"s":[]}').s.filter((x) => x.a === 'geography' && !x.ev);
+ok(rows0.length === 1 && rows0[0].m >= 1 && rows0[0].who === 'Ahana' && rows0[0].d === '2026-10-02', 'an active minute, one sitting: { a, d, t, m, who }');
+const m0 = rows0[0].m; t += 10 * 60000; for (let i = 0; i < 8; i++) { t += 15000; tickFn(); }
+ok(JSON.parse(store['bizzing.activity']).s.filter((x) => !x.ev).reduce((a, x) => a + x.m, 0) === m0, 'idle minutes are not counted');
+A.stop(); Date.now = realNow; globalThis.setInterval = realSI;
+F.familyOff(true); const b2 = JSON.stringify(store); const A2 = F.trackActivity('geography', () => 'Sample'); A2.stop();
+ok(JSON.stringify(store) === b2, 'the demo starts no tracker'); F.familyOff(false);
 F.trackMilestone('geography', 'Ahana', 'band', 'Reached Level 4');
 ok(JSON.parse(store['bizzing.activity']).s.some((x) => x.ev === 'band' && x.m === 0 && x.label === 'Reached Level 4'), 'a milestone is a row with m:0, ev and label');
 

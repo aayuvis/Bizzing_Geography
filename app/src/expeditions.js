@@ -15,6 +15,7 @@
 
    The record lives on the child: k.exp[expeditionId] = { at, seen:{key:day}, m:{modId:{on,tries,best}} }.
    Grown-ups are shown objectives mastered, never minutes. */
+import { gi, ico } from './icons.js';
 import { EXPEDITIONS, expeditionById, daysOf, EXPEDITIONS_INTRO, EXPEDITIONS_PARENT } from './data/expeditions.js';
 import { byId, drill } from './stops.js';
 import { dayKey, shuffle, rnd } from './rand.js';
@@ -110,7 +111,7 @@ export function dayTitle(d) {
   return `Practice · ${d.stops.map((s) => byId[s].title).join(' · ')}`;
 }
 const RY = (x) => 72 + 9 * Math.sin((x / 100) * Math.PI * 2 * 1.1 + 0.4);
-const camps = (e) => [...e.modules.map((m, i) => ({ id: m.id, n: i + 1, name: m.name })), { id: 'final', n: '🏁', name: 'The finish' }];
+const camps = (e) => [...e.modules.map((m, i) => ({ id: m.id, n: i + 1, name: m.name })), { id: 'final', n: 'end', name: 'The finish' }];
 
 export function viewHub(k, pageHead) {
   const all = EXPEDITIONS.map((e) => stats(k, e));
@@ -121,7 +122,7 @@ export function viewHub(k, pageHead) {
     <div class="crs-grid">${EXPEDITIONS.map((e, i) => {
       const s = all[i], pct = Math.round((100 * s.done) / s.days);
       return `<button class="crs-card" data-act="expOpen" data-arg="${e.id}" style="--ec:${e.colour}">
-        <span class="crs-fig" style="background-image:url(art/crs-${e.id}.webp)"><span class="crs-g">${e.glyph}</span>${s.complete ? '<span class="crs-done">🏅 Complete</span>' : s.started ? `<span class="crs-day">Day ${s.next ? s.next.n : s.days} of ${s.days}</span>` : ''}</span>
+        <span class="crs-fig" style="background-image:url(art/crs-${e.id}.webp)"><span class="crs-g">${gi(e.glyph)}</span>${s.complete ? `<span class="crs-done">${ico('medal')} Complete</span>` : s.started ? `<span class="crs-day">Day ${s.next ? s.next.n : s.days} of ${s.days}</span>` : ''}</span>
         <span class="crs-body"><span class="crs-sub">${esc(e.sub)}</span><b>${esc(e.name)}</b>
           <span class="crs-meta">${s.days} days · ${e.modules.length} parts · ${s.projects} projects · ${ageStr(e)}</span>
           ${pct ? `<span class="crs-bar"><i style="width:${pct}%"></i></span>` : ''}</span></button>`;
@@ -146,7 +147,7 @@ export function viewExpedition(k, eid, { pageHead, back, btn }, ui = {}) {
   const m = e.modules.find((x) => x.id === cp.id);
   const proj = md.find((d) => d.k === 'm'), art = proj && r.art[proj.key];
   return `<section class="crs-one" style="--ec:${e.colour}">
-    ${pageHead(`${e.glyph} ${esc(e.name)}`, '', back('nav', 'Expeditions', 'exp'), `<span class="chip">${s.done}/${s.days} days</span>`)}
+    ${pageHead(`${gi(e.glyph)} ${esc(e.name)}`, '', back('nav', 'Expeditions', 'exp'), `<span class="chip">${s.done}/${s.days} days</span>`)}
     <div class="board-scroll"><div class="board crs-board">
       <img src="art/crs-${e.id}.webp" alt="" width="1920" height="823">
       <svg class="road" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="${path}" class="rd-edge"/><path d="${path}" class="rd"/></svg>
@@ -156,12 +157,12 @@ export function viewExpedition(k, eid, { pageHead, back, btn }, ui = {}) {
     <div class="card pick-card crs-part">
       <p class="kicker">${cp.id === 'final' ? 'The finish' : `Part ${cp.n} of ${e.modules.length}`} · ${md.filter((d) => dayState(k, e, d) === 'done').length} of ${md.length} done</p>
       <h2>${esc(cp.id === 'final' ? 'Final test and final project' : m.name)}</h2>
-      <p class="crs-obj" id="crs-obj"><button class="read-btn" data-act="read" data-arg="#crs-obj" aria-label="Read this to me" title="Read this to me">🔊</button>${cp.id === 'final' ? 'Everything this expedition taught, mixed and cold — then one big thing to make.' : `After this part you can <b>${esc(m.objective)}</b>.${(r.m[m.id] || {}).on ? ' <span class="chip ok">learned ✓</span>' : ''}`}</p>
+      <p class="crs-obj" id="crs-obj"><button class="read-btn" data-act="read" data-arg="#crs-obj" aria-label="Read this to me" title="Read this to me">${ico('sound')}</button>${cp.id === 'final' ? 'Everything this expedition taught, mixed and cold — then one big thing to make.' : `After this part you can <b>${esc(m.objective)}</b>.${(r.m[m.id] || {}).on ? ' <span class="chip ok">learned ✓</span>' : ''}`}</p>
       <ol class="crs-steps">${md.map((d) => { const st = dayState(k, e, d);
         return `<li><button class="crs-step ${d.k} ${st}${nextHere && nextHere.key === d.key ? ' cur' : ''}" data-act="expDay" data-arg="${e.id}|${d.n}">
-          <span class="cs-g">${st === 'done' ? '✓' : GLYPH[d.k]}</span><span class="cs-k">${KIND[d.k]}</span><b>${dayTitle(d)}</b><i>${d.k === 'm' ? ENGINE_NAME[d.engine] : `${d.m} min`}</i></button></li>`; }).join('')}</ol>
+          <span class="cs-g">${st === 'done' ? '✓' : gi(GLYPH[d.k])}</span><span class="cs-k">${KIND[d.k]}</span><b>${dayTitle(d)}</b><i>${d.k === 'm' ? ENGINE_NAME[d.engine] : `${d.m} min`}</i></button></li>`; }).join('')}</ol>
       ${nextHere ? `<div class="crs-go">${sameDay ? '<p class="muted small">You learned this part today. The test counts as learned from tomorrow — practise now, or come back then.</p>' : ''}
-        ${btn(`${GLYPH[nextHere.k]} ${KIND[nextHere.k]}: ${nextHere.k === 'm' || nextHere.k === 'f' || nextHere.k === 'c' ? dayTitle(nextHere) : dayTitle(nextHere)} →`, 'expDay', `${e.id}|${nextHere.n}`, 'primary big')}</div>`
+        ${btn(`${gi(GLYPH[nextHere.k])} ${KIND[nextHere.k]}: ${nextHere.k === 'm' || nextHere.k === 'f' || nextHere.k === 'c' ? dayTitle(nextHere) : dayTitle(nextHere)} →`, 'expDay', `${e.id}|${nextHere.n}`, 'primary big')}</div>`
         : cp.id === 'final' ? certificate(k, e) : `<p class="crs-donep">✓ Part done — ${sel < C.length - 1 ? btn('Next part →', 'expPart', String(sel + 1), 'small') : ''}</p>`}
       ${art ? `<div class="crs-art"><span class="pj-thumbwrap">${ENGINES[proj.engine].thumb(proj, art)}</span><span><span class="kicker">You made</span><b>${esc(proj.made)}</b></span>${btn('Open it', 'expDay', `${e.id}|${proj.n}`, 'small')}</div>` : ''}
     </div>
@@ -174,7 +175,7 @@ function gallery(k, e) {
   return `<div class="card crs-gal"><h3>Things you made</h3><div class="crs-galg">${made.map((d) => `<button class="crs-gi" data-act="expDay" data-arg="${e.id}|${d.n}"><span class="pj-thumbwrap">${ENGINES[d.engine].thumb(d, r.art[d.key])}</span><b>${esc(d.name)}</b></button>`).join('')}</div></div>`;
 }
 function certificate(k, e) {
-  return `<div class="crs-cert"><span class="crs-medal">🏅</span><p class="kicker">Expedition complete</p><h3>${esc(k.name)} finished ${esc(e.name)}</h3>
+  return `<div class="crs-cert"><span class="crs-medal">${ico('medal')}</span><p class="kicker">Expedition complete</p><h3>${esc(k.name)} finished ${esc(e.name)}</h3>
     <ul>${e.modules.map((m) => `<li>✓ can ${esc(m.objective)}</li>`).join('')}</ul>
     <button class="btn" onclick="window.print()">Print the certificate</button></div>`;
 }
@@ -192,15 +193,15 @@ export function viewProject(k, arg, { pageHead, back, btn }) {
   const { e, d } = P, E = ENGINES[d.engine], st = projState(k, e, d), goals = E.goals(d, st), all = goals.every((g) => g.ok);
   const made = !!((k.exp[e.id] || {}).art || {})[d.key];
   return `<section class="pj-page" style="--ec:${e.colour}">
-    ${pageHead(`🛠️ ${esc(d.name)}`, '', back('expOpen', e.name, e.id), `<span class="chip">${ENGINE_NAME[d.engine]}</span>`)}
+    ${pageHead(`${ico('tools')} ${esc(d.name)}`, '', back('expOpen', e.name, e.id), `<span class="chip">${ENGINE_NAME[d.engine]}</span>`)}
     <div class="pj-grid">
       <div class="card pj-build">${E.view(d, st)}</div>
       <aside class="card pj-side">
         <p class="kicker">${d.mod === 'final' ? 'Final project' : `Part ${e.modules.findIndex((m) => m.id === d.mod) + 1} project`}</p>
-        <p class="pj-brief" id="pj-brief"><button class="read-btn" data-act="read" data-arg="#pj-brief, .pj-goals" aria-label="Read the brief and the checklist to me" title="Read the brief and the checklist to me">🔊</button>${esc(d.brief)}</p>
+        <p class="pj-brief" id="pj-brief"><button class="read-btn" data-act="read" data-arg="#pj-brief, .pj-goals" aria-label="Read the brief and the checklist to me" title="Read the brief and the checklist to me">${ico('sound')}</button>${esc(d.brief)}</p>
         <h3>Your checklist</h3>
         <ul class="pj-goals">${goals.map((g) => `<li class="${g.ok ? 'ok' : ''}"><span>${g.ok ? '✓' : '○'}</span>${esc(g.t)}</li>`).join('')}</ul>
-        ${btn(made && all ? 'Save my changes ✓' : all ? 'Finish project 🎉' : `${goals.filter((g) => !g.ok).length} to go`, 'projDone', '', all ? 'primary big wide' : 'big wide', all ? '' : 'disabled')}
+        ${btn(made && all ? 'Save my changes ✓' : all ? `Finish project ${ico('sparkle')}` : `${goals.filter((g) => !g.ok).length} to go`, 'projDone', '', all ? 'primary big wide' : 'big wide', all ? '' : 'disabled')}
         ${made ? `<p class="muted small center-t">Made on ${esc(k.exp[e.id].seen[d.key] || '')}. You can keep changing it.</p>` : ''}
       </aside>
     </div>
@@ -222,7 +223,7 @@ export function doDay(k, eid, n) {
   if (d.k === 't') { ledger.did(k, eid, d.key); return d.tool ? { go: ['lib', d.tool], toast: d.how } : { go: ['stop', d.stop] }; }
   if (d.k === 'm') { rec(k, eid); return { go: ['proj', `${eid}|${d.key}`] }; }
   const items = quizFor(d, rnd, d.k === 'f' ? 15 : 10, reviewStops(e, d));
-  return { run: { title: `${e.name} · ${KIND[d.k]}`, items, extra: { exp: eid, day: d.n, mod: d.mod, check: d.k === 'c' || d.k === 'f', key: d.key, sub: `${GLYPH[d.k]} ${KIND[d.k]}` } } };
+  return { run: { title: `${e.name} · ${KIND[d.k]}`, items, extra: { exp: eid, day: d.n, mod: d.mod, check: d.k === 'c' || d.k === 'f', key: d.key, sub: KIND[d.k] } } };
 }
 export function finishDay(k, run, right, n) {
   const e = expeditionById[run.exp];

@@ -3,6 +3,8 @@
 
 import { R } from './runtime.js';
 import { esc, cls, plural } from './ui.js';
+import { ico, gi } from './icons.js';
+import { shelly, says, empty } from './mascot.js';
 export { esc };
 import { WORLDS, STOPS, byId, worldOf, stopsIn } from './stops.js';
 import { LEVELS, ageOf, firstLevel, START } from './levels.js';
@@ -13,6 +15,7 @@ import { learnedList, stats as expStats } from './expeditions.js';
 import { GOALS, goalOf, sessionsToday } from './model.js';
 import { todaysWord } from './library/dictionary.js';
 import { LANDMARKS } from './data/landmarks.js';
+import { reviewDue } from './model.js';
 import { BANDS, AVATARS, AVATAR_PACKS, AVATAR_NAME, avatarFile, RANKS, RANK_SRC, rankOf, kid, stopRec, road, stopOpen, lvFor, starsTotal, maxStars, levelOf } from './model.js';
 import { worldSVG, regionSVG, viewFor } from './map.js';
 import { POSTCARDS } from './data/postcards.js';
@@ -25,6 +28,8 @@ import { listOptions } from './listmode.js';
 import { HIVE, balance, ledger as walletLedger, APP, activityRows } from './family.js';
 import { MEDALS, earned, medallion, SHOP, shopOf, PIN_PATH, TIER } from './rewards.js';
 import { nextStep, homeExpedition } from './next.js';
+import { missDue, missCount } from './mistakes.js';
+import { certificatesOf } from './certificate.js';
 
 /* ------------------------------------------------------------- helpers */
 
@@ -51,93 +56,11 @@ export function pageHead(title, sub = '', backBtn = '', right = '') {
 }
 /* 🔊 read it to me (K1): the device's own voice, an Indian English one first. The
    button names WHAT it reads; main.js reads that element's text. */
-export const readBtn = (sel, label = 'Read it to me') => `<button class="read-btn" data-act="read" data-arg="${esc(sel)}" aria-label="${esc(label)}" title="${esc(label)}">🔊</button>`;
+export const readBtn = (sel, label = 'Read it to me') => `<button class="read-btn" data-act="read" data-arg="${esc(sel)}" aria-label="${esc(label)}" title="${esc(label)}">${ico('sound')}</button>`;
 export const srcList = (src) => (src && src.length ? `<details class="src"><summary>Where this is checked</summary><ul>${src.map((s) => `<li>${esc(s)}</li>`).join('')}</ul></details>` : '');
 
-/* ------------------------------------------------------------- the shell */
-
-export const TABS = [
-  { k: 'home', n: 'Home', icon: 'home' },
-  { k: 'atlas', n: 'Atlas', icon: 'map' },
-  { k: 'exp', n: 'Expeditions', icon: 'flag' },
-  { k: 'library', n: 'Library', icon: 'book' },
-];
-const NAV_OF = { lib: 'library', stop: 'atlas', world: 'atlas', road: 'atlas', expd: 'exp', proj: 'exp', run: null, me: 'home', grownups: null, privacy: null };
-
-export function icon(k) {
-  const p = {
-    home: '<path d="M4 11.5 12 5l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z"/>',
-    map: '<path d="M9 4 3.5 6v14L9 18l6 2 5.5-2V4L15 6z"/><path d="M9 4v14M15 6v14" class="i2"/>',
-    road: '<circle cx="6" cy="18" r="2.6"/><circle cx="18" cy="6" r="2.6"/><path d="M8.4 17c5-1 1.5-8.5 7.2-10" class="i2"/>',
-    book: '<path d="M4 5.5A2 2 0 0 1 6 4h5v15H6a2 2 0 0 0-2 1.5z"/><path d="M20 5.5A2 2 0 0 0 18 4h-5v15h5a2 2 0 0 1 2 1.5z" class="i2"/>',
-    lock: '<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" class="i2"/>',
-    sound: '<path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" class="i2"/>',
-    mute: '<path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path d="m16 9.5 5 5M21 9.5l-5 5" class="i2"/>',
-    moon: '<path d="M19.5 14.5A8 8 0 0 1 9.5 4.5a8 8 0 1 0 10 10z"/>',
-    palette: '<path d="M12 3a9 9 0 1 0 0 18c1.4 0 2-.9 2-1.8 0-1.3-1.2-1.6-1.2-2.8 0-1 .8-1.6 1.9-1.6H17a4 4 0 0 0 4-4C21 6.6 17 3 12 3z"/><circle cx="7.5" cy="11" r="1.4" class="i2"/><circle cx="10.5" cy="7" r="1.4" class="i2"/><circle cx="15" cy="7.5" r="1.4" class="i2"/>',
-    star: '<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9 6.8 19.6l1-5.8-4.3-4.1 5.9-.9z"/>',
-    flag: '<path d="M5 21V4"/><path d="M5 4.5c4-2 7 2 11 0l3-1v10l-3 1c-4 2-7-2-11 0" class="i2"/>',
-  }[k] || '';
-  return `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">${p}</svg>`;
-}
-
-const HEX = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3l11.3 6.5v13L16 29 4.7 22.5v-13z" class="hx"/><path d="M16 10.5l5 2.9v5.8l-5 2.9-5-2.9v-5.8z" class="hx2"/></svg>';
-/* The avatar menu (family standard §3): every child in the household, their own
-   page, and the device's sound and light. Switching never mixes data. */
-function whoMenu(k) {
-  const dark = document.documentElement.getAttribute('data-mode') === 'dark';
-  return `<div class="who-menu" role="menu" aria-label="Explorers and settings">
-    <p class="wm-h">Who is exploring?</p>
-    ${R.h.kids.map((x) => `<button role="menuitemradio" aria-checked="${x.id === k.id}" class="wm-kid${x.id === k.id ? ' on' : ''}" data-act="switchKid" data-arg="${x.id}">${av(x.avatar, 32)}<b>${esc(x.name)}</b>${x.id === k.id ? '<i>✓</i>' : ''}</button>`).join('')}
-    ${R.demo ? '' : '<button role="menuitem" class="wm-i" data-act="nav" data-arg="welcome">＋ Add an explorer</button>'}
-    <hr>
-    <button role="menuitem" class="wm-i" data-act="nav" data-arg="me">${icon('star')} ${esc(k.name)}’s page — faces, medals, worlds</button>
-    <button role="menuitemcheckbox" aria-checked="${R.sound}" class="wm-i" data-act="sound">${icon(R.sound ? 'sound' : 'mute')} Sound ${R.sound ? 'on' : 'off'}</button>
-    <button role="menuitemcheckbox" aria-checked="${dark}" class="wm-i" data-act="mode">${icon('moon')} ${dark ? 'Dark' : 'Light'} — switch</button>
-  </div>`;
-}
-
-/* A medal, celebrated once: it spins in with what earned it — never compared with anyone. */
-function medalPop(m) {
-  return `<div class="mp-veil" role="dialog" aria-modal="true" aria-label="New medal: ${esc(m.name)}"><div class="card mp-card">
-    <p class="kicker">New medal</p><div class="mp-spin">${medallion(m, 132)}</div><h2>${esc(m.name)}</h2><p class="muted">${esc(m.how)}</p>
-    <button class="btn primary big" data-act="medalOk" autofocus>Put it on my shelf</button></div></div>`;
-}
-
-export function shell(body) {
-  const h = R.h, k = kid(h);
-  const nav = NAV_OF[R.ui.nav] !== undefined ? NAV_OF[R.ui.nav] : R.ui.nav;
-  const tabs = (cl) => TABS.map((t) => `<button class="${cl}${nav === t.k ? ' on' : ''}" data-act="nav" data-arg="${t.k}" ${nav === t.k ? 'aria-current="page"' : ''}>${icon(t.icon)}<span>${t.n}</span></button>`).join('');
-  const inRun = R.ui.nav === 'run';
-  return `
-  <a class="skip" href="#main">Skip to the content</a>
-  <header class="top">
-    ${inRun ? '' : `<a class="hive" href="${HIVE}" aria-label="Back to Bizzing Hive" title="Bizzing Hive — the family’s day planner">${HEX}</a>`}
-    <button class="brand" data-act="nav" data-arg="home" aria-label="Bizzing Geography — home">
-      <svg viewBox="0 0 40 40" class="brand-mark" aria-hidden="true"><rect width="40" height="40" rx="11" class="bm-bg"/><circle cx="20" cy="20" r="11.5" class="bm-globe"/><path d="M8.5 20h23M20 8.5c-5 6-5 17 0 23M20 8.5c5 6 5 17 0 23" class="bm-lines"/><path d="M28 7l3 5-5 1z" class="bm-star"/></svg>
-      <span class="brand-t">Bizzing <em>Geography</em></span>
-    </button>
-    ${k ? `<nav class="tabs" aria-label="Main">${tabs('tab')}</nav>` : '<span class="grow"></span>'}
-    <div class="tools">
-      ${k ? `<button class="tool" data-act="themes" aria-label="Theme: ${esc(THEMES.find((t) => t.id === themeOf(k)).name)}" title="Your world">${icon('palette')}</button>` : `<button class="tool" data-act="mode" aria-label="Light or dark">${icon('moon')}</button>`}
-      <button class="tool" data-act="nav" data-arg="grownups" aria-label="Grown-ups" title="Grown-ups">${icon('lock')}</button>
-      ${k ? `<button class="who" data-act="menu" aria-haspopup="menu" aria-expanded="${!!R.ui.menu}" aria-label="${esc(k.name)} — switch explorer, your page, sound">${av(k.avatar, 34, '')}<span class="who-v" aria-hidden="true">▾</span></button>` : ''}
-    </div>
-  </header>
-  ${k && R.ui.menu ? whoMenu(k) : ''}
-  ${R.demo ? '<div class="demo-bar" role="note"><b>Sample explorer</b> — a few weeks of made-up progress to look round. Nothing here is saved. <a href="./">Leave the sample</a></div>' : ''}
-  ${R.fromHive && !inRun ? `<a class="hive-chip" href="${HIVE}">← back to my day</a>` : ''}
-  ${h.parent.tester ? '<div class="tester" role="note">TESTER MODE — every stop is open. Nothing about the child changes. <button data-act="testerOff">Turn off</button></div>' : ''}
-  <main id="main" class="content" tabindex="-1">${body}</main>
-  ${k && (R.ui.medalPop || []).length ? medalPop(R.ui.medalPop[0]) : ''}
-  ${k ? `<nav class="tabbar" aria-label="Main">${tabs('tb')}</nav>` : ''}
-  <footer class="foot">Bizzing Geography · part of the Bizzing family with
-    <a href="https://www.bizzingbee.com/" rel="noopener">Bizzing Bee</a>,
-    <a href="https://aayuvis.github.io/bizzingindia.com/" rel="noopener">Bizzing India</a>,
-    <a href="https://aayuvis.github.io/bizzingfinance/" rel="noopener">Bizzing Finance</a> and
-    <a href="https://aayuvis.github.io/Bizzing-Maths/" rel="noopener">Bizzing Maths</a>
-    · No ads, no tracking, no accounts. ${GKEY && R.h.parent.streetview ? 'Where on Earth?’s real photos load from Google Street View (a grown-up can switch them off); nothing about your child is sent.' : 'Nothing leaves this device.'} Maps: Natural Earth (India’s depiction). <button class="linkish" data-act="nav" data-arg="privacy">Privacy</button></footer>`;
-}
+/* ------------------------------------------------------------- the shell: chrome.js */
+export const icon = (k) => ico(k);
 
 /* ------------------------------------------------------------- welcome */
 
@@ -148,38 +71,38 @@ export function shell(body) {
    page from the first minute, all free: nothing here is locked or earned. */
 export const STARTER_AVATARS = ['compowl', 'savannalion', 'dolphin', 'volcadrake', 'toucan'];
 export const STARTER_THEMES = ['atlas', 'ocean'];
-const guide = (text) => `<div class="ob-say">${av('compowl', 84, '')}<p>${text}</p></div>`;
+const guide = (text, pose = 'wave') => `<div class="ob-say">${shelly(pose, 96)}<p>${text}</p></div>`;
 export function viewWelcome() {
   const first = !R.h.kids.length;
   const d = R.ui.draft || (R.ui.draft = { step: first ? 'land' : 0, name: '', band: '', avatar: STARTER_AVATARS[0], theme: 'atlas' });
   const shell = (body, n) => `<section class="welcome ob">${n != null ? `<div class="ob-top">${n ? `<button class="back" data-act="obBack" aria-label="Back"><span aria-hidden="true">←</span></button>` : first ? '' : back('nav', 'Cancel', 'home')}<ol class="ob-dots" aria-label="Step ${n + 1} of 4">${[0, 1, 2, 3].map((i) => `<li class="${i <= n ? 'on' : ''}"></li>`).join('')}</ol></div>` : ''}${body}</section>`;
   if (d.step === 'land') return shell(`<div class="ob-land">
-      <div class="ob-hero" style="background-image:url(art/home-hero.webp)"></div>
+      <div class="ob-hero" style="background-image:url(art/home-hero.webp)">${shelly('wave', 150, 'ob-shelly')}</div>
       <p class="kicker">Bizzing Geography</p>
       <h1 class="display">Know the world — <em>and know how you know.</em></h1>
       <p class="lead">Maps and compasses, continents and capitals, rivers, weather and the restless Earth — for explorers aged 6 to 14.</p>
-      ${btn('Start exploring →', 'obStart', '', 'primary big wide')}
+      ${btn(`Start exploring ${ico('next')}`, 'obStart', '', 'primary big wide')}
       ${btn('Try one question first', 'trial', '', 'big wide ghost')}
       <div class="ob-counts">${[[STOPS.length, 'stops on the Atlas'], [EXPEDITIONS.length, 'expeditions'], [195, 'countries'], [SHELF.length, 'Library tools']].map(([n, l]) => `<div><b>${n}</b><span>${l}</span></div>`).join('')}</div>
-      <div class="card ob-promises">${[['🗺️', 'One map, drawn with care', 'Every map is drawn by the app from open data — never by an AI.'], ['🔒', 'Nothing about your child leaves this device', 'A first name and an age band. No email, no photo, no tracking, no ads.'], ['📚', 'Every fact says where it is checked', 'And a grown-up’s page that reports what was learned, not how long.']].map(([g, t, x]) => `<div><span>${g}</span><p><b>${t}</b><br><span class="muted small">${x}</span></p></div>`).join('')}</div>
+      <div class="card ob-promises">${[['map', 'One map, drawn with care', 'Every map is drawn by the app from open data — never by an AI.'], ['lock', 'Nothing about your child leaves this device', 'A first name and an age band. No email, no photo, no tracking, no ads.'], ['book', 'Every fact says where it is checked', 'And a grown-up’s page that reports what was learned, not how long.']].map(([g, t, x]) => `<div><span>${ico(g)}</span><p><b>${t}</b><br><span class="muted small">${x}</span></p></div>`).join('')}</div>
       <p class="muted small center-t">Part of the Bizzing family, with Bizzing Bee, India, Finance and Maths.</p></div>`);
-  if (d.step === 0) return shell(`${guide(first ? 'Hello, explorer! I am Compass Owl, and I know the way to everywhere. What shall I call you?' : 'Another explorer! What shall I call this one?')}
+  if (d.step === 0) return shell(`${guide(first ? 'Hello, explorer! I am Shelly. My shell is a globe, and I know the way round it. What shall I call you?' : 'Another explorer! What shall I call this one?')}
     <div class="card ob-card"><label class="lab" for="kname">First name or nickname</label>
       <input id="kname" class="inp big" data-draft="name" value="${esc(d.name)}" maxlength="20" autocomplete="off" autocapitalize="words" placeholder="e.g. Ahana">
       <p class="hint">Just a first name — never a surname, a birthday, a photo or where you live.</p>
       ${btn('Next →', 'obNext', '', 'primary big wide', d.name.trim() ? '' : 'disabled')}</div>`, 0);
   if (d.step === 1) return shell(`${guide(`Good to meet you, <b>${esc(d.name)}</b>! How old are you? It decides where your journey starts.`)}
     <div class="card ob-card ob-opts">${BANDS.map((b) => `<button class="ob-opt${d.band === b.id ? ' on' : ''}" data-act="draftBand" data-arg="${b.id}"><b>${b.label}</b><span>${b.blurb} — you start on Level ${levelOf(START[b.id]).n}, ${esc(levelOf(START[b.id]).name)}.</span></button>`).join('')}</div>`, 1);
-  if (d.step === 2) return shell(`${guide('Every explorer needs a travelling companion. Which one is yours?')}
+  if (d.step === 2) return shell(`${guide('Every explorer needs a face of their own. Which one is yours? There are ninety-six to find.', 'point')}
     <div class="card ob-card"><div class="ob-avs" role="radiogroup" aria-label="Your companion">${STARTER_AVATARS.map((a) => `<button id="av-ob-${a}" class="av-pick${d.avatar === a ? ' on' : ''}" role="radio" aria-checked="${d.avatar === a}" data-act="draftAv" data-arg="${a}" aria-label="${esc(AVATAR_NAME[a])}">${av(a, 96)}<span>${esc(AVATAR_NAME[a].replace(/ \(.*\)/, ''))}</span></button>`).join('')}</div>
-      <p class="hint center-t">${AVATARS.length - STARTER_AVATARS.length} more companions wait on your own page — change any time.</p>
+      <p class="hint center-t">${AVATARS.length - STARTER_AVATARS.length} more faces wait in your Collection — some free, some to earn with Bizzing coins.</p>
       ${btn('Next →', 'obNext', '', 'primary big wide')}</div>`, 2);
-  return shell(`${guide('Last one! Which world would you like to explore in? It changes the colours, the letters and the living picture behind everything.')}
+  return shell(`${guide('Last one! Which world would you like to explore in? It changes the colours, the letters, the living picture and the music.', 'think')}
     <div class="card ob-card"><div class="themes ob-themes" role="radiogroup" aria-label="Your world">${THEMES.filter((t) => STARTER_THEMES.includes(t.id)).map((t) => `<button class="theme-card" id="theme-ob-${t.id}" data-theme="${t.id}" data-act="draftTheme" data-arg="${t.id}" role="radio" aria-checked="${d.theme === t.id}">
         <span class="tc-sw" aria-hidden="true"><svg class="tc-map" viewBox="0 0 120 60"><rect width="120" height="60" class="tc-sea"/><path class="tc-land" d="M8 14c10-6 22-4 28 4s2 16-6 20-18 8-22 0-6-18 0-24zM52 8c14-4 30 0 36 8s14 4 22 10-2 18-14 18-16-6-26-4-22-2-22-12 0-16 4-20z"/><path class="tc-hl" d="M64 22c6-2 12 2 10 8s-10 6-13 2-3-8 3-10z"/></svg><span class="tc-aa">Aa</span>${d.theme === t.id ? '<span class="tc-on">On</span>' : ''}</span>
         <span class="tc-t"><b>${t.name}</b><span>${t.blurb}</span></span></button>`).join('')}</div>
-      <p class="hint center-t">Four more worlds on your page — desert, rainforest, aurora and space.</p>
-      ${btn('Start exploring 🚀', 'createKid', '', 'primary big wide')}</div>`, 3);
+      <p class="hint center-t">Four more worlds — rainforest, desert, aurora and space — open later with Bizzing coins or the family plan.</p>
+      ${btn(`Start exploring ${ico('next')}`, 'createKid', '', 'primary big wide')}</div>`, 3);
 }
 
 /* ------------------------------------------------------------- home */
@@ -188,34 +111,37 @@ const greet = () => { const h = new Date().getHours(); return h < 12 ? 'Good mor
 /* the place of the HOUR: one postcard per hour, the same in every house */
 export const todaysCard = (t = new Date()) => pick(POSTCARDS, seeded('pc' + dayKey(t) + ':' + t.getHours()));
 
-/* What your avatar says (Bizzing Bee's avatar greetings): a line per pack, turned by the day. */
-const SAY = {
-  kit: ['Compass ready. Which way today, {n}?', 'I packed the map. You bring the questions, {n}!', 'Every explorer starts with one step, {n}.'],
-  continents: ['I came a long way to explore with you, {n}!', 'Seven continents, {n} — which one first?', 'My home is on the map somewhere. Can you find it, {n}?'],
-  ocean: ['The sea covers most of the planet, {n}. Dive in!', 'Swim with me to somewhere new, {n}.', 'Which ocean shall we cross today, {n}?'],
-  earth: ['The Earth is always moving, {n}. Let’s keep up!', 'Mountains, rivers, storms — pick one, {n}!', 'Ready for an adventure, {n}?'],
-  forest: ['The forest is waking up, {n}. Let’s explore!', 'Follow the river with me, {n}.', 'So many places to see, {n}. Where to?'],
-};
-function sayLine(k) {
-  const pack = (AVATAR_PACKS.find((p) => p.avatars.includes(k.avatar)) || { id: 'kit' }).id;
-  const L = SAY[pack] || SAY.kit;
-  return L[Math.floor(seeded('say' + dayKey() + k.id)() * L.length)].replace('{n}', k.name);
+/* What Shelly says (B5): a line BUILT from what this child last did — the stop, the score,
+   the misses waiting — chosen once per sitting and never the same line twice in a row. */
+const SAY = ['Which way today, {n}? I have the whole globe on my back.', 'Every explorer starts with one step, {n}.', 'Seven continents, {n} — which one first?',
+  'The sea covers most of the planet, {n}. Dive in!', 'Mountains, rivers, storms — pick one, {n}!', 'So many places to see, {n}. Where to?'];
+export function greetLines(k) {
+  const L = k.last, n = esc(k.name), out = [];
+  if (L && Date.now() - L.at < 7 * 864e5) {
+    const t = esc(L.title);
+    out.push({ stop: `Last time you passed “${t}”. The next stop is ready, ${n}.`, try: `You had a go at “${t}”. Shall we try it again, ${n}?`,
+      exp: `Day done on ${t}! The next day is waiting.`, geo: `You pinned places all over the world, ${n}. Your best round is ${L.n ? L.n.toLocaleString('en-US') : ''} points.`,
+      made: `You made “${t}”. It is in your gallery.`, check: `Level check done — welcome to a new road, ${n}!`, mist: `You went back over your misses, ${n}. That is how places stick.` }[L.k] || '');
+    if (L.right != null && L.n) out.push(`${L.right} of ${L.n} right on “${t}” last time${L.right >= L.n - 1 ? ' — nearly all of them' : ''}. Ready for more, ${n}?`);
+  }
+  const due = missDue(k).length;
+  if (due) out.push(`${due === 1 ? 'One of your misses is' : `${due} of your misses are`} ready to try again, ${n}. They stick better after a gap.`);
+  const known = Object.values((k.lib.capitals || {}).box || {}).filter((b) => b >= 2).length;
+  if (known) out.push(`You know ${known === 1 ? 'one capital' : known + ' capitals'} for sure now, ${n}. Shall we add one more?`);
+  if (!out.filter(Boolean).length) out.push(...SAY.map((x) => x.replace('{n}', n)));
+  return out.filter(Boolean);
+}
+function greetLine(k) {
+  const key = ((k.last || {}).at || 0) + '|' + dayKey();
+  if (k.greet && k.greet.key === key) return k.greet.line;
+  const lines = greetLines(k), prev = k.greet && k.greet.line;
+  const pool = lines.length > 1 ? lines.filter((l) => l !== prev) : [...lines, ...SAY.map((x) => x.replace('{n}', esc(k.name)))].filter((l) => l !== prev);
+  const line = pool[Math.floor(seeded('say' + key + k.id)() * pool.length)];
+  k.greet = { key, line };
+  return line;
 }
 const ring = (n, goal) => { const r = 34, c = 2 * Math.PI * r, f = Math.min(1, n / goal);
   return `<svg class="h-ring-svg" viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="${r}" class="rb"/><circle cx="40" cy="40" r="${r}" class="rf" stroke-dasharray="${(f * c).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 40 40)"/></svg>`; };
-
-/* What the companion says: about the last thing this child actually did, when
-   there is one (k.last, written when a station, day, round or project ends). */
-function greetLine(k) {
-  const L = k.last;
-  if (L && Date.now() - L.at < 7 * 864e5) {
-    const t = esc(L.title);
-    return { stop: `Last time you passed “${t}”. The next station is ready, ${esc(k.name)}.`, try: `You had a go at “${t}”. Shall we try it again, ${esc(k.name)}?`,
-      exp: `Day done on ${t}! The next day is waiting.`, geo: `You pinned five places, ${esc(k.name)}. Your best is ${L.n ? L.n.toLocaleString('en-US') : ''} points.`,
-      made: `You made “${t}”. It is in your gallery.`, check: `Level check done — welcome to a new road, ${esc(k.name)}!` }[L.k] || esc(sayLine(k));
-  }
-  return esc(sayLine(k));
-}
 
 /* THE HOME (family standard §2, Bizzing Bee's template): greeting with the daily
    ring and the place of the hour; ONE Continue card — the only filled button on
@@ -233,7 +159,7 @@ export function viewHome() {
   const trip = (k.trips || {})[dayKey()];
   return `<section class="home hm">
     <div class="card hm-hello">
-      <div class="hm-me">${av(k.avatar, 96, '')}<div class="hm-say"><p class="muted small">${greet()}, <b>${esc(k.name)}</b></p><p class="hm-bub">${greetLine(k)}</p></div></div>
+      <div class="hm-me">${shelly('wave', 104, 'hm-shelly')}<div class="hm-say"><p class="muted small hm-who">${av(k.avatar, 28, '')} ${greet()}, <b>${esc(k.name)}</b></p><p class="hm-bub">${greetLine(k)}</p></div></div>
       <div class="hm-ring" role="group" aria-label="Today’s ring: ${done} of ${goal}">
         <div class="h-ring-c">${ring(done, goal)}<span><b>${done}/${goal}</b><i>today</i></span></div>
         <div><p class="small"><b>Today’s ring</b><br><span class="muted">each finished quiz, day or round fills a notch</span></p>
@@ -241,42 +167,42 @@ export function viewHome() {
       </div>
     </div>
     <div class="card hm-go">
-      <div class="hm-art" style="background-image:url(art/${n.art}.webp)"><span class="h-badge">${n.glyph}</span></div>
+      <div class="hm-art" style="background-image:url(art/${n.art}.webp)"><span class="h-badge">${gi(n.glyph)}</span></div>
       <div class="hm-body">
         <p class="kicker">Next on your journey · ${esc(n.kicker)}</p>
         <h2>${n.html ? n.title : esc(n.title)}</h2>
         <p class="muted small hm-sub">${esc(n.sub)}</p>
         <div class="hm-prog">
-          <span class="hm-bar" aria-label="Level ${n.level}: ${n.done} of ${n.total} stations"><i style="width:${Math.round((100 * n.done) / Math.max(1, n.total))}%"></i></span>
-          <span class="small"><b>Level ${n.level}</b> · ${n.done} of ${n.total} stations · <span title="${esc(rk.why)}">${esc(rk.n)}</span>${rk.next ? ` <span class="hm-rk"><i style="width:${rk.pct}%"></i></span>` : ''}</span>
+          <span class="hm-bar" aria-label="Level ${n.level}: ${n.done} of ${n.total} stops"><i style="width:${Math.round((100 * n.done) / Math.max(1, n.total))}%"></i></span>
+          <span class="small"><b>Level ${n.level}</b> · ${n.done} of ${n.total} stops · <span title="${esc(rk.why)}">${esc(rk.n)}</span>${rk.next ? ` <span class="hm-rk"><i style="width:${rk.pct}%"></i></span>` : ''}</span>
         </div>
-        <button class="btn primary big hm-cta" data-act="${n.act}" data-arg="${esc(n.arg)}">Continue ▶</button>
+        <button class="btn primary big hm-cta" data-act="${n.act}" data-arg="${esc(n.arg)}">Continue ${ico('next')}</button>
       </div>
     </div>
     <div class="card hm-exp">
-      <div class="hm-exp-art" style="background-image:url(art/crs-${e.id}.webp)"><span class="h-badge">${e.glyph}</span></div>
+      <div class="hm-exp-art" style="background-image:url(art/crs-${e.id}.webp)"><span class="h-badge">${gi(e.glyph)}</span></div>
       <div><p class="kicker">${es.started ? 'Your expedition' : 'An expedition for you'} · ${es.started ? `day ${ed ? ed.n : es.days} of ${es.days}` : `${es.days} days`}</p>
         <h3>${esc(e.name)}</h3><span class="hm-bar thin"><i style="width:${Math.round((100 * es.done) / es.days)}%"></i></span>
         <div class="row gap wrap">${btn(es.started ? 'Open the expedition' : 'Have a look', 'expOpen', e.id, 'small')}${btn('All expeditions', 'nav', 'exp', 'small ghost')}</div></div>
     </div>
     <div class="hm-three" aria-label="Today’s three">
-      <button class="card hm-t" data-act="trip"><span class="hm-tg">⏱️</span><span><span class="kicker">5-minute trip</span><b>${trip ? `Done today — ${trip.right} of ${trip.n}` : 'Review, one new thing, one map'}</b><span class="muted small">${trip ? 'Another one any time.' : 'Ends by itself. Nothing lost for skipping.'}</span></span></button>
+      <button class="card hm-t" data-act="trip"><span class="hm-tg">${ico('timer')}</span><span><span class="kicker">5-minute trip</span><b>${trip ? `Done today — ${trip.right} of ${trip.n}` : 'Review, one new thing, one map'}</b><span class="muted small">${trip ? 'Another one any time.' : 'Ends by itself. Nothing lost for skipping.'}</span></span></button>
       <button class="card hm-t" data-act="openPlace" data-arg="${pc.id}"><img src="art/${pc.id}.webp" alt="" loading="lazy" width="1280" height="720"><span><span class="kicker">Place of the hour</span><b>Where on Earth is this?</b><span class="muted small">${doneToday ? `You scored ${doneToday.toLocaleString('en-US')} today.` : 'Pin it on the map.'}</span></span></button>
       <button class="card hm-t" data-act="openLandmark" data-arg="${lm.id}"><img src="art/lm-${lm.id}.webp" alt="" loading="lazy" width="960" height="720"><span><span class="kicker">Landmark of the day</span><b>${esc(lm.name)}</b><span class="muted small">${esc(lm.where)}</span></span></button>
     </div>
     <nav class="hm-ways" aria-label="Ways in">
-      <button class="hm-w" data-act="nav" data-arg="atlas"><span>🗺️</span><b>Atlas</b><i>★ ${starsTotal(k)} / ${maxStars()}</i></button>
-      <button class="hm-w" data-act="nav" data-arg="exp"><span>🧭</span><b>Expeditions</b><i>${EXPEDITIONS.length} journeys</i></button>
-      <button class="hm-w" data-act="nav" data-arg="library"><span>📚</span><b>Library</b><i>${SHELF.length} tools</i></button>
+      <button class="hm-w" data-act="nav" data-arg="atlas"><span>${ico('map')}</span><b>Atlas</b><i>${ico('star')} ${starsTotal(k)} / ${maxStars()}</i></button>
+      <button class="hm-w" data-act="nav" data-arg="mistakes"><span>${ico('retry')}</span><b>My mistakes</b><i>${missDue(k).length ? missDue(k).length + ' ready' : missCount(k) ? 'waiting for a gap' : 'none yet'}</i></button>
+      <button class="hm-w" data-act="nav" data-arg="library"><span>${ico('book')}</span><b>Library</b><i>${SHELF.length} tools</i></button>
       <button class="hm-w hm-known" data-act="openTool" data-arg="capitals" aria-label="Countries you know: ${known.length} of 195">${worldSVG({ key: 'home-known', fill: Object.fromEntries(known.map((c) => [c, 'kn'])), grat: false, label: 'Countries whose capitals you know' })}<b>Countries you know</b><i>${known.length} of 195</i></button>
-      <button class="hm-w" data-act="nav" data-arg="me"><span>🏅</span><b>My page</b><i>🪙 ${coins} · medals</i></button>
-      <button class="hm-w" data-act="openWord" data-arg="${esc(tw)}"><span>📖</span><b>${esc(tw)}</b><i>word of the day</i></button>
+      <button class="hm-w" data-act="nav" data-arg="me"><span>${ico('medal')}</span><b>My page</b><i>${ico('coin')} ${coins} · medals</i></button>
+      <button class="hm-w" data-act="openWord" data-arg="${esc(tw)}"><span>${ico('book2')}</span><b>${esc(tw)}</b><i>word of the day</i></button>
     </nav>
   </section>`;
 }
 export const libTile = (t) => `<button class="lib-tile" data-act="openTool" data-arg="${t.id}">
       <span class="lib-art" style="background-image:url(art/${t.art}.webp)"></span>
-      <span class="lib-t"><b>${t.glyph || ''} ${esc(t.name)}</b><span>${esc(t.blurb)}</span></span></button>`;
+      <span class="lib-t"><b>${gi(t.glyph)} ${esc(t.name)}</b><span>${esc(t.blurb)}</span></span></button>`;
 
 /* ------------------------------------------------------------- the atlas */
 
@@ -293,8 +219,8 @@ const worldStars = (k, w) => stopsIn(w.id).reduce((a, s) => a + ((k.stops[s.id] 
    YOUR JOURNEY (the order you will walk them, level by level). They were two
    tabs once — "Atlas" and "My road" — but the road only ever explains the map. */
 const atlasTabs = (on) => `<div class="seg atlas-seg" role="tablist" aria-label="The Atlas">
-  <button role="tab" aria-selected="${on === 'map'}" class="${on === 'map' ? 'on' : ''}" data-act="nav" data-arg="atlas">🗺️ The map</button>
-  <button role="tab" aria-selected="${on === 'road'}" class="${on === 'road' ? 'on' : ''}" data-act="nav" data-arg="road">🛤️ Your journey</button></div>`;
+  <button role="tab" aria-selected="${on === 'map'}" class="${on === 'map' ? 'on' : ''}" data-act="nav" data-arg="atlas">${ico('map')} The map</button>
+  <button role="tab" aria-selected="${on === 'road'}" class="${on === 'road' ? 'on' : ''}" data-act="nav" data-arg="road">${ico('road')} Your journey</button></div>`;
 export function viewAtlas() {
   const h = R.h, k = kid(h);
   return `<section>
@@ -306,7 +232,7 @@ export function viewAtlas() {
         const p = MAP_PINS[w.id], open = stopsIn(w.id).some((s) => stopOpen(h, k, s.id));
         const onroad = road(k).steps.filter((s) => !s.done && byId[s.stop].world === w.id).length;
         return `<button class="map-pin${open ? '' : ' shut'}${p.side === 'l' ? ' lab-l' : ''}" style="left:${p.x}%;top:${p.y}%;--wi:${w.ink};--wt:${w.tint}" data-act="openWorld" data-arg="${w.id}" aria-label="${esc(w.name)}${open ? '' : ', later levels'}">
-          <span class="mp-g">${w.glyph}</span><span class="mp-t"><b>${esc(w.short)}</b>${onroad ? `<i class="mp-road">${onroad} on your road</i>` : open ? '' : '<i>Later levels</i>'}</span></button>`;
+          <span class="mp-g">${gi(w.glyph)}</span><span class="mp-t"><b>${esc(w.short)}</b>${onroad ? `<i class="mp-road">${onroad} on your road</i>` : open ? '' : '<i>Later levels</i>'}</span></button>`;
       }).join('')}
     </div></div>
     <div class="world-list">
@@ -314,7 +240,7 @@ export function viewAtlas() {
         const ss = stopsIn(w.id), open = ss.some((s) => stopOpen(h, k, s.id));
         return `<button class="wl${open ? '' : ' shut'}" data-act="openWorld" data-arg="${w.id}" style="--wt:${w.tint};--wi:${w.ink}">
           <img src="art/w-${w.id}.webp" alt="" loading="lazy" width="1920" height="815">
-          <span class="wl-t"><span class="kicker">${w.glyph} ${ss.length} stops · from age ${esc(w.band.split('-')[0])}</span><b>${esc(w.name)}</b><span>${esc(w.blurb)}</span><span class="wl-s">★ ${worldStars(k, w)} of ${ss.length * 3}</span></span></button>`;
+          <span class="wl-t"><span class="kicker">${gi(w.glyph)} ${ss.length} stops · from age ${esc(w.band.split('-')[0])}</span><b>${esc(w.name)}</b><span>${esc(w.blurb)}</span><span class="wl-s">★ ${worldStars(k, w)} of ${ss.length * 3}</span></span></button>`;
       }).join('')}
     </div>
   </section>`;
@@ -325,8 +251,8 @@ export function viewAtlas() {
 function lvBadge(k, id) {
   const f = firstLevel(id), L = k.road.level;
   const st = road(k).steps.find((s) => s.stop === id);
-  if (st) return `<b class="lvb road${st.done ? ' ok' : ''}" title="Station ${st.n} on your Level ${L} road">L${L} · ${st.done ? '✓' : st.n}</b>`;
-  return f < L ? `<b class="lvb past">L${f}</b>` : `<b class="lvb later">🔒 L${f}</b>`;
+  if (st) return `<b class="lvb road${st.done ? ' ok' : ''}" title="Stop ${st.n} on your Level ${L} road">L${L} · ${st.done ? '✓' : st.n}</b>`;
+  return f < L ? `<b class="lvb past">L${f}</b>` : `<b class="lvb later">${ico('lock')} L${f}</b>`;
 }
 
 const ROADY = (x) => 76 + 6 * Math.sin((x / 100) * Math.PI * 2 * 1.2 + 0.6);
@@ -337,7 +263,7 @@ export function viewWorld(wid) {
   const sel = R.ui.pick && ss.find((s) => s.id === R.ui.pick) ? R.ui.pick : (ss.find((s) => stopOpen(h, k, s.id) && (k.stops[s.id] || {}).stars < 2) || ss[0]).id;
   const s = byId[sel], open = stopOpen(h, k, sel), rec = k.stops[sel] || {};
   return `<section class="world-page" style="--wt:${w.tint};--wi:${w.ink}">
-    ${pageHead(`${w.glyph} ${esc(w.name)}`, esc(w.blurb), back('nav', 'Atlas', 'atlas'))}
+    ${pageHead(`${gi(w.glyph)} ${esc(w.name)}`, esc(w.blurb), back('nav', 'Atlas', 'atlas'))}
     <div class="board-scroll">
       <div class="board">
         <img src="art/w-${w.id}.webp" alt="" width="1920" height="815">
@@ -345,12 +271,13 @@ export function viewWorld(wid) {
         ${ss.map((st, j) => {
           const o = stopOpen(h, k, st.id), stars = (k.stops[st.id] || {}).stars || 0;
           return `<button class="bpin${cls(stars >= 2 && ' done', !o && ' shut', sel === st.id && ' sel')}" style="left:${xs[j]}%;top:${ROADY(xs[j])}%" data-act="pickStop" data-arg="${st.id}" aria-label="${esc(st.title)}${o ? '' : ', a later level'}">
-            <span>${o ? st.glyph : '🔒'}</span>${stars ? `<em>${'★'.repeat(stars)}</em>` : ''}${lvBadge(k, st.id)}</button>`;
+            <span>${o ? gi(st.glyph) : ico('lock')}</span>${stars ? `<em>${'★'.repeat(stars)}</em>` : ''}${reviewDue(k.stops[st.id]) ? '<i class="rv-due">review</i>' : ''}${lvBadge(k, st.id)}</button>`;
         }).join('')}
       </div>
     </div>
     <div class="card pick-card">
-      <p class="kicker">${s.glyph} Stop ${ss.indexOf(s) + 1} of ${ss.length} · ${open ? starRow(rec.stars || 0) : 'opens on Level ' + firstLevel(sel)}</p>
+      <span class="pick-shelly" aria-hidden="true">${shelly('point', 88)}</span>
+      <p class="kicker">Stop ${ss.indexOf(s) + 1} of ${ss.length} · ${open ? starRow(rec.stars || 0) : 'opens on Level ' + firstLevel(sel)}${reviewDue(rec) ? ' · <b class="rv-due">time to review</b>' : ''}</p>
       <h2>${esc(s.title)}</h2>
       <p class="lead">${esc(s.hook)}</p>
       <div class="row gap">${open ? btn('Open this stop', 'openStop', s.id, 'primary big') : `<span class="muted">This stop is on the Level ${firstLevel(sel)} road. Keep going on your own road — it will open.</span>`}</div>
@@ -365,18 +292,17 @@ export function viewStop(id) {
   const onRoad = road(k).steps.find((x) => x.stop === id);
   const lvName = ['', 'first look', 'deeper', 'stretch'][lv];
   return `<section class="stop-page narrow" style="--wt:${w.tint};--wi:${w.ink}">
-    ${pageHead(`${s.glyph} ${esc(s.title)}`, `${w.glyph} ${esc(w.name)}`, back('openWorld', w.short, w.id), starRow(rec.stars))}
+    ${pageHead(`${gi(s.glyph)} ${esc(s.title)}`, `${gi(w.glyph)} ${esc(w.name)}`, back('openWorld', w.short, w.id), starRow(rec.stars))}
     <div class="card learn" id="lesson">
       <div class="q-head"><p class="ns-hook">${esc(s.hook)}</p>${readBtn('#lesson .ns-hook, #lesson .idea, #lesson .why-line', 'Read the lesson to me')}</div>
       <div class="idea">${s.idea.map((p) => `<p>${p}</p>`).join('')}</div>
       <p class="why-line"><b>Why it matters:</b> ${esc(s.why)}</p>
       ${srcList(s.src)}
-      ${rec.learned ? '' : `<div class="row end">${btn('I’ve read it ★', 'learned', id, '')}</div>`}
     </div>
     <div class="card drill-card">
-      <p class="kicker">Practice · ${lvName}${onRoad ? ` · station ${onRoad.n} on your Level ${k.road.level} road` : ''}</p>
+      <p class="kicker">Practice · ${lvName}${onRoad ? ` · stop ${onRoad.n} on your Level ${k.road.level} road` : ''}</p>
       <h3>Ten questions</h3>
-      <p class="muted">Seven right earns ★★ and passes this station; nine right earns ★★★. Best so far: ${rec.best || 0}%.</p>
+      <p class="muted">Seven right earns ★★ and passes this stop; nine right earns ★★★. Best so far: ${rec.best || 0}%.</p>
       ${btn('Start practice', 'startDrill', id, 'primary big')}
     </div>
   </section>`;
@@ -390,7 +316,22 @@ function mapList(q) {
   const { ids, names } = listOptions(q);
   return `<p class="muted small list-say">Choose one place from the list.</p><div class="choice-row map-list" role="group" aria-label="Choose a place">${ids.map((id, i) => `<button class="btn big opt" data-act="choose" data-arg="${esc(id)}"><span>${esc(names[id])}</span> <kbd>${i + 1}</kbd></button>`).join('')}</div>`;
 }
-export function questionBody(q, fb, key = 'q') {
+const qHead = (q, read, hint, hintBtn) => `<div class="q-head"><p class="long-q" id="q-text" aria-live="polite">${esc(q.text)}</p>${hintBtn || ''}${readBtn(read, 'Read the question to me')}</div>${hint && hint.say ? `<p class="hint-say" role="status">${ico('hint')} ${esc(hint.say)} <span class="muted small">A right answer after a hint pays no coin.</span></p>` : ''}`;
+export function questionBody(q, fb, key = 'q', hint = null, hintBtn = '') {
+  if (q.kind === 'type') {
+    const val = (R.run && R.run.typed) || '';
+    return `${q.html ? `<div class="q-fig">${q.html}</div>` : ''}${qHead(q, '#q-text', hint, hintBtn)}
+      <div class="type-row"><input id="type-in" class="inp big${fb ? (fb.right ? ' right' : ' wrong') : ''}" data-typed value="${esc(fb ? fb.given : val)}" ${fb ? 'disabled' : 'autofocus'} autocomplete="off" autocapitalize="words" spellcheck="false" aria-label="Your answer" placeholder="Type it here">
+      ${fb ? '' : `<button class="btn big primary-o" data-act="typeGo" aria-label="Check my answer">${ico('check')} Check <kbd>Enter</kbd></button>`}</div>`;
+  }
+  if (q.kind === 'order') {
+    const got = (R.run && R.run.order) || [], left = q.items.filter((x) => !got.includes(x));
+    const shown = fb ? String(fb.given).split('|') : got, want = q.ans.split('|');
+    return `${qHead(q, '#q-text, .order-pool', hint, hintBtn)}
+      <ol class="order-got" aria-label="Your order">${q.items.map((_, i) => { const x = shown[i]; return `<li class="${x ? 'set' : ''}${fb ? (x === want[i] ? ' ok' : ' bad') : ''}"><span class="o-n">${i + 1}</span>${x ? esc(x) : '<i>…</i>'}${fb && !fb.right ? `<em>${esc(want[i])}</em>` : ''}</li>`; }).join('')}</ol>
+      ${fb ? '' : `<div class="choice-row order-pool" role="group" aria-label="Tap them in order">${left.map((x) => `<button class="btn big opt" data-act="orderPick" data-arg="${esc(x)}"><span>${esc(x)}</span> <kbd>${q.items.indexOf(x) + 1}</kbd></button>`).join('')}</div>
+      ${got.length ? `<div class="row center">${btn(`${ico('back')} Undo`, 'orderUndo', '', 'small ghost')}</div>` : ''}`}`;
+  }
   if (q.kind === 'map') {
     const pinsFb = fb && !fb.right && q.showAt ? [{ at: q.showAt, cls: 'good', r: 7 }] : [];
     const fill = {};
@@ -402,58 +343,85 @@ export function questionBody(q, fb, key = 'q') {
     const phone = typeof matchMedia !== 'undefined' && matchMedia('(max-width: 760px)').matches;
     const cont = !q.view && phone && q.ok && q.ok.length === 1 && byCc[q.ok[0]] && CONTINENTS.find((c) => c.id === byCc[q.ok[0]].cont && c.id !== 'Antarctica');
     const map = q.region ? regionSVG(q.region, { fill, key, tap: !fb, label: q.text })
-      : worldSVG({ fill, key, tap: !fb, view: q.view ? viewFor(q.view) : cont ? viewFor(cont.view, 0.08) : null, label: q.text, pins: pinsFb });
+      : worldSVG({ fill, key, tap: !fb, view: hint && hint.view ? viewFor(hint.view, 0.08) : q.view ? viewFor(q.view) : cont ? viewFor(cont.view, 0.08) : null, label: q.text, pins: pinsFb });
     const list = Store.loadDevice('listMode', false);
-    return `${q.html || ''}<div class="q-head"><p class="long-q" id="q-text" aria-live="polite">${esc(q.text)}</p>${readBtn('#q-text', 'Read the question to me')}</div>${list && !fb ? mapList(q) : map}
-      ${fb ? '' : `<div class="row gap center map-ctl">${list ? '' : `${btn('＋', 'mapZoom', key + '|in', 'small', 'aria-label="Zoom in"')}${btn('－', 'mapZoom', key + '|out', 'small', 'aria-label="Zoom out"')}${btn('⟲', 'mapZoom', key + '|home', 'small', 'aria-label="Whole map"')}`}<button class="btn small" data-act="listMode" aria-pressed="${list}">${list ? '🗺️ Show the map' : '☰ Choose from a list'}</button></div>`}`;
+    return `${q.html || ''}${qHead(q, '#q-text', hint, hintBtn)}${list && !fb ? mapList(q) : map}
+      ${fb ? '' : `<div class="row gap center map-ctl">${list ? '' : `${btn(ico('plus'), 'mapZoom', key + '|in', 'small', 'aria-label="Zoom in"')}${btn(ico('minus'), 'mapZoom', key + '|out', 'small', 'aria-label="Zoom out"')}${btn(ico('reset'), 'mapZoom', key + '|home', 'small', 'aria-label="Whole map"')}`}<button class="btn small" data-act="listMode" aria-pressed="${list}">${list ? `${ico('map')} Show the map` : `${ico('list')} Choose from a list`}</button></div>`}`;
   }
-  return `${q.html ? `<div class="q-fig">${q.html}</div>` : ''}<div class="q-head"><p class="long-q" id="q-text" aria-live="polite">${esc(q.text)}</p>${readBtn('#q-text, .choice-row', 'Read the question and the answers to me')}</div>
-    <div class="choice-row${q.opts.length <= 2 ? ' two' : ''}">${q.opts.map((c, i) => `<button class="btn big opt${fb && c === q.ans ? ' right' : ''}${fb && !fb.right && c === fb.given ? ' wrong' : ''}" data-act="choose" data-arg="${esc(c)}" ${fb ? 'disabled' : ''}><span>${esc(c)}</span> <kbd>${i + 1}</kbd></button>`).join('')}</div>`;
+  const struck = hint && hint.kind === 'strike' ? hint.opt : null;
+  return `${q.html ? `<div class="q-fig">${q.html}</div>` : ''}${qHead(q, '#q-text, .choice-row', hint, hintBtn)}
+    <div class="choice-row${q.opts.length <= 2 ? ' two' : ''}">${q.opts.map((c, i) => `<button class="btn big opt${fb && c === q.ans ? ' right' : ''}${fb && !fb.right && c === fb.given ? ' wrong' : ''}${c === struck ? ' struck' : ''}" data-act="choose" data-arg="${esc(c)}" ${fb || c === struck ? 'disabled' : ''}${c === struck ? ' aria-label="' + esc(c) + ' — taken away by the hint"' : ''}><span>${esc(c)}</span> <kbd>${i + 1}</kbd></button>`).join('')}</div>`;
 }
 
 /* Praise names what was done (J1): the place found, the answer, a run of right
    ones in THIS quiz — never a comparison with anyone. */
 export function praise(q, run) {
   let n = 0; for (let i = (run ? run.results.length : 0) - 1; i >= 0 && run.results[i].right; i--) n++;
-  const what = q.kind === 'map' ? `Right — you found ${esc(q.targetName || 'it')} on the map.` : `Right — <b>${esc(q.ans)}</b>.`;
+  const what = q.kind === 'map' ? `Right — you found ${esc(q.targetName || 'it')} on the map.` : q.kind === 'order' ? 'Right — every one in its place.' : `Right — <b>${esc(q.ans)}</b>.`;
   const more = n >= 5 ? ` That is ${n} in a row.` : n === 3 ? ' Three in a row.' : '';
   return what + more;
 }
 export function feedback(q, fb, run) {
   const name = q.kind === 'map' ? (fb.givenName || '') : '';
   if (fb.right) return `<p class="fb good" id="fb-text">${praise(q, run)}</p>${q.why ? `<p class="why-chip">${esc(q.why)}</p>` : ''}`;
-  const ans = q.kind === 'map' ? (q.targetName || q.target || 'the place in green') : q.ans;
+  const ans = q.kind === 'map' ? (q.targetName || q.target || 'the place in green') : q.kind === 'order' ? q.ans.split('|').join(' → ') : q.ans;
   return `<p class="fb bad" id="fb-text">${name ? `That’s ${esc(name)}. ` : 'Not this time. '}The answer is <b>${esc(ans)}</b>${q.kind === 'map' ? ', shown in green' : ''}.</p>${q.why ? `<p class="why-chip">${esc(q.why)}</p>` : ''}`;
 }
 
+/* G6: a run of right answers in THIS quiz, shown as it grows — never a comparison with anyone */
+const streakOf = (run) => { let n = 0; for (let i = run.results.length - 1; i >= 0 && run.results[i].right; i--) n++; return n; };
 export function viewRun() {
   const run = R.run;
   if (run.over) return viewRunEnd(run);
-  const q = run.items[run.i], fb = run.fb;
+  const q = run.items[run.i], fb = run.fb, hint = (run.hints || {})[run.i] || null, st = streakOf(run);
+  const hintBtn = fb || hint || run.kind === 'trial' ? '' : `<button class="read-btn hint-btn" data-act="hint" aria-label="A hint (a right answer after it pays no coin)" title="A hint">${ico('hint')}</button>`;
+  const stop = byId[run.stop];
   return `<section class="runner narrow ${fb ? (fb.right ? 'is-right' : 'is-wrong') : ''}">
     ${pageHead(esc(run.title), esc(run.sub || ''), back('quitRun', 'Stop'))}
-    <div class="dots" aria-label="Question ${run.i + 1} of ${run.items.length}">${run.items.map((_, i) => `<i class="${i < run.results.length ? (run.results[i].right ? 'r' : 'w') : i === run.i ? 'c' : ''}"></i>`).join('')}</div>
-    ${run.intro && run.i === 0 && byId[run.stop] ? `<details class="card why-card" id="why" open><summary><b>${byId[run.stop].glyph} First, the idea</b> <span class="muted small">— ${esc(byId[run.stop].title)}</span> ${readBtn('#why p', 'Read the idea to me')}</summary>
-      <p class="ns-hook">${esc(byId[run.stop].hook)}</p>${byId[run.stop].idea.slice(0, 2).map((x) => `<p>${x}</p>`).join('')}<p class="why-line"><b>Why it matters:</b> ${esc(byId[run.stop].why)}</p></details>` : ''}
+    <div class="run-bar"><div class="dots" aria-label="Question ${run.i + 1} of ${run.items.length}">${run.items.map((_, i) => `<i class="${i < run.results.length ? (run.results[i].right ? 'r' : 'w') : i === run.i ? 'c' : ''}"></i>`).join('')}</div>
+      ${st >= 2 ? `<span class="combo${fb && fb.right ? ' pop' : ''}" aria-label="${st} right in a row">${ico('star')} ${st} in a row</span>` : ''}</div>
+    ${run.intro && run.i === 0 && stop ? `<details class="card why-card" id="why" open><summary><b>${gi(stop.glyph)} First, the idea</b> <span class="muted small">— ${esc(stop.title)}</span> ${readBtn('#why p', 'Read the idea to me')}</summary>
+      <p class="ns-hook">${esc(stop.hook)}</p>${stop.idea.slice(0, 2).map((x) => `<p>${x}</p>`).join('')}<p class="why-line"><b>Why it matters:</b> ${esc(stop.why)}</p></details>` : ''}
     <div class="card qcard">
-      ${questionBody(q, fb, 'q' + run.i)}
+      ${questionBody(q, fb, 'q' + run.i, hint, hintBtn)}
       ${fb ? feedback(q, fb, run) : ''}
+      ${fb ? `<span class="q-shelly" aria-hidden="true">${shelly(fb.right ? 'cheer' : 'oops', 72)}</span>` : ''}
     </div>
     ${fb && !fb.right ? `<div class="row center">${btn('Next <kbd>Enter</kbd>', 'nextQ', '', 'primary big')}</div>` : ''}
   </section>`;
 }
 
+/* G6: the round's places, revealed one by one on a small map — by their fill, never a border */
+function revealMap(run) {
+  const map = run.items.map((q, i) => ({ q, r: run.results[i] })).filter((x) => x.q.kind === 'map' && !x.q.region && x.r);
+  if (!map.length) return '';
+  const fill = {};
+  map.forEach(({ q, r }, i) => { for (const c of (q.ok || []).slice(0, 60)) fill[c] = (r.right ? 'ok' : 'bad') + ' rv rv' + Math.min(i, 9); });
+  return `<div class="card reveal-map"><p class="kicker">This round on the map</p>${worldSVG({ key: 'reveal', fill, grat: false, label: 'The places in this round: green found, coral missed' })}</div>`;
+}
+const mmss = (secs) => `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
 function viewRunEnd(run) {
-  const right = run.results.filter((r) => r.right).length, n = run.results.length, s = run.summary || {};
+  const right = run.results.filter((r) => r.right).length, n = run.results.length, s = run.summary || {}, k = kid(R.h);
+  const good = right / Math.max(1, n) >= 0.7;
+  const ansOf = (q) => q.kind === 'map' ? q.targetName || '' : q.kind === 'order' ? q.ans.split('|').join(' → ') : q.ans;
   return `<section class="narrow">
     ${pageHead(esc(run.title), '', back('endRun', 'Done'))}
-    <div class="card end-card">
+    <div class="card end-card${good ? ' good' : ''}">
+      <div class="end-cast">${shelly(good ? 'cheer' : 'think', 120, 'end-shelly')}${k ? av(k.avatar, 72, '') : ''}</div>
       ${s.stars != null ? starRow(s.stars, 3, true) : ''}
       <h2>${right} of ${n} right</h2>
       ${(s.lines || []).map((l) => `<p>${l}</p>`).join('')}
-      <div class="row gap center">${(s.buttons || []).join('')}${btn('Done', 'endRun', '', 'primary big')}</div>
+      <ul class="end-facts">
+        ${s.practised && s.practised.length ? `<li>${ico('book')}<span><b>Practised</b> ${s.practised.map(esc).join(' · ')}</span></li>` : ''}
+        ${s.secs != null ? `<li>${ico('timer')}<span><b>Time</b> ${mmss(s.secs)}</span></li>` : ''}
+        ${s.starsUp ? `<li>${ico('star')}<span><b>Stars</b> +${s.starsUp}</span></li>` : ''}
+        ${s.coins != null && k ? `<li>${ico('coin')}<span><b>Bizzing coins</b> ${s.coins ? '+' + s.coins : 'none this time'}${Object.keys(run.hints || {}).length ? ' (hinted answers pay none)' : ''}</span></li>` : ''}
+        ${s.next && s.next.title ? `<li>${ico('next')}<span><b>Next</b> ${esc(s.next.title)}</span></li>` : ''}
+      </ul>
+      <div class="row gap center wrap">${(s.buttons || []).join('')}${btn('Done', 'endRun', '', 'primary big')}</div>
     </div>
-    ${run.results.some((r) => !r.right) ? `<div class="card"><h3>To look at again</h3><ul class="missed">${run.results.map((r, i) => (r.right ? '' : `<li>${esc(run.items[i].text)} — <b>${esc(run.items[i].kind === 'map' ? run.items[i].targetName || '' : run.items[i].ans)}</b></li>`)).join('')}</ul></div>` : ''}
+    ${revealMap(run)}
+    ${run.results.some((r) => !r.right) ? `<div class="card"><h3>To look at again</h3><p class="muted small">Each one is in <button class="linkish" data-act="nav" data-arg="mistakes">My mistakes</button> and comes back after a gap.</p><ul class="missed">${run.results.map((r, i) => (r.right ? '' : `<li>${run.items[i].html && /<img/.test(run.items[i].html) ? `<span class="mfig">${run.items[i].html}</span>` : ''}<span>${esc(run.items[i].text)} — <b>${esc(ansOf(run.items[i]))}</b></span></li>`)).join('')}</ul></div>` : ''}
   </section>`;
 }
 
@@ -477,17 +445,17 @@ export function viewRoad() {
     ${atlasTabs('road')}
     ${glance}
     <div class="narrow">
-    <h2 class="jl-h">Level ${L.n} · ${esc(L.name)} <span class="muted small">${ageOf(L.n)} · ${L.steps.length} stations${L.n === mine ? ' · you are here' : ''}</span></h2>
+    <h2 class="jl-h">Level ${L.n} · ${esc(L.name)} <span class="muted small">${ageOf(L.n)} · ${L.steps.length} stops${L.n === mine ? ' · you are here' : ''}</span></h2>
     <p class="muted center-t jl-b">${esc(L.blurb)}</p>
     <ol class="jsteps">${steps.map((s) => {
       const st = byId[s.stop], w = worldOf(st.world);
       return `<li><button class="jstep${s.done ? ' done' : ''}${s.open ? '' : ' shut'}${!show && rd.next && rd.next.stop === s.stop ? ' cur' : ''}" data-act="${s.open ? 'openStop' : 'noop'}" data-arg="${s.stop}" style="--wi:${w.ink};--wt:${w.tint}" ${s.open ? '' : 'aria-disabled="true"'}>
-        <span class="js-n">${s.done ? '✓' : s.open ? s.n : '🔒'}</span><span class="js-t"><b>${st.glyph} ${esc(st.title)}</b><span>${esc(w.short)} · ${['', 'first look', 'deeper', 'stretch'][s.lv]}</span></span></button></li>`;
+        <span class="js-n">${s.done ? '✓' : s.open ? s.n : ico('lock')}</span><span class="js-t"><b>${gi(st.glyph)} ${esc(st.title)}</b><span>${esc(w.short)} · ${['', 'first look', 'deeper', 'stretch'][s.lv]}</span></span></button></li>`;
     }).join('')}</ol>
     ${show ? '' : `<div class="card center-card">
       <p class="kicker">Level check</p>
       <h3>${rd.all ? `Ready for Level ${L.n + 1}` : 'Already know this?'}</h3>
-      <p class="muted">Twelve questions from this road. Ten right opens Level ${Math.min(10, L.n + 1)}${rd.all ? '' : ' — even before you have walked every station'}.</p>
+      <p class="muted">Twelve questions from this road. Ten right opens Level ${Math.min(10, L.n + 1)}${rd.all ? '' : ' — even before you have walked every stop'}.</p>
       ${L.n < 10 || !k.road.finished.includes(10) ? btn('Take the level check', 'levelCheck', '', rd.all ? 'primary big' : 'big') : ''}
     </div>`}
     </div>
@@ -496,50 +464,7 @@ export function viewRoad() {
 
 /* ------------------------------------------------------------- me */
 
-function medalShelf(k) {
-  const got = earned(k).length;
-  return `<div class="card" id="medals"><div class="row between wrap"><h3>Medals <span class="muted small">${got} of ${MEDALS.length}</span></h3><span class="muted small">Each one is earned by what you did — never by luck, never by days in a row.</span></div>
-    <ol class="medal-shelf">${MEDALS.map((m) => { const on = (k.medals || {})[m.id]; return `<li class="${on ? 'got' : ''}" title="${esc(m.how)}">${medallion(m, 64, !!on)}<b>${esc(m.name)}</b><span>${on ? `Earned ${esc(on)}` : esc(m.how)}</span></li>`; }).join('')}</ol></div>`;
-}
-function walletCard(k) {
-  const sh = shopOf(k), c = balance(k.name), recent = walletLedger(k.name).filter((x) => x.a === APP).slice(-5).reverse();
-  const WHY = { right: 'right answers', stop: 'a station, day or round finished', mastered: 'something mastered', contest: 'a level check' };
-  const item = (it) => { const own = sh.owned.includes(it.id), use = sh[it.kind] === it.id.split(':')[1];
-    return `<li class="shop-i${use ? ' on' : ''}"><span class="shop-look ${it.kind}" data-look="${it.id.split(':')[1]}">${it.kind === 'pin' ? pinSwatch(it.id.split(':')[1]) : ''}</span><b>${esc(it.name)}</b><span class="muted small">${esc(it.blurb)}</span>
-      ${use ? '<span class="chip">In use</span>' : own ? btn('Use', 'use', it.id, 'small') : btn(`🪙 ${it.price}`, 'buy', it.id, 'small', c < it.price ? 'aria-disabled="true"' : '')}</li>`; };
-  return `<div class="card" id="wallet"><div class="row between wrap"><h3>🪙 ${c} Bizzing coins</h3><span class="muted small">Earned for learning — the same coins in every Bizzing app. Never bought, never by chance.</span></div>
-    ${recent.length ? `<p class="muted small">Lately: ${recent.map((x) => `${x.n > 0 ? '+' : ''}${x.n} ${x.n > 0 ? (WHY[x.why] || x.why) : 'spent'}`).join(' · ')}</p>` : ''}
-    <h4>The map shop</h4><p class="muted small">Looks for your maps at printed prices. Nothing here changes your rank or opens a lesson — every lesson is already yours.</p>
-    <ul class="shop">${SHOP.map(item).join('')}</ul></div>`;
-}
-export const pinSwatch = (shape) => `<svg viewBox="-12 -12 24 24" width="34" height="34" aria-hidden="true">${PIN_PATH[shape] ? `<path d="${PIN_PATH[shape]}" class="pin-shape"/>` : '<circle r="7" class="pin-shape"/>'}</svg>`;
-
 export const autoRead = (k) => (k.prefs || {}).readAuto ?? k.band === '6-7';
-export function viewMe() {
-  const k = kid(R.h), rk = rankOf(k.xp);
-  return `<section class="narrow">
-    ${pageHead(esc(k.name), `${BANDS.find((b) => b.id === k.band).label} · Level ${k.road.level}`)}
-    ${medalShelf(k)}
-    ${walletCard(k)}
-    <div class="card"><h3>Change your face</h3>${avatarPicker(k.avatar, 'setAv', 'me')}</div>
-    ${themePicker(k)}
-    <div class="card row gap wrap"><div style="flex:1;min-width:200px"><h3>Read aloud</h3><p class="muted small">Every question and lesson has a 🔊 button. ${k.band === '6-7' ? 'For explorers aged 6–7 each question is also read out by itself.' : 'Tap it whenever you like.'}</p></div>
-      <button class="btn" data-act="readAuto" aria-pressed="${autoRead(k)}">${autoRead(k) ? '🔊 Reading questions by itself' : '🔈 Only when I tap 🔊'}</button></div>
-    <div class="card row gap wrap"><div style="flex:1;min-width:200px"><h3>Moving background</h3><p class="muted small">The world behind the page moves. Switch it to a still picture on this device if it distracts. It always holds still during a quiz.</p></div>
-      <button class="btn" data-act="still" aria-pressed="${Store.loadDevice('still', false)}">${Store.loadDevice('still', false) ? '▶ Let it move' : '⏸ Hold it still'}</button></div>
-    <div class="card">
-      <h3>Explorers on this device</h3>
-      <div class="who-list">${R.h.kids.map((x) => `<button class="who-row${x.id === k.id ? ' on' : ''}" data-act="switchKid" data-arg="${x.id}">${av(x.avatar, 40)} <b>${esc(x.name)}</b></button>`).join('')}
-        <button class="btn" data-act="nav" data-arg="welcome">+ Add an explorer</button></div>
-    </div>
-    <details class="card ladder-card"><summary><h3>Explorer ranks</h3> <span class="muted small">— you are ${esc(rk.n)}</span></summary>
-      <ol class="ladder">${RANKS.map((r, i) => `<li class="${i <= rk.i ? 'got' : ''}${i === rk.i ? ' now' : ''}"><b>${i + 1}. ${esc(r.n)}</b> <span class="muted small">${r.xp} right answers — ${esc(r.why)}</span></li>`).join('')}</ol>
-      ${srcList(RANK_SRC)}
-    </details>
-
-  </section>`;
-}
-
 /* ------------------------------------------------------------- grown-ups */
 
 /* THE REPORT CARD (family standard §7): Time · Progress · Mastery, the same three
@@ -563,18 +488,20 @@ function reportCard(k) {
   const slipping = Object.entries((k.lib.capitals || {}).box || {}).filter(([cc, b]) => b === 1 && ((k.lib.capitals || {}).last || {})[cc]).length;
   return `<div class="card report"><div class="row gap">${av(k.avatar, 44)}<div><h3>${esc(k.name)}</h3><p class="muted small">${BANDS.find((b) => b.id === k.band).label} · Level ${k.road.level} · ${rankOf(k.xp).n} · ${plural(earned(k).length, 'medal')}</p></div></div>
     <div class="rc3">
-      <section><h4>⏱ Time</h4><p class="rc-big">${mins} <span>active minutes this week</span></p><p class="muted small">On ${days7} of the last 7 days. Active means on screen and touched in the last two minutes.</p>
+      <section><h4>${ico('timer')} Time</h4><p class="rc-big">${mins} <span>active minutes this week</span></p><p class="muted small">On ${days7} of the last 7 days. Active means on screen and touched in the last two minutes.</p>
         <div class="rc-trend" aria-label="Right answers each week, four weeks">${weeks.map((n, i) => `<span style="--h:${Math.round((100 * n) / top)}%" title="${n} right"><i></i><b>${n}</b><em>${['3 wks ago', '2 wks ago', 'last wk', 'this wk'][i]}</em></span>`).join('')}</div></section>
-      <section><h4>🛤️ Progress</h4><p class="rc-big">Level ${rd.L.n} <span>of 10 · ${rd.done} of ${rd.steps.length} stations on this road</span></p>
+      <section><h4>${ico('road')} Progress</h4><p class="rc-big">Level ${rd.L.n} <span>of 10 · ${rd.done} of ${rd.steps.length} stops on this road</span></p>
         <span class="hm-bar"><i style="width:${Math.round((100 * rd.done) / rd.steps.length)}%"></i></span>
-        <p class="muted small">${on.length ? on.map((e) => `${e.glyph} ${esc(e.name)}: day ${expStats(k, e).done} of ${expStats(k, e).days}`).join(' · ') : 'No expedition started yet.'}</p>
+        <p class="muted small">${on.length ? on.map((e) => `${gi(e.glyph)} ${esc(e.name)}: day ${expStats(k, e).done} of ${expStats(k, e).days}`).join(' · ') : 'No expedition started yet.'}</p>
         <p class="muted small">This week: ${plural(q7, 'question')}, ${ok7} right${q7 ? ` (${Math.round((100 * ok7) / q7)}%)` : ''}.</p></section>
-      <section><h4>🧠 Mastery</h4><p class="rc-big">${passed} <span>stations passed · ${capK} capitals · ${flagK} flags · ${stK} state capitals known</span></p>
-        <ul class="rc-worlds">${worlds.map(({ w, p, n }) => `<li><span>${w.glyph} ${esc(w.short)}</span><span class="hm-bar thin"><i style="width:${Math.round((100 * p) / n)}%"></i></span><b>${p}/${n}</b></li>`).join('')}</ul>
+      <section><h4>${ico('brain')} Mastery</h4><p class="rc-big">${passed} <span>stops passed · ${capK} capitals · ${flagK} flags · ${stK} state capitals known</span></p>
+        <ul class="rc-worlds">${worlds.map(({ w, p, n }) => `<li><span>${gi(w.glyph)} ${esc(w.short)}</span><span class="hm-bar thin"><i style="width:${Math.round((100 * p) / n)}%"></i></span><b>${p}/${n}</b></li>`).join('')}</ul>
         ${slipping ? `<p class="muted small">${slipping} capital${slipping > 1 ? 's' : ''} slipped after a miss — they come back in the capitals quiz.</p>` : ''}</section>
     </div>
     ${L.length ? `<h4>What ${esc(k.name)} can do now</h4><ul class="learned">${L.map((x) => `<li>✓ ${esc(k.name)} can ${esc(x.m.objective)} <span class="muted small">(${esc(x.e.name)}, ${x.on})</span></li>`).join('')}</ul>` : ''}
     <p class="hint">${esc(EXPEDITIONS_PARENT)}</p>
+    ${(() => { const cs = certificatesOf(k); return `<details class="rc-set rc-certs"${cs.length ? '' : ''}><summary>Certificates for ${esc(k.name)} (${cs.length})</summary>
+      ${cs.length ? `<p class="muted small">Each is a picture made on this device — nothing is uploaded. Share or save it from here.</p><ul class="certs">${cs.map((c) => `<li><span><b>${esc(c.title)}</b><span class="muted small">${esc(k.name)} ${esc(c.what)}</span></span>${btn(`${ico('share')} Make the picture`, 'cert', k.id + '|' + c.id, 'small')}</li>`).join('')}</ul>` : `<p class="muted small">The first one comes with a finished level, a world walked or an expedition done.</p>`}</details>`; })()}
     <details class="rc-set"><summary>Settings for ${esc(k.name)}</summary>
       <div class="row gap wrap"><span>Today’s ring:</span>${GOALS.map((g) => `<button class="btn small${goalOf(k) === g ? ' primary-o' : ''}" data-act="kidGoal" data-arg="${k.id}|${g}" aria-pressed="${goalOf(k) === g}">${g} a day</button>`).join('')}</div>
       <div class="row gap wrap"><span>Read questions aloud by itself:</span><button class="btn small" data-act="kidRead" data-arg="${k.id}" aria-pressed="${autoRead(k)}">${autoRead(k) ? 'On' : 'Off'}</button></div>
@@ -588,15 +515,16 @@ export function viewGrownups() {
   const h = R.h;
   if (!R.ui.gate) {
     return `<section class="narrow">${pageHead('For grown-ups', '', back('nav', 'Back', 'home'))}
-      <div class="card center-card"><p>${h.parent.pin ? 'Enter your four-digit PIN.' : 'Set a four-digit PIN for this page.'}</p>
+      <div class="card center-card"><p>${h.parent.pinHash ? 'Enter your four-digit PIN.' : 'Set a four-digit PIN for this page.'}</p>
         <input id="pin" class="inp pin" inputmode="numeric" maxlength="4" data-draft="pin" value="${esc(R.ui.gateIn)}" aria-label="PIN" autocomplete="off">
-        <div class="row center">${btn(h.parent.pin ? 'Open' : 'Set PIN', 'gate', '', 'primary')}</div>
+        <div class="row center">${btn(h.parent.pinHash ? 'Open' : 'Set PIN', 'gate', '', 'primary')}</div>
         <p class="hint">The PIN is a deterrent, not security — anyone who can clear this browser’s storage can reset it.</p></div></section>`;
   }
   return `<section class="narrow">${pageHead('For grown-ups', 'What each child has done, measured from their answers.', back('nav', 'Back', 'home'))}
     <p class="muted small center-t">The family-wide view, across every Bizzing app, is on <a href="${HIVE}#/grownups">the Hive’s grown-ups page</a>.</p>
     ${h.kids.map(reportCard).join('')}
     <div class="card"><h3>Settings</h3>
+      <label class="set-row"><input type="checkbox" data-act="plan" ${h.parent.plan === 'family' ? 'checked' : ''}><span>Family plan — opens all six worlds and their faces for every child here. Until the family’s own server is built this is a switch a grown-up sets; no payment is ever asked for on a child’s screen.</span></label>
       <label class="set-row"><input type="checkbox" data-act="tester" ${h.parent.tester ? 'checked' : ''}><span>Tester mode — opens every stop and level for a grown-up to look round. Changes nothing about a child.</span></label>
       <label class="set-row${GKEY ? '' : ' off'}"><input type="checkbox" data-act="streetview" ${h.parent.streetview ? 'checked' : ''} ${GKEY ? '' : 'disabled'}><span>Real photos in Where on Earth? — Google Street View of real places. <b>This is the one thing in the app that contacts another company:</b> while it is on, Where on Earth? loads each photo from Google, so Google sees this device’s internet address and which photo was shown. It sends nothing about your child — no name, no age, no answers, no location. On by default; untick to use paintings only.${GKEY ? '' : ' (Not set up in this copy of the app.)'}</span></label>
       <div class="row gap wrap">${btn('Back up to a file', 'backup')}${btn('Restore from a file', 'restore')}${btn('Delete everything on this device', 'wipe', '', 'danger')}</div>
@@ -619,4 +547,18 @@ export function viewPrivacy() {
       <p>It never asks where anyone lives, and Where on Earth? never uses the device’s location.</p>
       <p>A grown-up can back this up to a file, restore it, or delete it all from the grown-ups’ page.</p>
     </div></section>`;
+}
+
+/* ------------------------------------------------------------- the mistakes deck (F3) */
+export function viewMistakes() {
+  const k = kid(R.h), due = missDue(k), all = Object.entries(k.miss || {}).map(([key, m]) => ({ key, ...m })).sort((a, b) => b.at - a.at);
+  const waitFor = (m) => { const ms = m.at + [20 * 3600e3, 3 * 864e5][Math.min(m.box, 1)] - Date.now(); return ms <= 0 ? 'ready now' : ms < 864e5 ? 'back tomorrow' : `back in ${Math.ceil(ms / 864e5)} days`; };
+  const ansOf = (q) => q.kind === 'map' ? (q.targetName || '') : q.kind === 'order' ? (q.ans || '').split('|').join(' → ') : q.ans;
+  if (!all.length) return `<section class="narrow">${pageHead('My mistakes')}${empty('No mistakes kept yet. When you miss a question it waits here, and comes back a day later — that is how places stick.', btn('Back to my journey', 'nav', 'home', 'big'))}</section>`;
+  return `<section class="narrow mistakes">
+    ${pageHead('My mistakes', `${plural(all.length, 'card')} · ${due.length} ready`)}
+    <div class="card mist-go">${says(due.length ? 'point' : 'sleep', due.length ? `${due.length === 1 ? 'One card is' : `${due.length} cards are`} ready. Right after a gap moves a card up; two steps up and it is yours, and it leaves the deck.` : 'Nothing is ready yet. Each card comes back after a gap — a day, then three days — because remembering later is what learning is.')}
+      ${due.length ? btn(`Practise my misses (${Math.min(10, due.length)})`, 'practiseMisses', '', 'primary big') : ''}</div>
+    <ul class="mist-list">${all.map((m) => `<li class="card mist"><div class="mist-fig">${m.q.html && !/<button/.test(m.q.html) ? m.q.html : ''}</div><div><p class="kicker">${esc(m.from || '')} · ${['step 1 of 2', 'step 2 of 2'][Math.min(m.box, 1)]} · ${waitFor(m)}</p><p>${esc(m.q.text)}</p><p class="muted small">The answer: <b>${esc(ansOf(m.q))}</b>${m.n > 1 ? ` · missed ${m.n} times` : ''}</p></div></li>`).join('')}</ul>
+  </section>`;
 }

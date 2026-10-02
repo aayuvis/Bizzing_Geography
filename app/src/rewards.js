@@ -19,6 +19,7 @@ import { QUIZ } from './geo.js';
 import { EXPEDITIONS } from './data/expeditions.js';
 import { stats as expStats } from './expeditions.js';
 import { dayKey } from './rand.js';
+import { ICONS, GLYPH } from './icons.js';
 
 /* ------------------------------------------------------------------ rank */
 
@@ -44,8 +45,8 @@ const capMedal = (cont, glyph) => ({
   test: (k) => { const kn = new Set(known((k.lib.capitals || {}).box)); return QUIZ.filter((c) => c.cont === cont).every((c) => kn.has(c.cc)); },
 });
 export const MEDALS = [
-  { id: 'first-station', tier: 1, glyph: '🚩', name: 'First station', how: 'Pass your first station (seven of ten right).', test: (k) => Object.values(k.stops).some((r) => r.stars >= 2) },
-  { id: 'ten-aced', tier: 2, glyph: '⭐', name: 'Ten stations aced', how: 'Earn ★★★ — nine of ten — at ten stations.', test: (k) => Object.values(k.stops).filter((r) => r.stars >= 3).length >= 10 },
+  { id: 'first-station', tier: 1, glyph: '🚩', name: 'First stop', how: 'Pass your first stop (seven of ten right).', test: (k) => Object.values(k.stops).some((r) => r.stars >= 2) },
+  { id: 'ten-aced', tier: 2, glyph: '⭐', name: 'Ten stops aced', how: 'Earn ★★★ — nine of ten — at ten stops.', test: (k) => Object.values(k.stops).filter((r) => r.stars >= 3).length >= 10 },
   ...WORLDS.map((w) => ({ id: 'world-' + w.id, tier: 2, glyph: w.glyph, name: `${w.short}, walked`, how: `Pass every stop in ${w.name}.`, test: (k) => stopsIn(w.id).every((s) => (k.stops[s.id] || {}).stars >= 2) })),
   ...[2, 4, 6, 8, 10].map((n) => ({ id: 'level-' + n, tier: n >= 8 ? 3 : 2, glyph: '🛤️', name: `Level ${n} road`, how: `Pass the Level ${n} check.`, test: (k) => k.road.finished.includes(n) })),
   { id: 'caps-25', tier: 1, glyph: '🏛️', name: '25 capitals', how: 'Know 25 capitals of countries, each right on two different days.', test: (k) => known((k.lib.capitals || {}).box).length >= 25 },
@@ -70,7 +71,7 @@ export function newMedals(k) {
 }
 export const medallion = (m, size = 72, got = true) => `<svg class="medal ${TIER[m.tier]}${got ? '' : ' dim'}" width="${size}" height="${size}" viewBox="0 0 80 80" aria-hidden="true">
   <path class="md-rib" d="M26 4h12l-6 22zM42 4h12l-6 22z"/><circle cx="40" cy="46" r="30" class="md-o"/><circle cx="40" cy="46" r="24" class="md-i"/>
-  <text x="40" y="47" text-anchor="middle" dominant-baseline="central" font-size="24">${got ? m.glyph : '?'}</text></svg>`;
+  <svg x="24" y="30" width="32" height="32" viewBox="0 0 24 24" class="ico md-g">${got ? ICONS[GLYPH[m.glyph] || GLYPH[String(m.glyph).replace(/\uFE0F/g, '')] || 'medal'] : ICONS.help}</svg></svg>`;
 
 /* ------------------------------------------------------------------ the shop */
 

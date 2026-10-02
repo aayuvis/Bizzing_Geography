@@ -10,6 +10,7 @@
    line; modern borders appear only in each continent's last age. A plate is
    a painting of a place, never a map of old coastlines or old borders. Hard
    moments (`hard`) show from the 11–14 band, and the age says there is more. */
+import { gi, ico } from '../icons.js';
 import { EARTH, MAPS, ERAS_NEED_REVIEW } from '../data/eras.js';
 import { CONTINENT_HISTORY, HISTORY_NEEDS_REVIEW } from '../data/history.js';
 import { CONTINENTS } from '../geo.js';
@@ -25,9 +26,9 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 const HIST = Object.fromEntries(Object.entries(CONTINENT_HISTORY).map(([k, v]) => [k, [...v].sort((a, b) => (a.today - b.today) || a.y - b.y)]));
 const CONT = Object.fromEntries(CONTINENTS.map((c) => [c.id, c]));
 const TRACKS = {
-  earth: { name: '🌍 The Earth', list: EARTH },
-  maps: { name: '🗺️ Our maps', list: MAPS },
-  ...Object.fromEntries(Object.keys(HIST).map((k) => [k, { name: `${CONT[k].glyph} ${k}`, list: HIST[k], cont: k }])),
+  earth: { name: 'The Earth', glyph: '🌍', list: EARTH },
+  maps: { name: 'Our maps', glyph: '🗺️', list: MAPS },
+  ...Object.fromEntries(Object.keys(HIST).map((k) => [k, { name: k, glyph: CONT[k].glyph, list: HIST[k], cont: k }])),
 };
 /* the map frame per continent: Oceania's story spans the Pacific, so its map is centred there */
 const FRAME = Object.fromEntries(CONTINENTS.map((c) => [c.id, { box: c.view, rot: 0 }]));
@@ -50,7 +51,7 @@ const yearWords = (y) => (y < 0 ? `about ${(-y).toLocaleString('en')} BCE` : `ab
 
 export function view(ctx) {
   const u = ctx.ui, T = trackOf(u), i = Math.min(u.i || 0, T.list.length - 1), e = T.list[i];
-  const tabs = `<div class="seg t-time-tabs" role="tablist" aria-label="Which story">${Object.entries(TRACKS).map(([k, x]) => `<button role="tab" aria-selected="${x === T}" class="${x === T ? 'on' : ''}" data-act="lib" data-arg="time|t|${esc(k)}">${esc(x.name)}</button>`).join('')}</div>`;
+  const tabs = `<div class="seg t-time-tabs" role="tablist" aria-label="Which story">${Object.entries(TRACKS).map(([k, x]) => `<button role="tab" aria-selected="${x === T}" class="${x === T ? 'on' : ''}" data-act="lib" data-arg="time|t|${esc(k)}">${gi(x.glyph)} ${esc(x.name)}</button>`).join('')}</div>`;
   return tabs + (T.cont ? continentCard(ctx, T, e, i) : earthCard(T, e, i));
 }
 
@@ -68,7 +69,7 @@ function stage(T, i, img, alt, cap, overlay) {
     <ol class="t-dots" aria-label="Timeline">${T.list.map((x, j) => `<li><button class="${j === i ? 'on' : j < i ? 'past' : ''}" data-act="lib" data-arg="time|i|${j}" aria-label="${esc(x.when)}: ${esc(x.title)}" title="${esc(x.title)}"></button></li>`).join('')}</ol>
     <button class="t-nav prev" data-act="lib" data-arg="time|step|-1" ${i ? '' : 'disabled'} aria-label="Earlier">‹</button>
     <button class="t-nav next" data-act="lib" data-arg="time|step|1" ${i < n - 1 ? '' : 'disabled'} aria-label="Later">›</button>
-    <div class="t-ov" id="t-ov"><button class="read-btn t-ov-read" data-act="read" data-arg="#t-ov h2, #t-ov p" aria-label="Read this to me" title="Read this to me">🔊</button>${overlay}</div>
+    <div class="t-ov" id="t-ov"><button class="read-btn t-ov-read" data-act="read" data-arg="#t-ov h2, #t-ov p" aria-label="Read this to me" title="Read this to me">${ico('sound')}</button>${overlay}</div>
     ${cap ? `<span class="t-credit">${cap}</span>` : ''}
   </div>`;
 }
@@ -79,7 +80,7 @@ function earthCard(T, e, i) {
       `<p class="kicker">${esc(e.when)} · ${i + 1} of ${T.list.length}</p><h2>${esc(e.title)}</h2><p>${esc(e.body)}</p>`)}
     <div class="card t-more">
       ${e.look ? `<p class="why-line">${esc(e.look)}</p>` : ''}
-      ${earth ? `<p class="t-clock"><span aria-hidden="true">🕛</span> If all of Earth’s history were <b>one day</b>, this would be at <b>${clock(e.ago)}</b>.${e.ago && e.ago < 1e6 ? ' People arrive in the last few seconds before midnight.' : ''}</p>` : ''}
+      ${earth ? `<p class="t-clock"><span aria-hidden="true">${ico('clock')}</span> If all of Earth’s history were <b>one day</b>, this would be at <b>${clock(e.ago)}</b>.${e.ago && e.ago < 1e6 ? ' People arrive in the last few seconds before midnight.' : ''}</p>` : ''}
       <div class="row gap wrap"><button class="btn primary" data-act="lib" data-arg="time|quiz">Quiz: which came first?</button></div>
       <details class="src"><summary>Where this is checked</summary><ul>${e.src.map((s) => `<li>${esc(s)}</li>`).join('')}</ul></details>
       ${ERAS_NEED_REVIEW ? '<p class="t-review">✎ Awaiting a second reader. Dates this old are scientists’ best estimates, and they get revised.</p>' : ''}
@@ -98,8 +99,8 @@ function continentCard(ctx, T, e, i) {
     <div class="card t-hist">
       ${worldSVG({ key: 'hist-' + T.cont.replace(/\s/g, ''), tap: true, view: viewFor(FRAME[T.cont].box, 0.06, FRAME[T.cont].rot), rot: FRAME[T.cont].rot, zones, pins, borders: !!e.today, grat: false, label: `${T.cont}, ${e.when}: ${e.zones.map((z) => z[3]).join(', ') || 'the countries of today'}` })}
       <p class="muted small center-t" title="${e.today ? 'Today’s countries, drawn the one way this app draws them everywhere.' : !e.zones.length ? 'In this age the map was a tangle of empires, colonies and changing lines — too tangled for soft colours.' : 'Soft colours show where a people or an empire held sway. Their edges faded, moved and were argued over, so they are not borders.'}">${e.today ? 'Today’s countries.' : !e.zones.length ? 'Too tangled for soft colours — the dots are places to visit.' : 'Soft colours, not borders — today’s borders did not exist yet.'} Tap a dot to visit.</p>
-      ${site ? `<p class="t-hist-site" role="status"><b>📍 ${esc(site[0])}</b> — ${esc(site[3])}</p>` : ''}
-      ${e.sites.length ? `<div class="row gap wrap t-hist-sites" aria-label="Places you can still visit">${e.sites.map((s, j) => `<button class="chip-btn small${j === u.site ? ' on' : ''}" aria-pressed="${j === u.site}" data-act="lib" data-arg="time|site|${j}">📍 ${esc(s[0])}</button>`).join('')}</div>` : ''}
+      ${site ? `<p class="t-hist-site" role="status"><b>${ico('pin')} ${esc(site[0])}</b> — ${esc(site[3])}</p>` : ''}
+      ${e.sites.length ? `<div class="row gap wrap t-hist-sites" aria-label="Places you can still visit">${e.sites.map((s, j) => `<button class="chip-btn small${j === u.site ? ' on' : ''}" aria-pressed="${j === u.site}" data-act="lib" data-arg="time|site|${j}">${ico('pin')} ${esc(s[0])}</button>`).join('')}</div>` : ''}
       <details class="t-acc" open><summary><h3>What happened</h3></summary>
         <ol class="t-hist-moments">${moments.map((m) => `<li><b>${esc(m.when)}</b> — ${esc(m.what)}</li>`).join('')}</ol>
         ${hidden ? `<p class="muted small">There is more to this age — some of it hard — for older explorers (11–14).</p>` : ''}</details>

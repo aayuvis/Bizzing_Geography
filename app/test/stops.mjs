@@ -6,7 +6,7 @@ import { STOPS, drill, correct } from '../src/stops.js';
 import { seeded } from '../src/rand.js';
 import { hasShape } from '../src/map.js';
 
-let fails = 0, n = 0;
+let fails = 0, n = 0; const kinds = { type: 0, order: 0 };
 const bad = (s, lv, q, msg) => { if (fails++ < 25) console.error(`✗ ${s.id} lv${lv}: ${msg}\n   ${q.text} → ${q.ans || q.ok}`); };
 for (const s of STOPS) {
   for (const f of ['id', 'title', 'hook', 'idea', 'why', 'gen', 'band', 'world']) if (!s[f]) bad(s, 0, { text: '' }, `missing ${f}`);
@@ -28,6 +28,17 @@ for (const s of STOPS) {
         } else if (q.kind === 'map') {
           if (!q.ok.length) bad(s, lv, q, 'no target');
           if (!q.ok.some(hasShape)) bad(s, lv, q, 'no target has a shape on the map');
+        } else if (q.kind === 'type') {
+          kinds.type++;
+          if (!q.ans || !(q.accept || []).includes(q.ans)) bad(s, lv, q, 'a typed answer that does not accept its own answer');
+          if (!correct(q, q.ans) || !correct(q, '  ' + q.ans.toUpperCase() + ' ') || correct(q, q.ans.slice(0, -1)) || correct(q, '')) bad(s, lv, q, 'typing check: the answer, its case and spaces pass; a letter short or nothing fails');
+          if ((q.accept || []).some((a) => a.length > 2 && q.text.toLowerCase().includes(a.toLowerCase()))) bad(s, lv, q, 'answer in the text');
+        } else if (q.kind === 'order') {
+          kinds.order++;
+          const want = q.ans.split('|');
+          if (want.length < 3 || new Set(q.items).size !== q.items.length || [...q.items].sort().join() !== [...want].sort().join()) bad(s, lv, q, `order: ${q.items.join(' | ')} vs ${q.ans}`);
+          if (q.items.join('|') === q.ans) bad(s, lv, q, 'order: shown already in the answer’s order');
+          if (!correct(q, q.ans) || correct(q, [...want].reverse().join('|'))) bad(s, lv, q, 'order: the right order is right, the reverse is not');
         } else bad(s, lv, q, 'unknown kind ' + q.kind);
       }
     }
@@ -37,6 +48,8 @@ for (const s of STOPS) {
 const slots = [0, 0, 0, 0];
 for (const s of STOPS) { const r = seeded('slots' + s.id); for (const q of drill(s, 2, 10, r)) if (q.kind === 'mc' && q.opts.length === 4) slots[q.opts.indexOf(q.ans)]++; }
 const tot = slots.reduce((a, b) => a + b, 0);
+/* E4: at least two kinds of item beyond choosing, really generated */
+if (kinds.type < 50 || kinds.order < 50) { fails++; console.error(`✗ too few typed (${kinds.type}) or put-in-order (${kinds.order}) questions`); }
 if (slots.some((x) => x / tot < 0.18)) { fails++; console.error('✗ answer slots are lopsided:', slots); }
-console.log(`${fails ? '✗' : '✓'} stops: ${STOPS.length} stops, ${n} questions, slots ${slots.join('/')}${fails ? `, ${fails} failures` : ''}`);
+console.log(`${fails ? '✗' : '✓'} stops: ${STOPS.length} stops, ${n} questions (${kinds.type} typed, ${kinds.order} in order), slots ${slots.join('/')}${fails ? `, ${fails} failures` : ''}`);
 process.exit(fails ? 1 : 0);

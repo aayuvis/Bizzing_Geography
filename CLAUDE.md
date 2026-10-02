@@ -81,14 +81,22 @@ Inherited from the family, and it holds here:
   gitignored) before `tools/art/process.py` (which also trims painted paper borders).
 - Places of worship are painted from outside, still, never as a prize. Sites a community has
   asked the world not to treat as an attraction (Uluru) are not on the shelf.
-- **Forty avatars, five packs of eight** (`model.js` `AVATAR_PACKS`: Explorer's Kit, Seven
-  Continents, Ocean Crew, Wild Earth, Forest & River), painted for this app in the family's
-  sticker style (`gen.py` `AVATAR`, `--group avatars`). Creatures only — never a person or a
-  deity (`test/avatars.mjs` holds the Bee's denylist) — and no real map on any of them (the
-  globe turtle was repainted for drawing continents). All free, none locked. Faces the picker
-  offered before (`AVATAR_KEPT`) still draw for a child who chose one.
+- **Ninety-six avatars, twelve packs of eight** (`src/avatars.js`, family standard v2 §8), through
+  the family's own engine, vendored byte for byte (`src/bizzing-avatars.js` + `styles/bizzing-avatars.css`;
+  `test/avatars.mjs` holds `validate()` to `[]` and the files to the Hive's). Five packs painted here first
+  (Explorer's Kit, Seven Continents, Ocean Crew, Wild Earth, Forest & River), Bee's **Big Beasts** and
+  **Elements**, and five painted for the worlds (Deep Sea, Canopy, Oasis, Ice Floe, High Peaks — `gen.py`
+  `AVATAR2`). Two packs to each world, 2 Common · 3 Rare · 2 Epic · 1 Legendary; a Legendary waits for a
+  named MEDAL (learning), then coins. **The owner overrode "all free"**: Commons are free, the rest are
+  bought with Bizzing coins. Store v6 grandfathers the face and world a child already had.
+  Creatures only — never a person or a deity — and no real map on any of them.
   `process.py --avatars` **fails on a ghost**: a ground that was not pure magenta keys the
-  creature half away; repaint anything it names (seven were, first time round).
+  creature half away; repaint anything it names.
+- **Shelly** the sea turtle is the mascot (`src/mascot.js`, six poses in `public/mascot/`, the app icon on
+  teal with map contours). Her globe shell carries only latitude and longitude lines — **no continents**:
+  the "a model never draws a real map" rule wins over the concept sheet.
+- **Worlds** (the six themes) each have a painted far plane by day (`art/wd-*`) and one repainted from it by
+  night (`art/wn-*`), drawn as the scene's back layer, with Shelly's idle loop in front.
 - The Gemini key lives at `/root/.gkey` (mode 600, `GKEY_FILE` overrides). **Never in the repo.**
 
 ### Product & code (inherited from the family, non-negotiable)
@@ -154,9 +162,9 @@ Inherited from the family, and it holds here:
 - **A capital card pops up over the map** (Country and State Capitals, `ask.js` `panel`), never
   below the fold; ✕ or Esc closes it. No explanatory text blocks on those pages — a count
   ("12 / 50 known") and the map.
-- **The welcome is Bizzing Finance's**: a landing page, then one question a screen with Compass
-  Owl as guide — name, age, **five** companions, **two** worlds. The other 35 faces and four worlds
-  are on the child's page from minute one, all free.
+- **The welcome is Bizzing Finance's**: a landing page, then one question a screen with Shelly as
+  guide — name, age, **five** Common faces, **two** open worlds — and then an easy first question on the
+  whole map whose right answer is celebrated (A8), then the first stop.
 - **Above the fold is for doing.** Page heads are one row (no subtitle on a phone); tool pages
   lead with their controls; filter rows scroll in one line. `test/ui.mjs` asserts each key
   screen's core content starts above the fold, desktop and phone.
@@ -169,13 +177,13 @@ Inherited from the family, and it holds here:
 
 The shared spec every Bizzing app follows. Here it lives in five files:
 
-- **`src/family.js`** — the shared `localStorage` keys, to the standard's contract:
+- **`src/family.js`** — adapts the family's vendored drop-ins (`bizzing-activity.js`, `bizzing-wallet.js`,
+  `bizzing-avatars.js`, byte for byte) to this app; the bodies below describe the contract they keep:
   `bizzing.activity` (active minutes `{a,d,t,m,who}` and milestones `{…,m:0,ev,label}`) and
   `bizzing.wallet` (one wallet per child by lower-case first name; `earn` pays only the standard
   amounts — right 1 · station/day/round 5 · mastered 20 · level check 10 — capped at 100 a day per
-  app; `spend` at printed prices, never below zero; append-only ledger). Written to the contract
-  because the Schedule drop-ins could not be read from this session — **when they are vendored,
-  they replace these bodies**, and `test/family.mjs` holds the contract either way.
+  app; `spend` at printed prices, never below zero; append-only ledger). `test/family.mjs` holds the
+  contract; `test/avatars.mjs` proves the vendored files are the Hive's, byte for byte.
 - **`src/next.js`** — THE next step. Home's Continue, `#/continue` and the end of the welcome all ask
   it. Home has exactly one primary button (asserted).
 - **`src/rewards.js`** — rank moves only on learning (`xpFor`: 1 per right answer while it is being
@@ -193,8 +201,20 @@ The shared spec every Bizzing app follows. Here it lives in five files:
 - **Weight**: Where on Earth? and Earth Through Time load on demand (`library/index.js loadTool`,
   prefetched when idle so they work offline). The browser check holds initial JS ≤ 400 KB gzipped
   and the phone's first screen ≤ 1.5 MB.
-- **Tabs stay Home · Atlas · Expeditions · Library** (the owner kept "Expeditions"); the standard's
-  five-tab naming (Practice, Play) is not adopted.
+- **Tabs stay Home · Atlas · Expeditions · Library** (the owner kept "Expeditions"): a tab row under the top bar
+  at ≥900px, a bottom bar below. Everything else is in the **☰ drawer** (`src/chrome.js`): My page · Shop ·
+  Collection · Medals · Your journey · My mistakes · Search · Where on Earth? · Settings · Grown-ups · Help ·
+  Privacy · Back to the Hive, with a one-tap mute.
+- **Top bar** (standard §3): ⬡ Hive · ☰ · Shelly + Bizzing Geography · search · coin chip (opens the wallet
+  history) · light/dark · 🔒 · avatar ▾. **Settings** is Bee's sheet in five sections (Me · Sound & music ·
+  Look · Comfort · Grown-ups). **Shop**: Avatars · Worlds (240 coins each, or the family plan — a grown-ups'
+  flag until the family server) · Extras (map pins and frames), then the wallet history.
+- **Music** is composed in code (`src/music.js`, `music/CREDITS.md`): a loop per world, home and games,
+  default 40%, ducks under effects and read-aloud, paused when hidden, off in Calm mode. No narration.
+- **Learning** (family audit E4/E6/F3/C4): typed and put-in-order items beside multiple choice; one hint per
+  question (`src/hints.js`; a hinted right answer pays no coin); the mistakes deck (`src/mistakes.js`) brings
+  a miss back after a gap; one search over stops, places, countries, landmarks and words (`src/search.js`).
+  Stars come only from answers and fall due for review after four weeks; a miss then drops one star.
 
 ## Real photos — Google Street View, on by default (the owner's decision)
 
@@ -275,8 +295,8 @@ wholesale and refuses to publish if the staged file count differs from the build
    Needs merging first: Italy, Spain, France. **Not** China or Pakistan (their state lines contradict
    the India depiction) nor Nepal, Bangladesh, Kenya, Indonesia, Colombia (Natural Earth's divisions
    are out of date). Each capital list is checked by the build: every capital inside its own state.
-4. **Vendor the family drop-ins** (`Bizzing_Schedule/integration/bizzing-activity.js`, `bizzing-wallet.js`)
-   into `src/family.js` — this app writes to their contract today, from its own code.
+4. **The human checks the art**: Shelly's six poses and icon, the 40 new faces and the twelve world plates
+   were looked at once by the agent that made them; the owner may still swap the mascot (Kip, Roam).
 
 ## Branch
 

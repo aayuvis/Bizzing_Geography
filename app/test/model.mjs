@@ -1,5 +1,5 @@
 /* model.mjs — the rules about progress and the household. */
-import { newHousehold, newKid, scoreRun, road, stopOpen, lvFor, passLevel, rankOf, tick, stopRec, RANKS } from '../src/model.js';
+import { reviewDue, newHousehold, newKid, scoreRun, road, stopOpen, lvFor, passLevel, rankOf, tick, stopRec, RANKS } from '../src/model.js';
 import { LEVELS, START } from '../src/levels.js';
 import { migrate, SCHEMA } from '../src/store.js';
 let fails = 0; const ok = (c, m) => { if (!c) { fails++; console.error('✗ ' + m); } };
@@ -27,5 +27,15 @@ tick(a, false); ok(a.xp === 0, 'a wrong answer earns nothing'); tick(a, true, 2)
 ok(rankOf(0).n === RANKS[0].n && rankOf(RANKS[3].xp).i === 3, 'ranks follow xp');
 ok(migrate({ kids: [] }).v === SCHEMA, 'an unversioned household migrates');
 ok(migrate({ v: SCHEMA + 5, kids: [] }).v === SCHEMA + 5, 'a newer household is never downgraded');
+/* E9: mastery is re-checked — weeks later a stop is due for review; a miss then drops ONE star and says so */
+{ const c = newKid('Rev', '8-10', 'compowl'), st = road(c).steps[0], t0 = Date.UTC(2026, 0, 1);
+  scoreRun(c, st.stop, st.lv, 10, 10, t0); const rr = stopRec(c, st.stop);
+  ok(rr.stars === 3 && !reviewDue(rr, t0 + 5 * 864e5), 'a fresh pass is not due for review');
+  ok(reviewDue(rr, t0 + 40 * 864e5), 'six weeks on, it is due for review');
+  const slip = scoreRun(c, st.stop, st.lv, 4, 10, t0 + 40 * 864e5);
+  ok(slip.slipped && rr.stars === 2, 'a miss while due drops one star, and is reported (slipped)');
+  const back = scoreRun(c, st.stop, st.lv, 9, 10, t0 + 41 * 864e5);
+  ok(back.stars === 3 && !reviewDue(rr, t0 + 42 * 864e5), 'a pass brings it back and resets the clock');
+  ok(scoreRun(newKid('N', '8-10'), st.stop, st.lv, 0, 10).stars === 0, 'no star for nothing right — reading earns no star'); }
 console.log(`${fails ? '✗' : '✓'} model: household, road, stars, levels, ranks, store`);
 process.exit(fails ? 1 : 0);

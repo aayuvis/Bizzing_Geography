@@ -6,6 +6,7 @@
    from the SAME topic — so the choices are near-misses, not giveaways — and
    never a word that appears in the definition itself (the family's
    never-leak-the-answer rule; the selftest proves it for every word). */
+import { gi, ico } from '../icons.js';
 import { mc } from '../chapters/kit.js';
 import { shuffle, seeded, dayKey, rnd, pick } from '../rand.js';
 
@@ -362,10 +363,10 @@ export function view(ctx) {
     <p class="t-dict-today"><span class="kicker">Word of the day</span> <b>${esc(tw)}</b> — ${esc(td)}.</p>
     <div class="row gap wrap t-dict-topics">
       <button class="chip-btn small${topic ? '' : ' on'}" aria-pressed="${!topic}" data-act="lib" data-arg="dictionary|topic|">All ${WORDS.length}</button>
-      ${TOPICS.map((t) => `<button class="chip-btn small${topic === t.id ? ' on' : ''}" aria-pressed="${topic === t.id}" data-act="lib" data-arg="dictionary|topic|${t.id}">${t.glyph} ${esc(t.name)} <span class="muted">${WORDS.filter((x) => x[2] === t.id).length}</span></button>`).join('')}
+      ${TOPICS.map((t) => `<button class="chip-btn small${topic === t.id ? ' on' : ''}" aria-pressed="${topic === t.id}" data-act="lib" data-arg="dictionary|topic|${t.id}">${gi(t.glyph)} ${esc(t.name)} <span class="muted">${WORDS.filter((x) => x[2] === t.id).length}</span></button>`).join('')}
     </div>
     <p class="muted small">${list.length} of ${WORDS.length} words</p>
-    <dl class="t-dict">${list.map(([w, d, t, ex]) => { const L = w[0].toUpperCase(), head = L !== letter ? `<h3 class="t-dict-l">${(letter = L)}</h3>` : ''; return `${head}<div><dt>${esc(w)} <span class="t-dict-tag" title="${esc(topicOf[t].name)}">${topicOf[t].glyph}</span></dt><dd>${esc(d)}.${ex ? ` <span class="t-dict-ex">Example: ${esc(ex)}.</span>` : ''}</dd></div>`; }).join('')}</dl></div>`;
+    <dl class="t-dict">${list.map(([w, d, t, ex]) => { const L = w[0].toUpperCase(), head = L !== letter ? `<h3 class="t-dict-l">${(letter = L)}</h3>` : ''; return `${head}<div><dt>${esc(w)} <span class="t-dict-tag" title="${esc(topicOf[t].name)}">${gi(topicOf[t].glyph)}</span></dt><dd>${esc(d)}.${ex ? ` <span class="t-dict-ex">Example: ${esc(ex)}.</span>` : ''}</dd></div>`; }).join('')}</dl></div>`;
 }
 export function act(name, arg, ctx) {
   if (name === 'topic') ctx.ui.topic = arg || '';

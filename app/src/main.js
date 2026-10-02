@@ -1,9 +1,16 @@
 /* main.js — the shell: boot, hash routing, the question runner, keys, and
    every data-act in one table. */
 
+import { gi, ico } from './icons.js';
 import { R } from './runtime.js';
-import { Store } from './store.js';
-import { on, fire, bindRoot, sfx, setSound, toast, confetti, say, hush } from './ui.js';
+import { Store, pinHash } from './store.js';
+import { on, fire, bindRoot, sfx, setSound, setCalm, onSound, ac, toast, confetti, say, hush, setSayRate } from './ui.js';
+import * as C from './chrome.js';
+import * as M from './music.js';
+import { viewSearch } from './search.js';
+import { missAdd, missDue, missRight, missWrong, keyOf } from './mistakes.js';
+import { CATALOGUE, byAvatar, worldNo, canWear, stateOf as avState } from './avatars.js';
+import { buy as buyAvatar, buyWorld as buyWorldFam, worldOpen } from './bizzing-avatars.js';
 import { byId, drill, correct, worldOf, STOPS } from './stops.js';
 import { newHousehold, newKid, kid, AVATARS, tick, session, GOALS, stopRec, scoreRun, road, stopOpen, lvFor, passLevel, levelOf, CHECK_PASS } from './model.js';
 import { byCc } from './geo.js';
@@ -17,11 +24,13 @@ import { GKEY, photosOn } from './photos.js';
 import { THEMES, themeOf, isTheme, applyTheme, syncThemeColor } from './themes.js';
 import { syncScene } from './scenes.js';
 import * as X from './expeditions.js';
-import { APP, trackActivity, trackMilestone, familyOff, earn as famEarn, spend } from './family.js';
+import { APP, trackActivity, trackMilestone, familyOff, earn as famEarn, spend, balance as famBalance } from './family.js';
 import { xpFor, bonus, newMedals, SHOP, shopOf } from './rewards.js';
 import { nextStep } from './next.js';
 import { demoHousehold } from './demo.js';
 import { expeditionById } from './data/expeditions.js';
+import { hintFor } from './hints.js';
+import { certificatesOf, shareCertificate } from './certificate.js';
 import { dayKey } from './rand.js';
 
 const root = document.getElementById('app');
@@ -97,7 +106,8 @@ function go(nav, arg = null, fromHash = false) {
   if (nav === 'world' && !worldOf(arg)) { nav = 'atlas'; arg = null; }
   if (nav !== asked) fromHash = false;
   if (nav === 'grownups' && R.ui.nav !== 'grownups') { R.ui.gate = false; R.ui.gateIn = ''; }
-  R.ui.nav = nav; R.ui.arg = arg; R.ui.confirm = null; R.ui.menu = false;
+  if (nav !== R.ui.nav) R.ui.prev = R.ui.nav;
+  R.ui.nav = nav; R.ui.arg = arg; R.ui.confirm = null; R.ui.menu = false; R.ui.drawer = false; R.ui.sheet = null;
   hush();
   if (!fromHash) writeHash();
   render();
@@ -109,6 +119,8 @@ function go(nav, arg = null, fromHash = false) {
 function screen() {
   const k = kid(R.h), n = R.ui.nav;
   if (n === 'privacy') return V.viewPrivacy();
+  if (n === 'settings' && !k) return C.viewSettings();
+  if (n === 'help') return C.viewHelp();
   if (n === 'grownups') return V.viewGrownups();
   if (n === 'run' && R.run) return V.viewRun();
   if (!k || n === 'welcome') return V.viewWelcome();
@@ -125,9 +137,16 @@ function screen() {
       if (toolById[R.ui.arg]) return toolView(toolById[R.ui.arg]);
       const meta = SHELF.find((t) => t.id === R.ui.arg); if (!meta) return libraryView();
       loadTool(meta.id).then(() => { if (R.ui.nav === 'lib' && R.ui.arg === meta.id) render(); });
-      return `<section class="tool-page">${V.pageHead(`${meta.glyph} ${meta.name}`, '', V.back('nav', 'Library', 'library'))}<div class="card center-card"><p class="muted">Opening ${V.esc(meta.name)}…</p></div></section>`;
+      return `<section class="tool-page">${V.pageHead(`${gi(meta.glyph)} ${meta.name}`, '', V.back('nav', 'Library', 'library'))}<div class="card center-card"><p class="muted">Opening ${V.esc(meta.name)}…</p></div></section>`;
     }
-    case 'me': return V.viewMe();
+    case 'me': return C.viewMe();
+    case 'settings': return C.viewSettings();
+    case 'shop': return C.viewShop();
+    case 'collection': return C.viewCollection();
+    case 'medals': return C.viewMedals();
+    case 'help': return C.viewHelp();
+    case 'search': return viewSearch(R.ui.q || R.ui.arg || '');
+    case 'mistakes': return V.viewMistakes();
     default: return V.viewHome();
   }
 }
@@ -136,10 +155,11 @@ const libraryView = () => `<section>${V.pageHead('The Explorer’s Library')}
 function toolView(tool) {
   let body;
   try { body = tool.view(libCtx(tool.TOOL.id)); } catch (e) { console.error(e); body = '<div class="card center-card"><p>Something went wrong in this tool.</p></div>'; }
-  return `<section class="tool-page tool-${tool.TOOL.id}">${V.pageHead(`${tool.TOOL.glyph} ${tool.TOOL.name}`, '', V.back('nav', 'Library', 'library'))}${body}</section>`;
+  return `<section class="tool-page tool-${tool.TOOL.id}">${V.pageHead(`${gi(tool.TOOL.glyph)} ${tool.TOOL.name}`, '', V.back('nav', 'Library', 'library'))}${body}</section>`;
 }
 
-let focusId = null, woPic = {}, autoReadAt = '';
+let focusId = null, woPic = {}, autoReadAt = '', lastLoopTheme = null;
+M.attach(ac); onSound((secs) => M.duck(secs || 0.9));
 function render() {
   const a = document.activeElement;
   focusId = a && a.id ? a.id : null;
@@ -147,10 +167,22 @@ function render() {
   /* the active child's theme; on the welcome's last step, the world being chosen */
   const th = (!kid(R.h) || R.ui.nav === 'welcome') && R.ui.draft && R.ui.draft.step === 3 ? R.ui.draft.theme : themeOf(kid(R.h));
   applyTheme(th);
-  const kk = kid(R.h); document.documentElement.setAttribute('data-frame', kk ? shopOf(kk).frame : 'plain');
-  if (R.ui.coinToast) { const c = R.ui.coinToast; R.ui.coinToast = 0; setTimeout(() => toast(`+${c} 🪙 for learning`), 0); }
-  syncScene(th, R.ui.nav === 'run' || Store.loadDevice('still', false));   // a quiz run gets a still, faded scene
-  root.innerHTML = V.shell(screen());
+  const kk = kid(R.h), html = document.documentElement; html.setAttribute('data-frame', kk ? shopOf(kk).frame : 'plain');
+  /* the device's comfort and look settings (standard §5) */
+  html.toggleAttribute('data-bz-dark', html.getAttribute('data-mode') === 'dark');
+  html.setAttribute('data-text', Store.loadDevice('text', 'm'));
+  if (Store.loadDevice('motion', false)) html.setAttribute('data-motion', 'reduced'); else html.removeAttribute('data-motion');
+  html.classList.toggle('calm', !!Store.loadDevice('calm', false));
+  setCalm(!!Store.loadDevice('calm', false));
+  if (kk) setSayRate((kk.prefs || {}).rate || 1);
+  /* music: the world's loop, home's, or the games' (a run is a game) */
+  const nav = R.ui.nav, loop = nav === 'run' || (nav === 'lib' && R.ui.arg === 'geoguess' && ((R.ui.lib || {}).geoguess || {}).g) ? 'game' : nav === 'home' || nav === 'welcome' ? 'home' : th;
+  M.want(loop, { on: !!Store.loadDevice('music', true), calm: !!Store.loadDevice('calm', false), vol: Store.loadDevice('vol', 40), sting: loop === th && lastLoopTheme !== th && lastLoopTheme != null });
+  if (loop === th) lastLoopTheme = th;
+  if (R.ui.coinToast) { const c = R.ui.coinToast; R.ui.coinToast = 0; setTimeout(() => toast(`+${c} Bizzing ${c === 1 ? 'coin' : 'coins'} for learning`), 0); }
+  syncScene(th, R.ui.nav === 'run' || Store.loadDevice('still', false) || Store.loadDevice('motion', false));   // a quiz run gets a still, faded scene
+  root.innerHTML = C.shell(screen());
+  starsToIcons(root);
   restoreMaps(root);
   root.querySelectorAll('.wo-view').forEach((v) => {   // a new picture starts in the middle; a re-render keeps where the child looked
     const src = (v.querySelector('img:not(.wo-bg)') || {}).src;
@@ -176,12 +208,23 @@ function render() {
   if (rr && !rr.over && !rr.fb && kr && V.autoRead(kr) && R.sound && autoReadAt !== rr.items.length + ':' + rr.i + rr.title) { autoReadAt = rr.items.length + ':' + rr.i + rr.title; setTimeout(() => readOut('#q-text, .choice-row'), 250); }
 }
 R.render = render;
+/* ★ is drawn as the family's star icon wherever it sits in a control or heading — some
+   systems paint the character as a coloured emoji (§9: no emoji in controls) */
+const STAR = '<svg class="ico st" viewBox="0 0 24 24" aria-hidden="true"><path class="d" d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9 6.8 19.6l1-5.8-4.3-4.1 5.9-.9z"/></svg>';
+function starsToIcons(el) {
+  for (const host of el.querySelectorAll('button, .chip, h1, h2, h3, [role=tab], nav, .stars')) {
+    const w = document.createTreeWalker(host, NodeFilter.SHOW_TEXT), hit = [];
+    while (w.nextNode()) if (w.currentNode.nodeValue.includes('★')) hit.push(w.currentNode);
+    for (const t of hit) { const sp = document.createElement('span'); sp.className = 'st-txt'; sp.innerHTML = t.nodeValue.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])).replace(/★/g, STAR); t.replaceWith(sp); }
+  }
+}
 
 /* ------------------------------------------------------------- the runner */
 
 function startRun(kind, title, items, extra = {}) {
   if (!items.length) { toast('Nothing to ask here yet.'); return; }
-  R.run = { kind, title, items, i: 0, results: [], fb: null, over: false, ...extra };
+  const kk0 = kid(R.h);
+  R.run = { kind, title, items, i: 0, results: [], fb: null, over: false, t0: Date.now(), coins: 0, hints: {}, bal0: kk0 ? famBalance(kk0.name) : 0, stars0: extra.stop && kk0 ? ((kk0.stops[extra.stop] || {}).stars || 0) : null, ...extra };
   R.ui.mapPick = null;
   go('run');
 }
@@ -192,10 +235,17 @@ function answer(given) {
   run.fb = { right, given, givenName };
   if (q.kind === 'map' && !q.targetName) q.targetName = byCc[q.target] ? byCc[q.target].name : q.target;
   run.results.push({ right });
+  const hinted = !!(run.hints || {})[run.i];
   if (k && run.kind !== 'trial') {
     const src = run.kind === 'drill' ? run.stop : run.kind === 'lib' ? run.lib : run.kind === 'sprint' ? 'exp:' + run.exp : run.kind;
-    tick(k, right, right ? xpFor(k, src, run.kind === 'drill' ? { stop: run.stop, lv: run.lv } : {}) : 0);
-    if (right) earn('right', true);
+    /* a hint halves the reward: the answer still counts, but a hinted right one pays no coin and no rank */
+    tick(k, right, right && !hinted ? xpFor(k, src, run.kind === 'drill' ? { stop: run.stop, lv: run.lv } : {}) : 0);
+    if (right && !hinted) run.coins = (run.coins || 0) + earn('right', true);
+    /* the mistakes deck (F3): a miss is kept, with its picture, and comes back after a gap */
+    if (run.kind === 'mist' && q.missKey) { const r2 = right ? missRight(k, q.missKey) : missWrong(k, q.missKey); run.fb.deck = r2; }
+    else if (!right) missAdd(k, q, q.from || (run.kind === 'drill' && byId[run.stop] ? byId[run.stop].title : run.title));
+    /* the first right answer this explorer ever gives is a moment (A8) — not the sign-up */
+    if (right && !k.firstRight) { k.firstRight = Date.now(); R.ui.firstPop = q.kind === 'map' ? `You found ${q.targetName || 'it'} on the map. Every place you find stays found.` : `“${q.ans}” — right first time. That is how explorers start.`; confetti(60); setTimeout(() => sfx.level(), 350); }
   }
   if (run.kind === 'lib' && toolById[run.lib] && toolById[run.lib].answered) toolById[run.lib].answered(q, right, libCtx(run.lib));
   save();
@@ -206,7 +256,7 @@ function answer(given) {
 }
 function nextQ() {
   const run = R.run; if (!run) return;
-  run.fb = null; run.i++;
+  run.fb = null; run.i++; run.typed = ''; run.order = [];
   if (run.i >= run.items.length) finish(run);
   render();
 }
@@ -220,17 +270,19 @@ function finish(run) {
     const rd = road(k);
     const best = Math.round((100 * right) / n) >= (stopRec(k, run.stop).best || 0) && res.passed;
     run.summary = { stars: res.stars, lines: [res.passed ? `You ${res.firstPass ? 'passed' : 'walked'} <b>${V.esc(byId[run.stop].title)}</b> with ${right} of ${n}${best && stopRec(k, run.stop).runs > 1 ? ' — your best yet' : ''}${res.gained ? ` · ${'★'.repeat(res.stars)}` : ''}.` : `${right} of ${n} on ${V.esc(byId[run.stop].title)}. Seven right passes it — read the lesson again, then have another go.`] };
-    if (res.passed && rd.next) run.summary.buttons = [V.btn(`Next station: ${byId[rd.next.stop].title} →`, 'openStop', rd.next.stop, 'big')];
-    if (res.passed && rd.all) run.summary.lines.push(`Every station on Level ${rd.L.n} is done. Take the level check to open the next level.`);
+    if (res.passed && rd.next) run.summary.buttons = [V.btn(`Next stop: ${byId[rd.next.stop].title} →`, 'openStop', rd.next.stop, 'big')];
+    if (res.passed && rd.all) run.summary.lines.push(`Every stop on Level ${rd.L.n} is done. Take the level check to open the next level.`);
+    if (res.slipped) run.summary.lines.push(`This stop had not been practised for a few weeks and slipped: ${'★'.repeat(res.stars)} now. One more pass brings it back.`);
+    if (res.reviewed) run.summary.lines.push('Reviewed after a few weeks — still yours.');
     if (res.gained) { sfx.level(); confetti(30); }
-    k.last = { k: res.passed ? 'stop' : 'try', title: byId[run.stop].title, at: Date.now() };
+    k.last = { k: res.passed ? 'stop' : 'try', title: byId[run.stop].title, at: Date.now(), right, n };
     if (res.passed && res.firstPass) { bonus(k, 'stop'); earn('stop'); }
     if (res.passed && res.gained) trackMilestone(APP, k.name, 'stop', `Passed ${byId[run.stop].title}`);
   } else if (run.kind === 'check') {
     const pass = right / n >= CHECK_PASS;
     earn('contest');
     if (pass) { bonus(k, 'level'); earn('mastered'); const L = passLevel(k); k.last = { k: 'check', title: `Level ${L}`, at: Date.now() }; trackMilestone(APP, k.name, 'band', `Reached Level ${L}: ${levelOf(L).name}`); run.summary = { stars: 3, lines: [`Level check passed. Welcome to Level ${L}: ${levelOf(L).name}.`] }; sfx.level(); confetti(60); }
-    else run.summary = { stars: right / n >= 0.6 ? 1 : 0, lines: [`Ten right opens the next level. Walk a few more stations on your road, then try again.`] };
+    else run.summary = { stars: right / n >= 0.6 ? 1 : 0, lines: [`Ten right opens the next level. Walk a few more stops on your road, then try again.`] };
   } else if (run.kind === 'sprint') {
     run.summary = X.finishDay(k, run, right, n);
     earn('stop'); if (run.summary.big) { bonus(k, 'part'); earn('mastered'); }
@@ -242,10 +294,26 @@ function finish(run) {
     const ks = Object.keys(k.trips).sort(); while (ks.length > 30) delete k.trips[ks.shift()];
     run.summary = { lines: [`You practised ${[...new Set(run.items.map((q) => q.from).filter(Boolean))].join(', ')}.`, 'That is today’s trip done. Nothing more is needed — and another is always here.'] };
     if (right >= n - 1) { sfx.level(); confetti(25); }
+  } else if (run.kind === 'warm') {
+    const st = road(k).next;
+    run.summary = { lines: [right ? 'You know where that is. Now your journey starts — the first stop is ready.' : 'That is how the map works: tap, and it tells you. Now your journey starts.'], buttons: st ? [V.btn(`First stop: ${V.esc(byId[st.stop].title)} ${'→'}`, 'warmNext', st.stop, 'big')] : [] };
+  } else if (run.kind === 'mist') {
+    const left = missDue(k).length;
+    k.last = { k: 'mist', title: 'My mistakes', at: Date.now(), right, n };
+    run.summary = { lines: [`${right} of ${n} came back right after the gap${right === n ? ' — every one' : ''}.`, left ? `${left} more ${left === 1 ? 'is' : 'are'} ready.` : 'The rest come back after their gap.'] };
+    if (right) earn('stop');
   } else if (run.kind === 'lib') {
     const t = toolById[run.lib];
     run.summary = t && t.done ? t.done(run, libCtx(run.lib)) : null;
   }
+  /* F4: the finish names what was practised, how long it took, what it earned and what is next */
+  run.summary = run.summary || {};
+  run.summary.secs = Math.round((Date.now() - run.t0) / 1000);
+  run.summary.coins = Math.max(0, famBalance(k.name) - run.bal0);
+  run.summary.practised = [...new Set(run.items.map((q) => q.from || (q.stop && byId[q.stop] && byId[q.stop].title)).filter(Boolean))].slice(0, 4);
+  if (run.stars0 != null && run.summary.stars != null) run.summary.starsUp = Math.max(0, (run.summary.stars || 0) - run.stars0);
+  if (!run.summary.next) { const nx = nextStep(k); run.summary.next = { act: nx.act, arg: nx.arg, title: nx.html ? String(nx.title).replace(/<[^>]+>/g, '') : nx.title }; }
+  if (right / Math.max(1, n) >= 0.7) sfx.finish();
   save();
 }
 
@@ -282,16 +350,16 @@ on('expDay', (arg) => {
   if (r.go) go(r.go[0], r.go[1]); else render();
 });
 on('learned', (id) => { const r = stopRec(kid(R.h), id); if (!r.learned) { r.learned = true; r.stars = Math.max(r.stars, 1); save(); sfx.coin(); } render(); });
-function startDrill(id, extra = {}) { const s = byId[id], k = kid(R.h), lv = lvFor(k, id); startRun('drill', s.title, drill(s, lv, 10), { stop: id, lv, sub: `${s.glyph} ${['', 'First look', 'Deeper', 'Stretch'][lv]}`, ...extra }); }
+function startDrill(id, extra = {}) { const s = byId[id], k = kid(R.h), lv = lvFor(k, id); startRun('drill', s.title, drill(s, lv, 10), { stop: id, lv, sub: `${gi(s.glyph)} ${['', 'First look', 'Deeper', 'Stretch'][lv]}`, ...extra }); }
 on('startDrill', (id) => startDrill(id));
 /* try one question before making an explorer (A5): nothing is saved until sign-up */
-on('trial', () => startRun('trial', 'Try one question', drill(byId['find-continent'], 1, 1), { sub: '🌍 No explorer needed yet' }));
+on('trial', () => startRun('trial', 'Try one question', drill(byId['find-continent'], 1, 1), { sub: 'No explorer needed yet' }));
 /* the timed round of Where on Earth? (E2): a clock per card, ticking on screen only */
 setInterval(() => {
   const g = R.ui.nav === 'lib' && R.ui.arg === 'geoguess' && ((R.ui.lib || {}).geoguess || {}).g;
   if (!g || !g.timed || g.i >= g.cards.length || g.done[g.i]) return;
   const left = Math.max(0, Math.ceil((g.deadline - Date.now()) / 1000)), el = root.querySelector('.wo-clock');
-  if (el) { el.textContent = `⏱ ${left}s`; el.classList.toggle('low', left <= 10); }
+  if (el) { el.textContent = `${left}s`; el.classList.toggle('low', left <= 10); }
   if (left <= 0) { fire('lib', 'geoguess|timeout'); buzz(30); }
 }, 500);
 /* the 5-minute trip (E1): three from what you have passed, one new, one on the map — then it ends */
@@ -304,7 +372,7 @@ on('trip', () => {
   const mapStop = shuffle([...passed, nx], rnd).find((id) => drill(byId[id], lvFor(k, id), 6).some((q) => q.kind === 'map'));
   if (mapStop) { const q = drill(byId[mapStop], lvFor(k, mapStop), 12).find((x) => x.kind === 'map'); if (q) items.push({ ...q, from: byId[mapStop].title }); }
   while (items.length < 5) items.push(...tag(drill(byId[nx], lvFor(k, nx), 1), nx));
-  startRun('trip', '5-minute trip', items.slice(0, 5), { sub: '⏱️ Review · one new · one map' });
+  startRun('trip', '5-minute trip', items.slice(0, 5), { sub: 'Review · one new · one map' });
 });
 /* the shop: printed prices, from the family wallet; a look, never content */
 on('buy', (id) => {
@@ -315,6 +383,45 @@ on('buy', (id) => {
 });
 on('use', (id) => { const k = kid(R.h), it = SHOP.find((x) => x.id === id), sh = shopOf(k); if (!it || !sh.owned.includes(id)) return; sh[it.kind] = id.split(':')[1]; save(); render(); });
 on('medalOk', () => { R.ui.medalPop = (R.ui.medalPop || []).slice(1); render(); });
+on('firstOk', () => { R.ui.firstPop = null; render(); });
+
+/* ---- the family chrome (standard §1, §3, §5, §8) */
+function focusIn(sel) { const f = root.querySelector(sel); if (f) f.focus(); }
+on('drawer', () => { R.ui.drawer = !R.ui.drawer; R.ui.menu = false; render(); if (R.ui.drawer) focusIn('.drawer .dr-x'); else focusIn('.burger'); });
+on('wallet', () => { R.ui.sheet = R.ui.sheet === 'wallet' ? null : 'wallet'; R.ui.drawer = false; render(); if (R.ui.sheet) focusIn('#wallet-sheet .tool'); else focusIn('.coin-chip'); });
+on('back', () => history.back());
+on('shopTab', (t) => { R.ui.shopTab = t; render(); focusIn('.shop-tabs .on'); });
+on('buyAv', (id) => {
+  const k = kid(R.h), a = byAvatar[id]; if (!k || !a) return;
+  if (R.demo) { toast('The sample cannot buy — make your own explorer.'); return; }
+  const ctx = C.ctxOf(k);
+  if (!buyAvatar(APP, k.name, a, ctx)) { toast(`Not yet: ${avState(id, ctx).say}.`); return; }
+  k.owned = [...new Set([...(k.owned || []), id])]; k.avatar = id; sfx.unlock(); confetti(30); save(); render(); toast(`${a.name} is yours — and you are wearing it.`);
+});
+on('buyWorld', (n) => {
+  const k = kid(R.h); n = +n; if (!k) return;
+  if (R.demo) { toast('The sample cannot buy — make your own explorer.'); return; }
+  if (!buyWorldFam(APP, k.name, n, C.ctxOf(k))) { toast('240 Bizzing coins open a world — earn them by learning.'); return; }
+  k.worlds = [...new Set([...(k.worlds || []), n])]; sfx.unlock(); confetti(40); save(); render(); toast('A new world is open — and two more packs of faces with it.');
+});
+on('music', () => { Store.saveDevice('music', !Store.loadDevice('music', true)); render(); });
+on('readAuto', () => { const k = kid(R.h); k.prefs.readAuto = !V.autoRead(k); save(); render(); });
+on('rate', (r) => { const k = kid(R.h); k.prefs.rate = r === 'slow' ? 0.85 : 1; setSayRate(k.prefs.rate); save(); render(); });
+on('setMode', (m) => {
+  if (m === 'auto') { Store.saveDevice('mode', null); document.documentElement.setAttribute('data-mode', sysDark.matches ? 'dark' : 'light'); }
+  else { Store.saveDevice('mode', m); document.documentElement.setAttribute('data-mode', m); }
+  syncThemeColor(); render();
+});
+on('setText', (t) => { if (['s', 'm', 'l'].includes(t)) { Store.saveDevice('text', t); render(); } });
+on('motion', () => { Store.saveDevice('motion', !Store.loadDevice('motion', false)); render(); });
+on('calm', () => { Store.saveDevice('calm', !Store.loadDevice('calm', false)); render(); });
+on('plan', () => { if (!R.ui.gate) return; R.h.parent.plan = R.h.parent.plan === 'family' ? 'free' : 'family'; save(); render(); });
+on('openCountry', (cc) => { loadTool('explorer').then((t) => { if (t) t.act('sel', cc, libCtx('explorer')); go('lib', 'explorer'); }); });
+on('practiseMisses', () => {
+  const k = kid(R.h), due = missDue(k).sort((a, b) => a.at - b.at).slice(0, 10);
+  if (!due.length) { toast('Nothing is ready yet — each card waits for a gap.'); return; }
+  startRun('mist', 'My mistakes', due.map((m) => ({ ...m.q, missKey: m.key, from: m.from })), { sub: 'Cards that came back after a gap' });
+});
 /* read it to me: the text of whatever the button points at, in the device's voice */
 function readOut(sel) {
   const els = [...root.querySelectorAll(sel)]; if (!els.length) return;
@@ -336,9 +443,16 @@ on('levelCheck', () => {
 });
 on('lvShow', (n) => { R.ui.lvShow = +n; render(); });
 on('choose', (a) => answer(a));
+/* E6: one hint per question, recorded on the run so the reward rule can see it */
+on('hint', () => { const run = R.run; if (!run || run.fb || run.over) return; const q = run.items[run.i]; run.hints = run.hints || {}; run.hints[run.i] = hintFor(q, byId[q.stop || run.stop]); if (run.hints[run.i].kind === 'first' && !(run.order || []).length) run.order = [run.hints[run.i].first]; sfx.click(); render(); });
+/* E4: a typed answer, and a put-in-order answer */
+on('typeGo', () => { const run = R.run; if (!run || run.fb) return; const v = (root.querySelector('#type-in') || {}).value || run.typed || ''; if (!v.trim()) return; run.typed = ''; answer(v.trim()); });
+on('orderPick', (x) => { const run = R.run; if (!run || run.fb) return; const q = run.items[run.i]; run.order = [...(run.order || []), x].filter((v, i, a) => a.indexOf(v) === i); sfx.click(); if (run.order.length === q.items.length) { const g = run.order.join('|'); run.order = []; answer(g); } else render(); });
+on('orderUndo', () => { const run = R.run; if (!run || run.fb) return; run.order = (run.order || []).slice(0, -1); render(); });
 on('nextQ', () => nextQ());
-on('quitRun', () => { const r = R.run; R.run = null; if (r && r.kind === 'trial') return go('welcome'); if (r && r.kind === 'sprint') return go('expd', r.exp); if (r && r.kind === 'lib') return go('lib', r.lib); if (r && r.kind === 'drill') return go('stop', r.stop); go(r && r.kind === 'check' ? 'road' : 'home'); });
-on('endRun', () => { const r = R.run; R.run = null; if (r && r.kind === 'trial') { R.ui.draft = { step: 0, name: '', band: '', avatar: V.STARTER_AVATARS[0], theme: 'atlas' }; return go('welcome'); } if (r && r.kind === 'sprint') return go('expd', r.exp); if (r && r.kind === 'lib') return go('lib', r.lib); if (r && r.kind === 'drill') return go('stop', r.stop); go(r && r.kind === 'check' ? 'road' : 'home'); });
+on('quitRun', () => { const r = R.run; R.run = null; if (r && r.kind === 'mist') return go('mistakes'); if (r && r.kind === 'trial') return go('welcome'); if (r && r.kind === 'sprint') return go('expd', r.exp); if (r && r.kind === 'lib') return go('lib', r.lib); if (r && r.kind === 'drill') return go('stop', r.stop); go(r && r.kind === 'check' ? 'road' : 'home'); });
+on('warmNext', (id) => { R.run = null; startDrill(id, { intro: true }); });
+on('endRun', () => { const r = R.run; R.run = null; if (r && r.kind === 'warm') { const st = road(kid(R.h)).next; return st ? startDrill(st.stop, { intro: true }) : go('home'); } if (r && r.kind === 'mist') return go('mistakes'); if (r && r.kind === 'trial') { R.ui.draft = { step: 0, name: '', band: '', avatar: V.STARTER_AVATARS[0], theme: 'atlas' }; return go('welcome'); } if (r && r.kind === 'sprint') return go('expd', r.exp); if (r && r.kind === 'lib') return go('lib', r.lib); if (r && r.kind === 'drill') return go('stop', r.stop); go(r && r.kind === 'check' ? 'road' : 'home'); });
 on('mapZoom', (a) => { const [key, how] = a.split('|'); zoomMap(root, key, how); });
 on('lib', (a) => {
   const [id, name, ...rest] = a.split('|'), tool = toolById[id];
@@ -406,25 +520,28 @@ on('createKid', () => {
   if (d.theme) k.prefs.theme = d.theme;
   R.h.kids.push(k); R.h.active = k.id; R.ui.draft = null;
   if (R.trial) { tick(k, R.trial.right > 0, 1); R.trial = null; }   // the question tried first counts
-  save(); sfx.level(); confetti(40);
-  /* the welcome ends IN the first station's first question (A3), with its lesson as a why-card above it */
+  save(); sfx.click();
+  /* A8: the welcome ends IN an easy, confident first question — find a continent on the
+     whole map — whose right answer is celebrated; then straight on to the first stop */
+  const warm = drill(byId['find-continent'], 1, 6).filter((q) => q.kind === 'map').slice(0, 1);
+  if (warm.length) return startRun('warm', 'Your first question', warm, { sub: 'An easy one to start' });
   const st = road(k).next; if (st) return startDrill(st.stop, { intro: true });
   go('home');
 });
 on('switchKid', (id) => { if (!R.h.kids.some((x) => x.id === id)) return; R.h.active = id; R.ui.lib = {}; R.ui.menu = false; save(); go('home'); });
-on('setAv', (a) => { if (AVATARS.includes(a)) { kid(R.h).avatar = a; save(); render(); } });
+on('setAv', (a) => { const k = kid(R.h); if (canWear(a, C.ctxOf(k))) { k.avatar = a; sfx.click(); save(); render(); } else toast('That face is not yours yet — its card says how.'); });
 on('goal', (n) => { const k = kid(R.h); if (GOALS.includes(+n)) { k.prefs.goal = +n; save(); render(); } });
 on('still', () => { Store.saveDevice('still', !Store.loadDevice('still', false)); render(); });
 /* themes belong to the child: chosen on their page, applied at once */
 on('theme', (id) => {
   const k = kid(R.h); if (!k || !isTheme(id)) return;
+  if (!worldOpen(worldNo(id), C.ctxOf(k))) { toast('That world opens with the family plan, or for 240 Bizzing coins in the Shop.'); return; }
   k.prefs = k.prefs || {}; k.prefs.theme = id; save(); render();
   const el = document.getElementById('theme-' + id); if (el) el.focus();
 });
 on('themes', () => {
-  go('me');
-  const el = document.getElementById('themes'); if (el) el.scrollIntoView({ block: 'start' });
-  const on1 = document.querySelector('.theme-card[aria-checked="true"]'); if (on1) on1.focus({ preventScroll: true });
+  go('settings');
+  const on1 = document.querySelector('.world-thumb[aria-checked="true"]'); if (on1) { on1.scrollIntoView({ block: 'center' }); on1.focus({ preventScroll: true }); }
 });
 
 /* chrome */
@@ -440,11 +557,12 @@ on('mode', () => {
 on('gate', () => {
   const pin = (R.ui.gateIn || '').replace(/\D/g, '');
   if (pin.length !== 4) { toast('Four digits, please.'); return; }
-  if (!R.h.parent.pin) { R.h.parent.pin = pin; save(); R.ui.gate = true; }
-  else if (pin === R.h.parent.pin) R.ui.gate = true;
+  if (!R.h.parent.pinHash) { R.h.parent.pinHash = pinHash(pin); save(); R.ui.gate = true; }
+  else if (pinHash(pin) === R.h.parent.pinHash) R.ui.gate = true;
   else { toast('That PIN is not right.'); R.ui.gateIn = ''; }
   render();
 });
+on('cert', (a) => { if (!R.ui.gate) return; const [kid1, cid] = String(a).split('|'), k = R.h.kids.find((x) => x.id === kid1); const c = k && certificatesOf(k).find((x) => x.id === cid); if (c) shareCertificate(k, c).then((how) => toast(how === 'shared' ? 'Shared.' : 'Saved as a picture.')); });
 on('tester', () => { R.h.parent.tester = !R.h.parent.tester; save(); render(); });
 on('streetview', () => { if (!GKEY) return; R.h.parent.streetview = !R.h.parent.streetview; R.ui.lib = {}; save(); render(); });
 on('testerOff', () => { R.h.parent.tester = false; save(); render(); });
@@ -489,6 +607,10 @@ root.addEventListener('input', (e) => {
     const b = root.querySelector('[data-act=obNext]'); if (b && t.dataset.draft === 'name') b.disabled = !R.ui.draft.name.trim();
     return;
   }
+  if (t.dataset.typed != null && R.run) { R.run.typed = t.value; return; }
+  if (t.dataset.set === 'name') { const k = kid(R.h), v = t.value.trim().slice(0, 20); if (k && v) { k.name = v; save(); } return; }
+  if (t.dataset.set === 'vol') { Store.saveDevice('vol', +t.value); M.setVolume(+t.value); const l = t.closest('.set-r').querySelector('i'); if (l) l.textContent = t.value + '%'; return; }
+  if (t.dataset.search != null) { R.ui.q = t.value; clearTimeout(inT); inT = setTimeout(() => { render(); }, 120); return; }
   if (t.dataset.libQuiet) { libCtx(R.ui.arg).ui[t.dataset.libQuiet] = t.value; return; }   // kept, never re-rendered while typing
   if (t.dataset.libInput) { const ctx = libCtx(R.ui.arg); ctx.ui[t.dataset.libInput] = t.value; clearTimeout(inT); inT = setTimeout(render, 90); }
   if (t.dataset.libRange) { const tool = toolById[t.dataset.libRange]; tool.act('range', t.value, libCtx(t.dataset.libRange)); render(); }
@@ -498,6 +620,12 @@ root.addEventListener('change', (e) => { if (e.target.dataset.act === 'tester') 
 addEventListener('keydown', (e) => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   if ((R.ui.medalPop || []).length && (e.key === 'Enter' || e.key === 'Escape' || e.key === ' ')) { e.preventDefault(); fire('medalOk'); return; }
+  if ((R.ui.drawer || R.ui.sheet) && e.key === 'Escape') { e.preventDefault(); if (R.ui.drawer) fire('drawer'); else fire('wallet'); return; }
+  if ((R.ui.drawer || R.ui.sheet) && e.key === 'Tab') {   // focus stays inside the open drawer or sheet
+    const box = root.querySelector(R.ui.drawer ? '.drawer' : '.sheet'), f = box ? [...box.querySelectorAll('button, a, input')] : [];
+    if (f.length) { const i = f.indexOf(document.activeElement); if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); } else if (!e.shiftKey && (i === f.length - 1 || i < 0)) { e.preventDefault(); f[0].focus(); } }
+    return;
+  }
   if (R.ui.menu && e.key === 'Escape') { R.ui.menu = false; render(); const w = root.querySelector('.who'); if (w) w.focus(); return; }
   const typing = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA');
   if (R.ui.nav === 'grownups' && e.key === 'Enter' && e.target.id === 'pin') { fire('gate'); return; }
@@ -506,9 +634,15 @@ addEventListener('keydown', (e) => {
   if (R.run && !R.run.over) {
     const q = R.run.items[R.run.i];
     if (R.run.fb) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); nextQ(); } return; }
+    if (q.kind === 'type' && e.key === 'Enter' && e.target.id === 'type-in') { e.preventDefault(); fire('typeGo'); return; }
+    if (q.kind === 'order' && !typing) {
+      const n = parseInt(e.key, 10); if (n >= 1 && n <= q.items.length && !(R.run.order || []).includes(q.items[n - 1])) { e.preventDefault(); fire('orderPick', q.items[n - 1]); }
+      if (e.key === 'Backspace') { e.preventDefault(); fire('orderUndo'); }
+    }
     if (q.kind === 'mc' && !typing) {
       const n = parseInt(e.key, 10);
-      if (n >= 1 && n <= q.opts.length) { e.preventDefault(); answer(q.opts[n - 1]); }
+      const hh = (R.run.hints || {})[R.run.i];
+      if (n >= 1 && n <= q.opts.length && !(hh && hh.opt === q.opts[n - 1])) { e.preventDefault(); answer(q.opts[n - 1]); }
     }
     if (q.kind === 'map' && !typing) {          // list mode: 1–6 choose, as for any list
       const n = parseInt(e.key, 10), b = root.querySelectorAll('.map-list .opt')[n - 1];
@@ -525,10 +659,11 @@ addEventListener('keydown', (e) => {
 /* the theme picker is a radio group: arrows move the choice and apply it */
 root.addEventListener('keydown', (e) => {
   const t = e.target;
-  if (!(t && t.classList && t.classList.contains('theme-card') && /^Arrow(Left|Right|Up|Down)$/.test(e.key))) return;
+  if (!(t && t.classList && t.classList.contains('world-thumb') && /^Arrow(Left|Right|Up|Down)$/.test(e.key))) return;
   e.preventDefault(); e.stopPropagation();
-  const i = THEMES.findIndex((x) => x.id === t.dataset.arg), d = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : -1;
-  fire('theme', THEMES[(i + d + THEMES.length) % THEMES.length].id);
+  const k = kid(R.h), open = THEMES.filter((x) => worldOpen(worldNo(x.id), C.ctxOf(k)));
+  const i = open.findIndex((x) => x.id === themeOf(k)), d = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : -1;
+  fire('theme', open[(i + d + open.length) % open.length].id);
 });
 root.addEventListener('keydown', (e) => {
   const b = e.target.closest && e.target.closest('.av-pick'); if (!b) return;
@@ -560,7 +695,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
 
 /* the family's activity feed: active minutes for the Hive, per child, never sent anywhere */
 const act = trackActivity(APP, () => (kid(R.h) || {}).name);
-window.__bzg = { R, go, fire, activityTick: act.tick };   // for test/ui.mjs, which drives the built app
+window.__bzg = { R, go, fire, music: M.musicState };   // for test/ui.mjs, which drives the built app
 /* the tools kept out of the first download arrive once the app is idle, so they work offline too */
 setTimeout(() => (window.requestIdleCallback || ((f) => setTimeout(f, 1)))(() => { loadTool('geoguess'); loadTool('time'); }), 4000);
 R.ui.nav = kid(R.h) ? 'home' : 'welcome';

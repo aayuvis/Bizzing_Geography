@@ -346,7 +346,7 @@
 
 /* ---- Earth Through Time fits one screen: painting | card on a desktop ---- */
 @media (min-width:1000px){
-  .t-split{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(320px,1fr);gap:14px;height:clamp(440px,calc(100dvh - 205px),820px);margin-bottom:14px}
+  .t-split{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(320px,1fr);gap:14px;height:clamp(440px,calc(100dvh - 275px),820px);margin-bottom:14px}
   .t-split .t-stage{max-width:none;margin:0;height:100%;min-height:0}
   .t-split .t-stage img{height:100%;aspect-ratio:auto}
   .t-split .t-ov{max-height:72%;overflow:auto}

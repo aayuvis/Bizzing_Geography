@@ -18,27 +18,15 @@ export const BANDS = [
 ];
 export const bandRank = (b) => BANDS.findIndex((x) => x.id === b);
 
-/* Forty explorers in five packs of eight, painted for this app in the
-   family's sticker style (tools/art/gen.py AVATAR). Every one is a creature,
-   never a person or a deity, and every one carries a piece of geography: a
-   geographer's tool, an animal from each continent, the ocean, a landform or
-   the weather, a forest or a river. All free, all at once: no unlocking, no
-   drops, no price — the family's no-loot rule. */
-export const AVATAR_PACKS = [
-  { id: 'kit', name: 'Explorer’s Kit', blurb: 'Built from a geographer’s tools.', avatars: ['compowl', 'globetortle', 'scrollfox', 'telescrane', 'backpackbear', 'lanternbug', 'binobat', 'pinguin'] },
-  { id: 'continents', name: 'Seven Continents', blurb: 'A friend from every continent — and the desert.', avatars: ['savannalion', 'snowleopard', 'hedgehog', 'bison', 'llama', 'kangaroo', 'emperor', 'camel'] },
-  { id: 'ocean', name: 'Ocean Crew', blurb: 'From the reef to the Arctic Ocean.', avatars: ['whale', 'seaturtle', 'dolphin', 'octopus', 'clownfish', 'seahorse', 'manta', 'walrus'] },
-  { id: 'earth', name: 'Wild Earth', blurb: 'Volcanoes, clouds, glaciers, dunes and storms.', avatars: ['volcadrake', 'cloudlamb', 'rainbowleon', 'glacieryak', 'fennec', 'mountaingoat', 'stormcat', 'coralcrab'] },
-  { id: 'forest', name: 'Forest & River', blurb: 'Rainforests, woodlands and rivers.', avatars: ['toucan', 'sloth', 'koala', 'beaver', 'jaguar', 'hippo', 'treefrog', 'riverotter'] },
-];
-export const AVATARS = AVATAR_PACKS.flatMap((p) => p.avatars);
-export const AVATAR_NAME = {
-  compowl: 'Compass Owl', globetortle: 'Globe Turtle', scrollfox: 'Map-scroll Fox', telescrane: 'Spyglass Crane', backpackbear: 'Backpack Bear', lanternbug: 'Lantern Firefly', binobat: 'Binocular Bat', pinguin: 'Map-pin Penguin',
-  savannalion: 'Savanna Lion (Africa)', snowleopard: 'Snow Leopard (Asia)', hedgehog: 'Hedgehog (Europe)', bison: 'Bison (North America)', llama: 'Llama (South America)', kangaroo: 'Kangaroo (Oceania)', emperor: 'Emperor Penguin (Antarctica)', camel: 'Bactrian Camel (the desert)',
-  whale: 'Blue Whale', seaturtle: 'Sea Turtle', dolphin: 'Dolphin', octopus: 'Octopus', clownfish: 'Clownfish', seahorse: 'Seahorse', manta: 'Manta Ray', walrus: 'Walrus',
-  volcadrake: 'Volcano Dragon', cloudlamb: 'Cloud Lamb', rainbowleon: 'Rainbow Chameleon', glacieryak: 'Glacier Yak', fennec: 'Dune Fennec', mountaingoat: 'Mountain Goat', stormcat: 'Storm Cat', coralcrab: 'Coral Crab',
-  toucan: 'Toucan', sloth: 'Sloth', koala: 'Koala', beaver: 'Beaver', jaguar: 'Jaguar', hippo: 'Pygmy Hippo', treefrog: 'Tree Frog', riverotter: 'River Otter',
-};
+/* Ninety-six explorers in twelve packs of eight (src/avatars.js, the family engine's
+   shape): two packs to each living world, tiered Common · Rare · Epic · Legendary.
+   Commons are free to every child; the rest are bought with Bizzing coins earned by
+   learning, once their world is open — and a Legendary first needs its named
+   milestone. Nothing is drawn blind. */
+import { PACKS, CATALOGUE, AVATAR_IDS, COMMONS } from './avatars.js';
+export const AVATAR_PACKS = PACKS.map((p) => ({ id: p.id, name: p.name, blurb: p.blurb, pack: p.pack, avatars: p.faces.map((f) => f[0]) }));
+export const AVATARS = AVATAR_IDS;
+export const AVATAR_NAME = Object.fromEntries(CATALOGUE.map((a) => [a.id, a.name]));
 /* The family faces this picker offered before it had its own: a child who
    chose one keeps it, drawn as itself — never silently swapped. */
 export const AVATAR_KEPT = ['beaker', 'atom', 'robo', 'magnet', 'scopey', 'brainiac', 'rocket', 'astro', 'comet', 'saturn', 'luna', 'supernova',
@@ -70,14 +58,14 @@ export function rankOf(xp) {
 
 /* ---------------------------------------------------------------- kids */
 
-export function newHousehold() { return { v: 5, kids: [], active: null, parent: { pin: null, tester: false, streetview: true } }; }
+export function newHousehold() { return { v: 6, kids: [], active: null, parent: { pin: null, tester: false, streetview: true, plan: 'free' } }; }
 
 export function newKid(name, band, avatar) {
   return {
     id: 'k' + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36),
     name: String(name || '').trim().slice(0, 20) || 'Explorer',
     band: BANDS.some((b) => b.id === band) ? band : '8-10',
-    avatar: AVATARS.includes(avatar) ? avatar : AVATARS[0],
+    avatar: COMMONS.includes(avatar) ? avatar : COMMONS[0],   // a new explorer starts with a Common, free to all
     xp: 0,
     stops: {},            // stop id → { stars, best, learned, runs, lv: { 1: true, … } levels passed }
     road: { level: START[band] || 3, finished: [], checks: {} },   // the ten roads
@@ -88,6 +76,9 @@ export function newKid(name, band, avatar) {
     prefs: {},
     shop: { owned: ['pin:dot', 'frame:plain'], pin: 'dot', frame: 'plain' },   // looks bought from the family wallet
     medals: {},           // medal id → the day it was first earned (each celebrated once)
+    owned: [],            // avatars bought with Bizzing coins (Commons need no entry)
+    worlds: [],           // worlds 3–6 opened with coins (1–2 are open to everyone)
+    miss: {},             // the mistakes deck: question key → { q, at, box, from }
   };
 }
 export const kid = (h) => h.kids.find((k) => k.id === h.active) || null;
@@ -109,19 +100,26 @@ export function tick(k, right, xp = 1) {
 
 export const stopRec = (k, id) => k.stops[id] || (k.stops[id] = { stars: 0, best: 0, learned: false, runs: 0, lv: {} });
 
-/* Stars, three per stop, and each one says what it is for:
-     ★   read the lesson
+/* Stars, three per stop, earned only by answers (E9 — reading the lesson earns nothing):
+     ★   a drill at 50% or better: on the way
      ★★  a drill at 70% or better — passes this level of the stop
-     ★★★ a drill at 90% or better */
-export const PASS = 0.7, ACE = 0.9, CHECK_PASS = 0.8;
-export function scoreRun(k, id, lv, right, total) {
-  const r = stopRec(k, id), pct = total ? right / total : 0;
+     ★★★ a drill at 90% or better
+   Mastery is re-checked: a stop passed more than REVIEW_DAYS ago is due for REVIEW. A pass
+   keeps it; a miss while it is due drops ONE star (never below one) and says so. */
+export const PASS = 0.7, ACE = 0.9, CHECK_PASS = 0.8, REVIEW_DAYS = 28;
+export const reviewDue = (r, now = Date.now()) => !!(r && r.stars >= 2 && r.at && now - r.at > REVIEW_DAYS * 864e5);
+export function scoreRun(k, id, lv, right, total, now = Date.now()) {
+  const r = stopRec(k, id), pct = total ? right / total : 0, due = reviewDue(r, now);
   r.runs++; r.best = Math.max(r.best, Math.round(pct * 100));
-  let s = r.learned ? 1 : 0;
+  let s = pct >= 0.5 ? 1 : 0;
   if (pct >= PASS) { s = Math.max(s, 2); r.lv[lv] = true; }
   if (pct >= ACE) s = 3;
-  const before = r.stars, firstPass = pct >= PASS && before < 2; r.stars = Math.max(r.stars, s);
-  return { pct, stars: r.stars, gained: r.stars - before, passed: pct >= PASS, firstPass };
+  const before = r.stars, firstPass = pct >= PASS && before < 2;
+  let slipped = false;
+  if (due && pct < PASS) { r.stars = Math.max(1, r.stars - 1); slipped = true; r.slipped = (r.slipped || 0) + 1; }
+  else r.stars = Math.max(r.stars, s);
+  if (pct >= PASS) r.at = now;
+  return { pct, stars: r.stars, gained: Math.max(0, r.stars - before), passed: pct >= PASS, firstPass, slipped, reviewed: due && pct >= PASS };
 }
 
 /* ---------------------------------------------------------------- the road */

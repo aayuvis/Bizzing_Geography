@@ -23,7 +23,7 @@ for (const e of EXPEDITIONS) for (const d of daysOf(e)) if (d.k === 'p' || d.k =
     ok(q.length === N || (first && q.length >= 7), `${e.id} day ${d.n}: ${N} questions (${q.length})`);
     ok(q.filter((x) => !x.review).length >= Math.min(5, q.length), `${e.id} day ${d.n}: at least five from the day's own stops`);
     ok(new Set(q.map((x) => x.text + '|' + (x.ans || x.ok.join()))).size === q.length, `${e.id} day ${d.n}: no repeats`);
-    ok(q.every((x) => x.kind === 'map' ? x.ok.length : x.opts.includes(x.ans)), `${e.id} day ${d.n}: every question has its answer`);
+    ok(q.every((x) => x.kind === 'map' ? x.ok.length : x.kind === 'type' ? x.accept.includes(x.ans) : x.kind === 'order' ? x.ans.split('|').length === x.items.length : x.opts.includes(x.ans)), `${e.id} day ${d.n}: every question has its answer`);
   }
 }
 

@@ -103,7 +103,8 @@ for (const t of THEMES) {
   }
 }
 if (THEMES.length !== 6) fail(`there are ${THEMES.length} themes; the owner asked for six`);
-if (new Set(THEMES.map((t) => t.ui)).size !== THEMES.length) fail('two themes share a UI face — each should read differently');
+if (!THEMES.every((t) => t.ui === 'Hanken Grotesk' && t.mono === 'Sono')) fail('every world reads in the family’s Hanken Grotesk, numbers in Sono (standard v2 §9)');
+if (new Set(THEMES.map((t) => t.display)).size !== THEMES.length) fail('two worlds share a display face — each should look its own');
 
 /* ---- nothing loads from Google at runtime */
 for (const f of ['styles/fonts.css', 'styles/themes.css', 'styles/tokens.css', 'styles/app.css', 'styles/geo.css', 'index.html'])

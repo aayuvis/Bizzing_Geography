@@ -14,7 +14,7 @@ const dayAgo = (n) => { const d = new Date(Date.now() - n * 864e5); return `${d.
 
 export function demoHousehold() {
   const r = seeded('bizzing-demo'), h = newHousehold();
-  h.demo = true; h.parent.pin = null;
+  h.demo = true; h.parent.pinHash = null;
   const k = newKid('Sample', '8-10', 'savannalion');
   k.id = 'kdemo'; k.prefs.theme = 'atlas'; k.medalsQuiet = true;
   /* the levels before this band's start are behind it; three stations into its own road */

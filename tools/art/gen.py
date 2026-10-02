@@ -162,13 +162,116 @@ AVATAR = {
     'riverotter': "A river otter floating on its back holding a smooth pebble, glossy brown fur, cream chin, a few water ripples.",
 }
 for k, v in AVATAR.items(): JOBS['av-' + k] = (v + ' ' + AV_STYLE, '1:1')
+# Five more packs (family standard v2 §8.1): one per living world — ocean, rainforest,
+# desert, polar, mountains — so the catalogue reaches 96 with Bee's Big Beasts and
+# Elements. Same sticker style, same rules: creatures only, a piece of geography each.
+AVATAR2 = {
+    # Deep Sea (Ocean Deep)
+    'angler':     "A deep-sea anglerfish, round dark-teal body, a small glowing golden lure bobbing on a stalk above its head, a friendly closed-mouth smile with NO teeth showing.",
+    'puffer':     "A pufferfish puffed up into a round ball, pale yellow with soft rounded spines and brown spots, tiny fins, cheeks round.",
+    'seastar':    "A five-armed sea star, warm orange with tiny cream bumps in rows along each arm, standing on two of its arms.",
+    'jelly':      "A moon jellyfish, a translucent pale-blue bell with four soft violet rings on top, short wavy frilly tentacles below.",
+    'hermit':     "A hermit crab peeking out of a spiral seashell, red-orange claws, little stalk eyes, the shell cream with brown bands.",
+    'seadragon':  "A leafy seadragon, a golden-yellow seahorse-like body covered in leafy frond-shaped fins in olive and orange, long snout, curled tail.",
+    'squid':      "A small friendly squid, soft sky-blue body with a pointed fin-hood, eight short arms and two longer ones, holding a tiny pearl.",
+    'orca':       "An orca calf, glossy black and white with the white eye patch, a tall rounded dorsal fin, a small splash of water.",
+    # Canopy (Rainforest)
+    'macaw':      "A scarlet macaw parrot, bright red body, yellow and blue wing feathers, a pale curved beak, perched on a short vine.",
+    'tapir':      "A Malayan tapir calf, black front and back with a white middle like a saddle blanket, a short soft trunk-like nose.",
+    'okapi':      "An okapi of the Congo rainforest, a dark chocolate-brown body with white zebra-like stripes on its legs, big ears.",
+    'tarsier':    "A tarsier, a tiny tan furry animal with enormous round golden eyes, long thin fingers hugging a twig.",
+    'dartfrog':   "A blue poison dart frog, bright cobalt blue with small black spots, sitting on a green leaf.",
+    'orangutan':  "A baby orangutan with shaggy orange-red fur and long arms, hugging a big green leaf like an umbrella.",
+    'morpho':     "A blue morpho butterfly with huge shimmering electric-blue wings edged in black with white dots, a small round body.",
+    'hornbill':   "A great hornbill bird with a big curved yellow beak and casque on top, black and white feathers, perched on a branch.",
+    # Oasis (Desert Dunes)
+    'meerkat':    "A meerkat standing up tall on its back legs on lookout, sandy fur, dark eye patches, a thin tail for balance.",
+    'jerboa':     "A desert jerboa, a tiny sandy mouse-like animal with huge ears, long back legs for hopping and a very long tail with a white tuft.",
+    'sandcat':    "A sand cat kitten of the Sahara, pale sandy fur, wide flat head with big low ears, faint stripes on its legs.",
+    'thornydevil':"A thorny devil lizard of the Australian desert, orange and tan with many soft rounded cone spikes, a little bump on its neck, smiling.",
+    'roadrunner': "A roadrunner bird mid-stride, streaky brown and white feathers, a shaggy crest, a long tail held up.",
+    'armadillo':  "An armadillo with a banded grey-tan shell, small pointed ears, a long nose, standing on four little legs.",
+    'scarab':     "A friendly scarab beetle with a shiny green-and-gold shell, six short legs, pushing a small ball of sand.",
+    'oryx':       "An Arabian oryx, a white antelope with long straight thin horns, dark brown legs and a dark face mask, standing on a sand ripple.",
+    # Ice Floe (Polar Aurora)
+    'polarbear':  "A polar bear cub with thick creamy-white fur, a black nose, sitting on a small ice floe.",
+    'arcticfox':  "An arctic fox in its white winter coat, a huge fluffy tail wrapped around its feet, a dusting of snowflakes.",
+    'puffin':     "An Atlantic puffin, black back, white face and belly, a bright orange-red-and-yellow striped beak, orange feet.",
+    'snowyowl':   "A snowy owl chick, fluffy white feathers with a few small dark flecks, round yellow eyes, perched on a tiny snow mound.",
+    'harpseal':   "A harp seal pup with fluffy white fur, big round dark eyes, small flippers, lying on the ice.",
+    'beluga':     "A beluga whale, smooth pure white body with a rounded bulging forehead, a gentle smile, a few bubbles.",
+    'reindeer':   "A reindeer calf with soft brown fur, a pale neck ruff, small branching antlers, a dark nose.",
+    'narwhal':    "A narwhal, a speckled grey-blue whale with one long spiral tusk pointing up from its head, a little splash.",
+    # High Peaks (mountains)
+    'pika':       "A pika, a tiny round grey-brown furry animal with round ears and no visible tail, holding a sprig of alpine flowers.",
+    'marmot':     "A marmot standing up on its back legs, chubby golden-brown fur, small round ears, sunning itself on a rock.",
+    'ibex':       "An Alpine ibex kid with tan-grey fur and long curved ridged horns, standing on a small rocky ledge.",
+    'chinchilla': "A chinchilla from the Andes, very soft dense blue-grey fur, big round ears, a bushy tail, holding a seed.",
+    'condor':     "An Andean condor chick, black feathers with a white ruff around the neck, a small grey head, wings spread a little.",
+    'takin':      "A golden takin calf of the Himalaya, shaggy golden fur, a big rounded moose-like nose, small curved horns.",
+    'eagle':      "A golden eagle, dark brown feathers with a golden nape, a yellow hooked beak, perched on a rocky peak with a patch of snow.",
+    'monal':      "A Himalayan monal pheasant with iridescent feathers of shimmering green, blue, purple and copper, a small crest on its head.",
+}
+for k, v in AVATAR2.items(): JOBS['av-' + k] = (v + ' ' + AV_STYLE, '1:1')
+
+# SHELLY, the app's mascot (family standard v2 §2): a sea turtle whose shell is a globe.
+# The doctrine wins over the concept sheet: a model never draws a real map, so her
+# globe carries only latitude and longitude lines and soft sea colours — no continents.
+SHELLY = ("Shelly, a cheerful young green sea turtle mascot standing upright on her back flippers like a cartoon character, "
+          "a round friendly green head and face, a small brown explorer neckerchief. Her domed shell is a toy globe: smooth "
+          "ocean-blue with thin pale curved lines of latitude and longitude only — NO continents, NO land shapes, NO map, "
+          "just the blue globe and its grid lines, and a thin brass ring round it like a globe's meridian. ")
+MASCOT_STYLE = ("Children's app mascot in the Bizzing family sticker style: chubby rounded body, big glossy dark eyes with two white "
+                "catch-lights, small rosy cheeks, thick clean dark-plum outline, soft cel shading with one highlight, bright warm "
+                "colours, friendly and huggable. ONE single character, full body, centred, the whole character inside the frame with "
+                "a comfortable margin. THE ENTIRE BACKGROUND IS FLAT PURE MAGENTA (hex FF00FF), one solid uniform field: no ground, "
+                "no shadow, no scenery, no border, no magenta or hot pink on the character. ABSOLUTELY NO TEXT, no letters, no digits, "
+                "no numbers, no logo, no watermark.")
+POSES = {
+    'wave':  "She is waving hello with one front flipper raised high, a warm open smile.",
+    'cheer': "She is cheering with both front flippers thrown up in the air, eyes happy, mouth open in delight, a few tiny sparkles.",
+    'think': "She is thinking, one front flipper on her chin, eyes looking up and to the side, a small curious smile.",
+    'point': "She is pointing to the right with one front flipper stretched out, looking that way, an encouraging smile.",
+    'sleep': "She is asleep sitting down, eyes closed in two gentle curves, head tilted, a peaceful smile, a tiny bubble near her mouth.",
+    'oops':  "She looks a little surprised and sheepish, one flipper scratching the back of her head, a small embarrassed smile, a single sweat drop.",
+}
+for k, v in POSES.items(): JOBS['mascot-' + k] = (SHELLY + v + ' ' + MASCOT_STYLE, '1:1', 'mascot-wave' if k != 'wave' else None)
+JOBS['icon'] = ("Square mobile app icon, full-bleed square tile, Shelly the mascot large and centred, her head and upper body filling "
+                "70% of the tile, on a solid deep teal (#0E6E74) background with a subtle tone-on-tone pattern of TOPOGRAPHIC CONTOUR "
+                "LINES (wavy concentric height lines like on a hiking map — NOT a world map, no countries, no coastlines), a soft glow "
+                "behind her. Readable at 48 pixels. " + SHELLY + "Bizzing family sticker style: thick clean dark-plum outline, soft cel "
+                "shading, big glossy eyes, rosy cheeks. ABSOLUTELY NO TEXT, no letters, no digits, no logo.", '1:1', 'mascot-wave')
+
+# The six living worlds (styles/themes.css, src/scenes.js) get a painted far plane,
+# by day and — repainted from the day plate so it is the same place — by night.
+WORLDP = {
+    'atlas':  "An old chart-sea seen from a sandy shore: calm turquoise sea to a far horizon, two small palm islands, a distant sailing ship, puffy clouds, a lighthouse on a far headland, gulls.",
+    'ocean':  "Under the sea, looking across a sunlit coral reef: shafts of light from the surface, coral of many colours, swaying kelp, sea fans, sandy floor, small fish far away.",
+    'jungle': "Deep in a tropical rainforest: tall buttress-root trees, hanging vines, giant leaves, a misty waterfall into a green pool, shafts of light through the canopy.",
+    'desert': "Golden desert dunes rolling to the horizon, an oasis of palm trees by a blue pool, distant flat-topped rock mesas, a clear sky.",
+    'aurora': "A polar landscape: snowy mountains, an ice shelf, icebergs floating in a dark-blue sea, a small cosy wooden research hut with a round window.",
+    'orbit':  "Space seen from a small rocky moon: the curve of a big blue planet in the sky with soft clouds and NO continents (only swirls of cloud over blue ocean), stars, a distant satellite, a small lander on the moon's surface.",
+}
+FRIEZE = ("Wide painted backdrop frieze for a children's app, in a warm hand-painted storybook style: soft gouache textures, "
+          "gentle light, clean calm shapes, an uncluttered open sky. " + NOTEXT +
+          " Very wide landscape composition.")
+NIGHT = ("Repaint THIS EXACT SAME scene, same composition, same places, same viewpoint, at NIGHT: a deep blue-violet night sky full of "
+         "stars and a moon, warm lamps and windows glowing, soft moonlight on the shapes, cosy and calm, never scary. Keep the "
+         "storybook gouache style. " + NOTEXT)
+for k, v in WORLDP.items():
+    JOBS['wd-' + k] = (v + ' ' + FRIEZE, '21:9')
+    JOBS['wn-' + k] = (NIGHT + ' The scene: ' + v, '21:9', 'wd-' + k)
+
 for e in data('expeditions', 'EXPEDITIONS'): JOBS['crs-' + e['id']] = (e['paint'] + '. No people, no lettering, no real map. ' + STYLE + ' Very wide landscape composition.', '21:9')
 
-GROUPS = {'postcards': 'pc-', 'landmarks': 'lm-', 'eras': 'era-', 'history': 'hist-', 'avatars': 'av-', 'courses': 'crs-', 'worlds': 'w-', 'library': 'lib-'}
+GROUPS = {'mascot': 'mascot-', 'day': 'wd-', 'night': 'wn-', 'postcards': 'pc-', 'landmarks': 'lm-', 'eras': 'era-', 'history': 'hist-', 'avatars': 'av-', 'courses': 'crs-', 'worlds': 'w-', 'library': 'lib-'}
 
 
-def call(model, prompt, ratio):
-    body = {"contents": [{"parts": [{"text": prompt}]}],
+def call(model, prompt, ratio, ref=None):
+    parts = [{"text": prompt}]
+    if ref:   # a picture to keep the same: the day plate for its night, the first pose for the rest
+        parts.insert(0, {"inlineData": {"mimeType": "image/png", "data": base64.b64encode(open(os.path.join(RAW, ref + '.png'), 'rb').read()).decode()}})
+    body = {"contents": [{"parts": parts}],
             "generationConfig": {"responseModalities": ["IMAGE"], "imageConfig": {"aspectRatio": ratio}}}
     req = urllib.request.Request(f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
                                  data=json.dumps(body).encode(), headers={"Content-Type": "application/json", "x-goog-api-key": KEY})
@@ -181,13 +284,14 @@ def call(model, prompt, ratio):
 
 
 def run(name):
-    prompt, ratio = JOBS[name]
+    prompt, ratio, ref = (JOBS[name] + (None,))[:3]
+    if ref and not os.path.exists(os.path.join(RAW, ref + '.png')): return f'{name}: waits for {ref}'
     out = os.path.join(RAW, name + '.png')
     msg = ''
     for attempt in range(6):
         model = MODELS[attempt % len(MODELS)]
         try:
-            img = call(model, prompt, ratio)
+            img = call(model, prompt, ratio, ref)
             open(out, 'wb').write(img)
             return f'{name}: ok ({model}, {len(img)//1024} KB)'
         except Exception as e:

@@ -26,10 +26,10 @@ export function nextStep(k) {
   const where = { level: rd.L.n, levelName: rd.L.name, done: rd.done, total: rd.steps.length, rank: rk };
   if (rd.next) {
     const s = byId[rd.next.stop], w = worldOf(s.world);
-    return { act: 'openStop', arg: s.id, kicker: `station ${rd.next.n}`, title: s.title, sub: `${w.name} · ${s.hook}`, art: `w-${w.id}`, glyph: s.glyph, ...where };
+    return { act: 'openStop', arg: s.id, kicker: `stop ${rd.next.n}`, title: s.title, sub: `${w.name} · ${s.hook}`, art: `w-${w.id}`, glyph: s.glyph, ...where };
   }
   if (!rd.all || !k.road.finished.includes(rd.L.n)) {
-    return { act: 'levelCheck', arg: '', kicker: 'every station done', title: 'The level check', sub: `Twelve questions from your road. Ten right opens Level ${Math.min(10, rd.L.n + 1)}.`, art: `w-${byId[rd.steps[0].stop].world}`, glyph: '🏁', ...where };
+    return { act: 'levelCheck', arg: '', kicker: 'every stop done', title: 'The level check', sub: `Twelve questions from your road. Ten right opens Level ${Math.min(10, rd.L.n + 1)}.`, art: `w-${byId[rd.steps[0].stop].world}`, glyph: '🏁', ...where };
   }
   const e = homeExpedition(k), es = expStats(k, e), ed = es.next;
   if (ed) {

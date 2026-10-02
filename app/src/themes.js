@@ -9,17 +9,17 @@
 
 export const THEMES = [
   { id: 'atlas', name: 'Old Atlas', blurb: 'A chart-sea: a ship under sail, balloons, gulls and a compass rose.',
-    display: 'Baloo 2', ui: 'Nunito', mono: 'Sono' },
+    display: 'Baloo 2', ui: 'Hanken Grotesk', mono: 'Sono' },
   { id: 'ocean', name: 'Ocean Deep', blurb: 'Under the waves: fish, a turtle, jellyfish, kelp and light rays.',
-    display: 'Space Grotesk', ui: 'Lexend', mono: 'JetBrains Mono' },
+    display: 'Space Grotesk', ui: 'Hanken Grotesk', mono: 'Sono' },
   { id: 'jungle', name: 'Rainforest', blurb: 'Canopy and vines: macaws, butterflies, falling leaves, fireflies.',
-    display: 'Kalam', ui: 'Atkinson Hyperlegible Next', mono: 'Atkinson Hyperlegible Mono' },
+    display: 'Kalam', ui: 'Hanken Grotesk', mono: 'Sono' },
   { id: 'desert', name: 'Desert Dunes', blurb: 'Dunes and pyramids: a camel caravan, a circling hawk, tumbleweeds.',
-    display: 'Yatra One', ui: 'Mukta', mono: 'Red Hat Mono' },
+    display: 'Yatra One', ui: 'Hanken Grotesk', mono: 'Sono' },
   { id: 'aurora', name: 'Polar Aurora', blurb: 'Northern lights over snowy peaks: penguins, icebergs, snowfall.',
-    display: 'Exo 2', ui: 'Archivo', mono: 'Azeret Mono' },
+    display: 'Exo 2', ui: 'Hanken Grotesk', mono: 'Sono' },
   { id: 'orbit', name: 'Satellite', blurb: 'A spinning Earth, satellites in orbit, the Moon and a rocket.',
-    display: 'Orbitron', ui: 'Exo 2', mono: 'Kode Mono' },
+    display: 'Orbitron', ui: 'Hanken Grotesk', mono: 'Sono' },
 ];
 
 export const DEFAULT_THEME = 'atlas';

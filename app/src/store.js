@@ -16,7 +16,14 @@
 
 const KEY = 'bzg_household';
 const DEV = 'bzg_device';
-export const SCHEMA = 5;
+export const SCHEMA = 6;
+
+import { hash } from './rand.js';
+/* The PIN is kept hashed (family standard §15). It is a deterrent, not security: anyone who
+   can clear this browser's storage can reset it, and the grown-ups' page says so. */
+export const pinHash = (pin) => 'h1:' + hash('bizzing-geography|pin|' + String(pin)).toString(36);
+import { WORLD_IDS as WORLDS, COMMONS } from './avatars.js';
+const COMMON = new Set(COMMONS);
 
 const STEPS = {
   // v0 is "no version field at all": anything from a pre-release build
@@ -29,6 +36,22 @@ const STEPS = {
   3: (h) => { h.v = 4; (h.kids || []).forEach((k) => { k.exp = k.exp || {}; }); return h; },
   // v5: the family layer — a shop of map looks, medals from evidence. Medals already deserved
   //     are recorded quietly on first sight (medalsQuiet), never re-celebrated as new.
+  /* v6: the family avatar engine and worlds (standard v2 §7–8). Every face was free before
+         tiers, so a child KEEPS the face they wear and the world they explore in — never
+         taken away; the rest are now earned. A plan flag (free until the family server),
+         an empty mistakes deck, and the PIN kept hashed. */
+  5: (h) => {
+    h.v = 6; h.parent = h.parent || {};
+    if (!h.parent.plan) h.parent.plan = 'free';
+    if (h.parent.pin) { h.parent.pinHash = pinHash(h.parent.pin); }
+    delete h.parent.pin;
+    (h.kids || []).forEach((k) => {
+      k.owned = k.owned || []; if (k.avatar && !COMMON.has(k.avatar) && !k.owned.includes(k.avatar)) k.owned.push(k.avatar);
+      const w = WORLDS.indexOf((k.prefs || {}).theme) + 1; k.worlds = k.worlds || []; if (w > 2 && !k.worlds.includes(w)) k.worlds.push(w);
+      k.miss = k.miss || {};
+    });
+    return h;
+  },
   4: (h) => { h.v = 5; (h.kids || []).forEach((k) => { k.shop = k.shop || { owned: ['pin:dot', 'frame:plain'], pin: 'dot', frame: 'plain' }; k.medals = k.medals || {}; k.medalsQuiet = true; }); return h; },
 };
 

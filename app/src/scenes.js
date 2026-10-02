@@ -195,10 +195,26 @@ function orbit(R) {
 
 const BUILD = { atlas, ocean, jungle, desert, aurora, orbit };
 export const SCENE_IDS = Object.keys(BUILD);
+/* Each world's painted FAR PLANE (tools/art gen.py wd-/wn-): the place by day and, painted
+   again from the day plate, by night — lamps lit, stars out. It drifts slower than every
+   prop in front of it (the parallax), and the night one replaces the day one in the dark.
+   SHELLY lives in every world too: the idle character loop (§7). */
+const SHELLY_AT = {
+  atlas: ['a-bob', 'left:9vw;bottom:19vh;--d:3.6s'], ocean: ['a-across', 'top:40vh;--d:75s;--dl:-30s'], jungle: ['a-bob', 'left:5vw;bottom:5vh;--d:4s'],
+  desert: ['a-bob', 'right:20vw;bottom:19vh;--d:4.4s'], aurora: ['a-bob', 'left:12vw;bottom:9vh;--d:5s'], orbit: ['a-float', 'left:8vw;top:56vh;--d:9s'],
+};
 export function sceneHTML(theme, seed = 7) {
-  const b = BUILD[theme] || BUILD.atlas;
-  return `<div class="scene-in sc-${theme in BUILD ? theme : 'atlas'}">${b(rng(seed))}</div>`;
+  const id = theme in BUILD ? theme : 'atlas', b = BUILD[id], [mv, at] = SHELLY_AT[id];
+  const sm = typeof innerWidth !== 'undefined' && innerWidth < 760 ? '-s' : '';
+  const plate = `<div class="scn s-plate a-drift" style="--d:90s"><div class="s-plate-day" style="background-image:url(art/wd-${id}${sm}.webp)"></div><div class="s-plate-night" style="background-image:url(art/wn-${id}${sm}.webp)"></div></div>`;
+  const shellyLoop = E(`shellyloop ${mv}`, at + ';width:clamp(56px,7vw,92px);aspect-ratio:1', `<img src="mascot/shelly-${id === 'orbit' || id === 'aurora' ? 'wave' : 'point'}.webp" alt="" width="92" height="92" loading="lazy" class="${id === 'ocean' ? '' : ''}">`);
+  const inner = b(rng(seed));
+  /* the plate goes behind the props, straight after the sky */
+  const at0 = inner.indexOf('</div>') + 6;
+  return `<div class="scene-in sc-${id}">${inner.slice(0, at0)}${plate}${inner.slice(at0)}${shellyLoop}</div>`;
 }
+/* paused when the page is hidden (standard §7): nothing animates behind a closed tab */
+if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => document.documentElement.classList.toggle('bz-hidden', document.hidden));
 
 /* ------------------------------------------------------------------ the Earth */
 let EARTH_URL = null;

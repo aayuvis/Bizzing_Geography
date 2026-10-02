@@ -11,6 +11,7 @@ import * as globe from './chapters/globe.js';
 import * as restless from './chapters/restless.js';
 import * as people from './chapters/people.js';
 import { rnd } from './rand.js';
+import { fold } from './chapters/kit.js';
 
 const CHAPTERS = [home, landwater, continents, compass, capitals, weather, rivers, globe, restless, people];
 export const WORLDS = CHAPTERS.map((c) => c.WORLD);
@@ -36,5 +37,6 @@ export function drill(stop, lv, n = 10, r = rnd) {
 /* Is this answer right? An option string for 'mc'; a place id for 'map'. */
 export function correct(q, a) {
   if (q.kind === 'map') return q.ok.includes(a);
+  if (q.kind === 'type') { const f = fold(a); return !!f && (q.accept || [q.ans]).some((x) => fold(x) === f); }
   return String(a) === q.ans;
 }

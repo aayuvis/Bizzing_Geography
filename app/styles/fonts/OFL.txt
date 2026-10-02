@@ -82,3 +82,10 @@ type as Bizzing India.
 The .woff2 files are the latin and latin-ext subsets as served by Google
 Fonts. They are checked in rather than fetched at build time so that the build
 is reproducible offline and the app has no third-party origin.
+
+  Hanken Grotesk  (the family UI face, every world)
+      Copyright 2021 The Hanken Grotesk Project Authors (https://github.com/marcologous/hanken-grotesk) — see OFL-hankengrotesk.txt
+  Fraunces  (the family chrome headings)
+      Copyright 2020 The Fraunces Project Authors (https://github.com/undercasetype/Fraunces) — see OFL-fraunces.txt
+  (Nunito, Lexend, Atkinson Hyperlegible, Mukta, Archivo, JetBrains Mono, Red Hat Mono, Azeret Mono and Kode Mono
+   were retired from the app in standard v2; their entries above are history.)

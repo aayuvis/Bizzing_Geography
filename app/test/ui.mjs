@@ -44,6 +44,7 @@ const inside = (page, sel) => page.evaluate((sel) => {
 
 async function run(vp, tag) {
   const page = await browser.newPage({ viewport: vp, deviceScaleFactor: 1, hasTouch: vp.width < 760 });
+  await page.clock.install();   // time still flows; the family's activity tracker can be fast-forwarded below
   /* the device voice, stubbed: what would be spoken is kept in window.__spoken */
   await page.addInitScript(() => { window.__spoken = []; try { window.speechSynthesis.speak = (u) => { window.__spoken.push(u.text); setTimeout(() => u.onend && u.onend(), 10); }; window.speechSynthesis.cancel = () => {}; } catch (_) {} });
   page.on('pageerror', (e) => errors.push(`${tag}: ${e.message}`));
@@ -74,8 +75,19 @@ async function run(vp, tag) {
     const txt = await page.evaluate(() => document.body.innerText);
     const g = /\b1 (points|stars|coins|questions|medals|stations|places|days|countries|capitals|words|stops|answers)\b/.exec(txt) || /\[object Object\]|\bundefined\b|\bNaN\b|\{[a-zA-Z_]+\}/.exec(txt);
     ok(!g, `${where}: no broken words on screen${g ? ' — "' + g[0] + '"' : ''}`);
+    /* §9/§22: zero emoji in controls and headings; every icon-only button is named (P6) */
+    const em = await page.evaluate(() => { const re = /\p{Extended_Pictographic}|\u20E3/u; return [...document.querySelectorAll('#app button, #app [role=tab], #app nav, #app h1, #app h2, #app h3, #app .chip')].filter((e) => e.offsetParent && re.test(e.innerText || '')).map((e) => (e.innerText || '').trim().slice(0, 30)); });
+    ok(!em.length, `${where}: no emoji in controls or headings${em.length ? ' — ' + em.slice(0, 3).join(' | ') : ''}`);
+    const unnamed = await page.evaluate(() => [...document.querySelectorAll('#app button, #app a')].filter((b) => b.checkVisibility() && !(b.innerText || '').trim() && !b.getAttribute('aria-label') && !b.querySelector('img[alt]:not([alt=""])')).map((b) => b.outerHTML.slice(0, 60)));
+    ok(!unnamed.length, `${where}: every icon button has a name${unnamed.length ? ' — ' + unnamed[0] : ''}`);
   };
 
+  const T0 = Date.now();
+  /* P3: every tap target at least 44px — measured, not trusted */
+  const targets = async (where) => {
+    const small = await page.evaluate(() => [...document.querySelectorAll('#app button, #app [role=tab], #app a.btn, #app input[type=range], #app summary')].filter((b) => b.offsetParent && !b.closest('.foot, .demo-bar, .prose p, .muted, .src') && !b.classList.contains('linkish')).map((b) => [b, b.getBoundingClientRect()]).filter(([, r]) => r.height < 43.5 || r.width < 43.5).map(([b, r]) => `${(b.innerText || b.getAttribute('aria-label') || b.className).trim().slice(0, 24)} ${Math.round(r.width)}×${Math.round(r.height)}`));
+    ok(!small.length, `${where}: every target is at least 44px${small.length ? ' — ' + small.slice(0, 4).join(', ') : ''}`);
+  };
   await page.goto(`http://127.0.0.1:${port}/Bizzing_Geography/`);
   await page.waitForSelector('.welcome');
   await shot('01-welcome'); await noSideways('landing');
@@ -98,14 +110,20 @@ async function run(vp, tag) {
   await shot('01c-world'); await noSideways('welcome');
   await page.click('[data-act=draftTheme][data-arg="atlas"]');
   await page.click('[data-act=createKid]');
-  /* A3: the welcome ends IN the first station's first question, its lesson as a why-card above it */
+  /* A8: the welcome ends IN an easy first question on the whole map; its right answer is celebrated (not the sign-up) */
   await page.waitForSelector('.runner .qcard');
-  ok(await page.locator('.why-card').count() === 1, 'the first question arrives with zero taps after setup, and its "why" above it');
-  ok(await page.evaluate(() => window.__bzg.R.run.kind === 'drill'), 'it is a station drill');
+  ok(await page.evaluate(() => window.__bzg.R.run.kind === 'warm' && window.__bzg.R.run.items[0].kind === 'map') && await page.locator('.conf').count() === 0, 'the first question arrives with zero taps after setup — an easy map question, and no confetti before any answer');
+  await page.evaluate(() => { const q = window.__bzg.R.run.items[0]; window.__bzg.fire('choose', q.ok[0]); });
+  await page.waitForSelector('.first-pop');
+  ok(Date.now() - T0 < 120000 && /first right answer/i.test(await page.locator('.first-pop').innerText()), `A8: a new child has a right answer and a celebration inside two minutes (${Math.round((Date.now() - T0) / 1000)}s, scripted)`);
+  await shot('01d-first-right');
+  await page.click('[data-act=firstOk]'); await page.waitForSelector('[data-act=warmNext]', { timeout: 5000 });
+  await page.click('[data-act=warmNext]'); await page.waitForSelector('.runner .qcard');
+  ok(await page.locator('.why-card').count() === 1 && await page.evaluate(() => window.__bzg.R.run.kind === 'drill'), 'then straight into the first stop, its "why" above the first question');
   ok(await page.evaluate(() => window.__bzg.R.h.kids[0].days && Object.values(window.__bzg.R.h.kids[0].days).some((d) => d.q >= 1)), 'the question tried first is counted on the new explorer');
   await page.click('[data-act=quitRun]'); await page.evaluate(() => window.__bzg.go('home'));
   await page.waitForSelector('.home');
-  await page.waitForTimeout(300); await shot('02-home'); await noSideways('home');
+  await page.waitForTimeout(300); await shot('02-home'); await noSideways('home'); await targets('home');
   ok(await page.evaluate(() => window.__bzg.R.h.kids[0].road.level) === 3, 'an 8–10 starts on Level 3');
   /* B2: exactly one filled primary button on home — the Continue card, chosen by next.js */
   ok(await page.evaluate(() => [...document.querySelectorAll('.btn.primary')].filter((b) => b.offsetParent).length) === 1, 'home has exactly one primary button');
@@ -114,7 +132,7 @@ async function run(vp, tag) {
   ok(await page.locator('.hm-ways > *').count() <= 6, 'six ways in at most');
   ok(await page.locator('.top .hive').getAttribute('href') === 'https://aayuvis.github.io/Bizzing_Schedule/', 'the top bar goes back to the Hive');
   /* the activity feed (O3): an active minute is written for this child */
-  await page.mouse.click(5, 300); await page.evaluate(() => window.__bzg.activityTick());
+  for (let i = 0; i < 6; i++) { await page.keyboard.press('Shift'); await page.clock.runFor(15000); }
   ok(await page.evaluate(() => { const f = JSON.parse(localStorage.getItem('bizzing.activity') || '{}'); return (f.s || []).some((x) => x.a === 'geography' && x.who === 'Ahana' && x.m >= 1); }), 'bizzing.activity gets an active minute for this child');
 
   await nav('atlas'); await page.waitForSelector('.map-board');
@@ -130,8 +148,7 @@ async function run(vp, tag) {
   await page.waitForTimeout(300); await shot('04-world');
   await page.click('[data-act=openStop]'); await page.waitForSelector('.stop-page');
   await shot('05-stop');
-  await page.click('[data-act=learned]');
-  ok(await page.evaluate(() => window.__bzg.R.h.kids[0].stops['eight-points'].stars) === 1, 'reading the lesson earns the first star');
+  ok(await page.locator('[data-act=learned]').count() === 0, 'E9: no star for saying "I’ve read it" — stars come only from answers');
 
   // a drill, answered right by keyboard: ★★★ and station 1 done
   await page.click('[data-act=startDrill]'); await page.waitForSelector('.qcard');
@@ -139,8 +156,8 @@ async function run(vp, tag) {
     const s = await S(); if (!s.run || s.run.over) break;
     if (i === 0) {
       await shot('06-question');
-      ok(await page.locator('.qcard .read-btn').count() === 1, 'every question has a 🔊 read-it-to-me button');
-      await page.click('.qcard .read-btn'); await page.waitForTimeout(80);
+      ok(await page.locator('.qcard .read-btn[data-act=read]').count() === 1, 'every question has a 🔊 read-it-to-me button');
+      await page.click('.qcard .read-btn[data-act=read]'); await page.waitForTimeout(80);
       const said = await page.evaluate(() => window.__spoken.at(-1) || '');
       ok(said.includes(s.run.q.text) && !said.includes('🔊') && (s.run.q.kind !== 'mc' || said.includes(s.run.q.opts[0])), `🔊 reads the question${s.run.q.kind === 'mc' ? ' and its answers' : ''} in the device voice`);
     }
@@ -151,11 +168,11 @@ async function run(vp, tag) {
   ok(await page.evaluate(() => window.__bzg.R.h.kids[0].stops['eight-points'].stars) === 3, 'ten right earns three stars');
   await shot('07-end');
   /* I4/J1: the first medal spins in once, with what earned it; coins only from the standard events */
-  ok(await page.locator('.mp-card').count() === 1 && (await page.locator('.mp-card').innerText()).includes('First station'), 'passing a first station celebrates the "First station" medal');
+  ok(await page.locator('.mp-card').count() === 1 && (await page.locator('.mp-card').innerText()).includes('First stop'), 'passing a first stop celebrates the "First stop" medal');
   await shot('07b-medal');
   await page.keyboard.press('Enter'); await page.waitForTimeout(150);
   ok(await page.locator('.mp-card').count() === 0, 'Enter puts the medal on the shelf');
-  ok(await page.evaluate(() => { const w = JSON.parse(localStorage.getItem('bizzing.wallet') || '{}'), me = (w.kids || {}).ahana; return me && me.coins > 0 && me.ledger.every((x) => x.a === 'geography' && ['right', 'stop', 'mastered', 'contest'].includes(x.why) && [1, 5, 10, 20].includes(x.n)); }), 'coins are earned only by the standard events, at the standard amounts');
+  ok(await page.evaluate(() => { const w = JSON.parse(localStorage.getItem('bizzing.wallet') || '{}'), me = (w.kids || {}).ahana; return me && me.coins > 0 && me.ledger.every((x) => x.a === 'geography' && ['answer', 'stop', 'mastery', 'contest'].includes(x.why) && [1, 5, 10, 20].includes(x.n)); }), 'coins are earned only by the standard events, at the standard amounts');
   await page.keyboard.press('Enter');
 
   // a map question: find a country, by a real tap on its shape
@@ -194,7 +211,7 @@ async function run(vp, tag) {
 
   await page.waitForSelector('.jsteps'); await shot('09-road'); await noSideways('road');
   ok(await page.locator('.jstep.done').count() >= 1, 'the road shows station 1 done');
-  ok(await page.locator('.jglance .jg').count() === 10 && await page.locator('.atlas-seg [aria-selected=true]').innerText() === '🛤️ Your journey', 'Your journey is a tab of the Atlas, with all ten levels at a glance');
+  ok(await page.locator('.jglance .jg').count() === 10 && (await page.locator('.atlas-seg [aria-selected=true]').innerText()).trim() === 'Your journey', 'Your journey is a tab of the Atlas, with all ten levels at a glance');
   ok(await page.locator(phone ? '.tb.on' : '.tab.on').getAttribute('data-arg') === 'atlas', 'the Atlas tab stays lit on the journey');
   // Expeditions: ten, each a painted board with a camp per part; a part's steps; a project built IN the app
   await nav('exp'); await page.waitForSelector('.crs-grid');
@@ -359,7 +376,7 @@ async function run(vp, tag) {
   /* E2: against the clock — the pin on the map is the guess when time runs out, or the card scores nothing */
   await page.evaluate(() => { window.__bzg.R.ui.lib.geoguess.g = null; window.__bzg.fire('lib', 'geoguess|timed'); });
   await page.waitForSelector('.wo-clock');
-  ok(/⏱ \d+s/.test(await page.locator('.wo-clock').innerText()), 'a timed round shows its clock');
+  ok(/\d+s/.test(await page.locator('.wo-clock').innerText()), 'a timed round shows its clock');
   await page.evaluate(() => { window.__bzg.R.ui.lib.geoguess.g.deadline = Date.now() - 1; });
   await page.waitForTimeout(900);
   ok(await page.evaluate(() => { const g = window.__bzg.R.ui.lib.geoguess.g; return !!g.done[0] && g.done[0].late && g.done[0].pts === 0; }), 'time out with no pin scores nothing — never a random guess');
@@ -423,35 +440,132 @@ async function run(vp, tag) {
   ok(await page.evaluate(() => window.__bzg.R.ui.lib.capitals.ask.state) === 'picked', 'picking Buenos Aires is right');
   ok(await page.evaluate(() => (window.__bzg.R.h.kids[0].lib.capitals.box || {}).AR) === 1, 'a right pick climbs the capital’s box');
 
-  // themes: the top bar's theme button opens the picker; a choice restyles the page AND the map, and belongs to the child
-  await page.evaluate(() => window.__bzg.go('home')); await page.waitForSelector('.top .tool[data-act=themes]');
+  // WORLDS (§7): Settings → Look; worlds 1–2 open, 3–6 locked until coins or the family plan; a choice restyles page AND map
+  await page.evaluate(() => window.__bzg.go('home')); await page.waitForSelector('.top [data-act=drawer]');
   ok(await page.evaluate(() => document.documentElement.dataset.theme) === 'atlas', 'a new child starts in Old Atlas');
   ok(await page.locator('#scene .scn').count() >= 40 && !(await page.evaluate(() => document.documentElement.classList.contains('sc-calm'))), 'home shows a full, moving scene');
-  await page.click('.top .tool[data-act=themes]'); await page.waitForSelector('.theme-card[aria-checked="true"]');
-  ok(await page.locator('.theme-card').count() === 6, 'the picker offers six themes');
+  await page.evaluate(() => window.__bzg.go('settings')); await page.waitForSelector('.world-thumb[aria-checked="true"]');
+  ok(await page.locator('.world-thumb').count() === 6 && await page.locator('.world-thumb.locked').count() === 4, 'six worlds: two open to everyone, four locked');
+  ok(await page.evaluate(() => [...document.querySelectorAll('.set-sec h2')].map((h) => h.innerText.trim()).join('|')) === 'Me|Sound & music|Look|Comfort|Grown-ups', 'Settings has the five sections in the family order');
+  await shot('29-settings'); await noSideways('settings'); await targets('settings');
   const seaBefore = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--sea').trim());
   await page.click('#theme-ocean'); await page.waitForTimeout(150);
   ok(await page.evaluate(() => document.documentElement.dataset.theme) === 'ocean' && await page.evaluate(() => window.__bzg.R.h.kids[0].prefs.theme) === 'ocean', 'tapping Ocean Deep applies it and saves it on the child');
-  ok(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--sea').trim()) !== seaBefore, 'the map’s sea takes the theme’s colour');
+  ok(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--sea').trim()) !== seaBefore, 'the map’s sea takes the world’s colour');
   await page.focus('#theme-ocean'); await page.keyboard.press('ArrowRight'); await page.waitForTimeout(150);
-  ok(await page.evaluate(() => document.documentElement.dataset.theme) === 'jungle', 'the arrow keys move the choice (keyboard)');
-  ok(await page.locator('#scene .sc-jungle').count() === 1, 'the scene follows the theme (Rainforest now)');
-  for (const t of ['desert', 'aurora', 'orbit']) { await page.click(`#theme-${t}`); await page.waitForTimeout(250); await page.evaluate(() => scrollTo(0, 0)); await shot(`21-theme-${t}`); }
-  await page.evaluate(() => window.__bzg.go('lib', 'capitals')); await page.waitForSelector('.gmap'); await page.waitForTimeout(200); await shot('22-orbit-map');
-  await page.evaluate(() => window.__bzg.go('me')); await page.waitForSelector('.av-packs');
+  ok(await page.evaluate(() => document.documentElement.dataset.theme) === 'atlas', 'the arrow keys move between the OPEN worlds (keyboard)');
+  await page.evaluate(() => window.__bzg.fire('theme', 'jungle')); await page.waitForTimeout(100);
+  ok(await page.evaluate(() => document.documentElement.dataset.theme) === 'atlas', 'a locked world cannot be chosen');
+  /* a world opened with 240 Bizzing coins, through the family engine */
+  await page.evaluate(() => { const w = JSON.parse(localStorage.getItem('bizzing.wallet')); w.kids.ahana.coins = 250; localStorage.setItem('bizzing.wallet', JSON.stringify(w)); window.__bzg.R.ui.shopTab = 'worlds'; window.__bzg.go('shop'); });
+  await page.click('[data-act=buyWorld][data-arg="3"]'); await page.waitForTimeout(150);
+  ok(await page.evaluate(() => window.__bzg.R.h.kids[0].worlds.includes(3) && JSON.parse(localStorage.getItem('bizzing.wallet')).kids.ahana.coins === 10), 'opening world 3 costs exactly 240 coins and is recorded on the child');
+  await page.evaluate(() => window.__bzg.fire('theme', 'jungle')); await page.waitForTimeout(250);
+  ok(await page.locator('#scene .sc-jungle').count() === 1 && await page.locator('#scene .s-plate').count() === 1 && await page.locator('#scene .s-shellyloop').count() === 1, 'the scene follows the world: its painted plate and Shelly’s idle loop (Rainforest now)');
+  /* the family plan (a grown-up's flag until the family server) opens the rest */
+  await page.evaluate(() => { window.__bzg.R.h.parent.plan = 'family'; window.__bzg.go('home'); });
+  for (const t of ['atlas', 'ocean', 'jungle', 'desert', 'aurora', 'orbit']) for (const mode of ['light', 'dark']) {
+    await page.evaluate(([t, m]) => { document.documentElement.setAttribute('data-mode', m); window.__bzg.fire('theme', t); scrollTo(0, 0); }, [t, mode]); await page.waitForTimeout(200);
+    ok(await page.evaluate((t) => document.documentElement.dataset.theme === t, t), `world ${t} opens with the family plan`);
+    const plate = await page.evaluate((m) => { const d = document.querySelector(m === 'dark' ? '.s-plate-night' : '.s-plate-day'); return d && getComputedStyle(d).display !== 'none' ? d.style.backgroundImage : ''; }, mode);
+    ok(plate.includes(mode === 'dark' ? '/wn-' : '/wd-'), `${t} ${mode}: a ${mode === 'dark' ? 'night' : 'day'} painting, never a daylight plate on a dark page (${plate})`);
+    /* AA on the words over the plate: the page head's pill */
+    await page.evaluate(() => window.__bzg.go('atlas')); await page.waitForTimeout(120);
+    const cr = await page.evaluate(() => { const h = document.querySelector('.phead h1'), p = h.closest('.phead-t'); const rgb = (c) => (c.match(/[\d.]+/g) || []).map(Number);
+      const lum = ([r, g, b]) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
+      const paper = rgb(getComputedStyle(document.documentElement).getPropertyValue('--paper').trim().replace(/^#(..)(..)(..)$/, (_, a, b, c) => `rgb(${parseInt(a, 16)},${parseInt(b, 16)},${parseInt(c, 16)})`));
+      const bgA = rgb(getComputedStyle(p).backgroundColor)[3] ?? 1, a = lum(rgb(getComputedStyle(h).color)), b = lum(paper);
+      return { r: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05), bgA }; });
+    ok(cr.r >= 4.5 && cr.bgA >= 0.8, `${t} ${mode}: the heading over the living world passes AA (${cr.r.toFixed(1)}:1 on a ${Math.round(cr.bgA * 100)}% paper pill)`);
+    if (['desert', 'aurora', 'orbit'].includes(t) || mode === 'dark') await shot(`21-world-${t}-${mode}`);
+    await page.evaluate(() => window.__bzg.go('home'));
+  }
+  await page.evaluate(() => { document.documentElement.setAttribute('data-mode', 'light'); window.__bzg.R.h.parent.plan = 'free'; window.__bzg.fire('theme', 'atlas'); });
+  /* §7: the world's life pauses when the page is hidden, and its music with it */
+  await page.mouse.click(5, 5);
+  ok(await page.evaluate(() => window.__bzg.music().playing && window.__bzg.music().loop === 'home'), 'music: home has its own loop, playing after a tap');
+  await page.evaluate(() => { Object.defineProperty(document, 'hidden', { value: true, configurable: true }); document.dispatchEvent(new Event('visibilitychange')); });
+  ok(await page.evaluate(() => document.documentElement.classList.contains('bz-hidden') && getComputedStyle(document.querySelector('#scene .scn.a-drift, #scene [class*="a-"]')).animationPlayState === 'paused' && !window.__bzg.music().playing), 'hidden: the scene pauses and the music stops');
+  await page.evaluate(() => { Object.defineProperty(document, 'hidden', { value: false, configurable: true }); document.dispatchEvent(new Event('visibilitychange')); });
+  ok(await page.evaluate(() => window.__bzg.music().playing), 'visible again: the music comes back');
+  await page.evaluate(() => { window.__bzg.fire('motion'); });
+  ok(await page.evaluate(() => getComputedStyle(document.querySelector('#scene [class*="a-"]')).animationPlayState === 'paused'), 'Reduce motion freezes the living world');
+  await page.evaluate(() => { window.__bzg.fire('motion'); window.__bzg.fire('calm'); });
+  ok(await page.evaluate(() => !window.__bzg.music().playing), 'Calm mode turns the music off');
+  await page.evaluate(() => { window.__bzg.fire('calm'); window.__bzg.go('collection'); });
+  /* §8: the Collection — all 96 by pack, each card says how it is got; a Rare bought with coins */
+  await page.waitForSelector('.bz-av');
+  ok(await page.locator('.bz-av').count() === 96 && await page.locator('.col-world').count() === 6, 'the Collection shows all 96, world by world');
+  ok(await page.evaluate(() => [...document.querySelectorAll('.bz-av')].every((f) => (f.querySelector('.av-say') || {}).innerText)), 'every card says how it is got, in plain words');
+  ok(await page.evaluate(() => ['common', 'rare', 'epic', 'legendary'].every((t) => document.querySelector(`.bz-av[data-tier="${t}"]`))), 'Common · Rare · Epic · Legendary on the cards');
+  await page.evaluate(() => { const w = JSON.parse(localStorage.getItem('bizzing.wallet')); w.kids.ahana.coins = 130; localStorage.setItem('bizzing.wallet', JSON.stringify(w)); window.__bzg.R.render(); });
+  await page.click('[data-act=buyAv][data-arg="scrollfox"]'); await page.waitForTimeout(150);
+  ok(await page.evaluate(() => { const k = window.__bzg.R.h.kids[0]; return k.owned.includes('scrollfox') && k.avatar === 'scrollfox' && JSON.parse(localStorage.getItem('bizzing.wallet')).kids.ahana.coins === 10; }), 'a Rare costs its printed 120 coins, and is worn');
+  await page.evaluate(() => window.__bzg.fire('setAv', 'jaguar')); await page.waitForTimeout(80);
+  ok(await page.evaluate(() => window.__bzg.R.h.kids[0].avatar) === 'scrollfox', 'a face that is not yours cannot be worn');
+  await shot('30-collection'); await noSideways('collection');
+  await page.evaluate(() => { document.documentElement.setAttribute('data-mode', 'dark'); window.__bzg.R.render(); });
+  ok(await page.evaluate(() => document.documentElement.hasAttribute('data-bz-dark') && getComputedStyle(document.querySelector('.bz-av[data-tier="rare"]')).boxShadow !== 'none'), 'in the dark the tiers glow (data-bz-dark)');
+  await shot('30b-collection-dark');
+  await page.evaluate(() => { document.documentElement.setAttribute('data-mode', 'light'); window.__bzg.go('medals'); });
+  await page.waitForSelector('.medal-shelf');
   ok(await page.locator('.medal-shelf li').count() >= 30 && await page.locator('.medal-shelf li.got').count() >= 1, 'the medal shelf shows every medal and what earned it');
   ok(await page.evaluate(() => Object.keys(window.__bzg.R.h.kids[0].medals).filter((m) => m === 'first-station').length) === 1, 'a medal is recorded once');
-  /* the shop: a printed price from the family wallet; a look, never rank */
+  /* the Shop's Extras: a printed price from the family wallet; a look, never rank */
   const xp0 = await page.evaluate(() => window.__bzg.R.h.kids[0].xp);
-  await page.evaluate(() => { const w = JSON.parse(localStorage.getItem('bizzing.wallet')); w.kids.ahana.coins = 60; localStorage.setItem('bizzing.wallet', JSON.stringify(w)); window.__bzg.fire('nav', 'me'); });
+  await page.evaluate(() => { const w = JSON.parse(localStorage.getItem('bizzing.wallet')); w.kids.ahana.coins = 60; localStorage.setItem('bizzing.wallet', JSON.stringify(w)); window.__bzg.R.ui.shopTab = 'extras'; window.__bzg.go('shop'); });
+  ok(await page.evaluate(() => [...document.querySelectorAll('.shop-tabs [role=tab]')].map((b) => b.innerText.trim()).join('|')) === 'Avatars|Worlds|Extras', 'the Shop has Avatars · Worlds · Extras');
   await page.click('[data-act=buy][data-arg="pin:star"]'); await page.waitForTimeout(150);
   ok(await page.evaluate(() => { const k = window.__bzg.R.h.kids[0]; return k.shop.owned.includes('pin:star') && k.shop.pin === 'star' && JSON.parse(localStorage.getItem('bizzing.wallet')).kids.ahana.coins === 40; }), 'buying the star pin costs its printed 20 coins and puts it in use');
   ok(await page.evaluate(() => window.__bzg.R.h.kids[0].xp) === xp0, 'buying never moves rank');
   await page.click('[data-act=buy][data-arg="frame:wood"]', { force: true }); await page.waitForTimeout(150);
   ok(await page.evaluate(() => !window.__bzg.R.h.kids[0].shop.owned.includes('frame:wood')), 'a look the wallet cannot pay for is refused');
-  await shot('28-me-shop'); await noSideways('me');
-  ok(await page.locator('.av-packs .av-pick').count() === 40, 'the avatar picker offers 40 faces');
-  await page.click('#theme-atlas'); await page.waitForTimeout(100);
+  ok(await page.locator('.ledger li').count() >= 3, 'the Shop ends with the wallet history');
+  await shot('28-shop'); await noSideways('shop');
+  /* K9: the coin chip opens the wallet history; Escape closes it */
+  await page.click('.coin-chip'); await page.waitForSelector('#wallet-sheet');
+  ok(/bought|right answer|stop/.test(await page.locator('#wallet-sheet .ledger').innerText()) && await page.locator('#wallet-sheet .ledger li').count() <= 30, 'the coin chip opens the last 30 coins, in words');
+  await page.keyboard.press('Escape'); await page.waitForTimeout(100);
+  ok(await page.locator('#wallet-sheet').count() === 0, 'Escape closes the wallet');
+  /* §3: the ☰ drawer opens and closes by keyboard, in the family order, focus kept inside */
+  await page.focus('.burger'); await page.keyboard.press('Enter'); await page.waitForSelector('.drawer');
+  ok(await page.evaluate(() => [...document.querySelectorAll('.drawer .dr-i span')].map((x) => x.innerText.trim()).join('|')).then((t) => /^My page\|Shop\|Collection\|Medals\|.*Settings\|Grown-ups\|Help\|Privacy\|Back to the Hive$/.test(t)), 'the ☰ menu: My page · Shop · Collection · Medals · … · Settings · Grown-ups · Help · Privacy · Back to the Hive');
+  for (let i = 0; i < 25; i++) await page.keyboard.press('Tab');
+  ok(await page.evaluate(() => !!document.activeElement.closest('.drawer')), 'focus stays inside the open drawer');
+  await page.keyboard.press('Escape'); await page.waitForTimeout(100);
+  ok(await page.locator('.drawer').count() === 0 && await page.evaluate(() => document.activeElement.classList.contains('burger')), 'Escape closes the drawer and focus goes back to ☰');
+  await page.click('.burger'); await page.click('.drawer [data-act=sound]'); await page.waitForTimeout(80);
+  ok(await page.evaluate(() => window.__bzg.R.sound === false), 'mute is one tap from ☰'); await page.evaluate(() => { window.__bzg.fire('sound'); window.__bzg.R.ui.drawer = false; window.__bzg.R.render(); });
+  /* C4: one search finds a stop, a country and a word */
+  await page.evaluate(() => window.__bzg.go('search')); await page.waitForSelector('#search-q');
+  for (const [q, want] of [['compass', 'Eight compass points'], ['canberra', 'Australia'], ['delta', 'delta']]) {
+    await page.fill('#search-q', q); await page.waitForTimeout(350);
+    ok((await page.locator('.search-res .sr b').allInnerTexts()).includes(want), `search "${q}" finds ${want}`);
+  }
+  await page.click('.search-res .sr >> nth=0'); await page.waitForTimeout(200);
+  ok(await page.evaluate(() => window.__bzg.R.ui.nav !== 'search'), 'a search result opens what it found');
+  /* E6 + E4 + F3: a hint, a typed answer, a put-in-order answer, and the mistakes deck */
+  await page.evaluate(() => { const R = window.__bzg.R; R.run = null; window.__bzg.fire('startDrill', 'eight-points'); const r = R.run; r.items = r.items.filter((q) => q.kind === 'mc' && q.opts.length >= 3).slice(0, 2); window.__bzg.go('run'); });
+  await page.click('[data-act=hint]'); await page.waitForTimeout(100);
+  ok(await page.locator('.opt.struck').count() === 1 && await page.evaluate(() => { const r = window.__bzg.R.run, q = r.items[r.i]; return r.hints[r.i].opt !== q.ans; }), 'E6: a hint takes away one WRONG choice');
+  const c0 = await page.evaluate(() => JSON.parse(localStorage.getItem('bizzing.wallet')).kids.ahana.coins);
+  await page.evaluate(() => { const r = window.__bzg.R.run; window.__bzg.fire('choose', r.items[r.i].ans); });
+  ok(await page.evaluate(() => JSON.parse(localStorage.getItem('bizzing.wallet')).kids.ahana.coins) === c0, 'a right answer after a hint pays no coin');
+  await page.evaluate(() => { const R = window.__bzg.R; R.run = { kind: 'drill', title: 'Kinds', items: [{ kind: 'type', text: 'Type the capital of Peru.', ans: 'Lima', accept: ['Lima'], stop: 'cap-americas', lv: 3 }, { kind: 'order', text: 'Put these countries in order of size, biggest first: tap them one by one.', items: ['Peru', 'Brazil', 'Chile'], ans: 'Brazil|Peru|Chile', stop: 'cap-americas', lv: 3 }], i: 0, results: [], fb: null, over: false, hints: {}, t0: Date.now(), bal0: 0, stop: 'cap-americas', lv: 3 }; window.__bzg.go('run'); });
+  await page.waitForSelector('#type-in'); await page.fill('#type-in', 'lima'); await page.press('#type-in', 'Enter'); await page.waitForTimeout(150);
+  ok(await page.evaluate(() => window.__bzg.R.run.fb && window.__bzg.R.run.fb.right), 'E4: a typed answer, by keyboard, forgiving of case');
+  await page.waitForSelector('.order-pool', { timeout: 4000 });
+  await shot('31-order'); await page.click('.order-pool [data-arg="Brazil"]');
+  await page.keyboard.press('1'); await page.waitForTimeout(80);   // Peru is item 1
+  if (phone) await page.tap('.order-pool [data-arg="Chile"]'); else await page.click('.order-pool [data-arg="Chile"]');
+  await page.waitForTimeout(150);
+  ok(await page.evaluate(() => window.__bzg.R.run.fb && window.__bzg.R.run.fb.right), 'E4: put in order by tap and by number key');
+  await page.evaluate(() => { const R = window.__bzg.R; R.run = null; const k = R.h.kids[0]; k.miss = {}; k.miss['Tap Spain on the map.|ES'] = { q: { kind: 'map', text: 'Tap Spain on the map.', ok: ['ES'], targetName: 'Spain' }, at: Date.now() - 2 * 864e5, box: 0, from: 'Capitals of Europe', n: 1 }; window.__bzg.go('mistakes'); });
+  await page.waitForSelector('[data-act=practiseMisses]'); await shot('32-mistakes'); await noSideways('mistakes');
+  await page.click('[data-act=practiseMisses]'); await page.waitForSelector('.qcard');
+  await page.evaluate(() => window.__bzg.fire('choose', 'ES')); await page.waitForTimeout(150);
+  ok(await page.evaluate(() => window.__bzg.R.h.kids[0].miss['Tap Spain on the map.|ES'].box === 1), 'F3: a missed card came back after a gap; right moves it up a step');
+  await page.evaluate(() => { window.__bzg.R.run = null; window.__bzg.go('home'); });
   // above the fold: on every key screen the core content starts in the top half of the first screen
   for (const [nav, arg, sel, what] of [['home', null, '.hm-go', 'the Continue card'], ['atlas', null, '.map-board', 'the island map'], ['road', null, '.jsteps', 'the road'],
     ['exp', null, '.crs-card', 'the first expedition'], ['expd', 'capitals', '.crs-board', 'the expedition board'], ['library', null, '.lib-tile', 'the first tool'], ['lib', 'capitals', '.gmap', 'the map'], ['lib', 'time', '.t-stage', 'the painting'], ['lib', 'geoguess', '.t-geo-intro .btn, .wo', 'Play or the game'], ['lib', 'dictionary', '#t-dictionary-q', 'the search box']]) {
@@ -532,7 +646,7 @@ async function run(vp, tag) {
     ok(!got.some((x) => /geoguess-|time-/.test(x.u)), 'the heavy tools are not in the first screen');
   }
   await shot('27-demo');
-  await page.evaluate(() => { window.__bzg.fire('goal', '5'); window.__bzg.activityTick(); }); await page.waitForTimeout(1200);   // the store writes on a short delay
+  await page.evaluate(() => { window.__bzg.fire('goal', '5'); }); for (let i = 0; i < 6; i++) { await page.keyboard.press('Shift'); await page.clock.runFor(15000); } await page.waitForTimeout(1200);   // the store writes on a short delay
   ok(JSON.stringify(await page.evaluate(() => [localStorage.getItem('bzg_household'), localStorage.getItem('bizzing.activity'), localStorage.getItem('bizzing.wallet')])) === JSON.stringify(before), 'the sample saves nothing and writes no shared feed');
   await page.close();
 }

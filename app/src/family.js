@@ -1,102 +1,76 @@
 /* family.js — the Bizzing family layer: what every app does the same way
-   (docs: Bizzing_Schedule docs/family/FAMILY-STANDARD.md §1, §13, §14).
+   (Bizzing_Schedule docs/family/FAMILY-STANDARD.md v2 §1, §19).
 
-   Every Bizzing app is served from aayuvis.github.io, so they share one
-   localStorage. Two shared keys live there, and this app writes both:
+   The family's own drop-ins are vendored byte for byte beside this file —
+   bizzing-activity.js (the Hive feed), bizzing-wallet.js (Bizzing coins) and
+   bizzing-avatars.js (tiers, prices, worlds). This file only adapts them to this app:
 
-     bizzing.activity = { v:1, s:[ { a, d, t, m, who } … ] }
-       a app id ('geography') · d local date · t start, minutes after midnight
-       m ACTIVE minutes (visible and touched in the last two minutes) · who first name
-       A milestone is the same row with m:0 and { ev:'band'|'world'|'stop'|'mastery', label }.
-     bizzing.wallet   = { v:1, kids:{ "<first name, lower case>": { coins, ledger:[{ a, t, n, why }] } } }
+     · the app's own names for the four paying events (a right answer, a stop or
+       round finished, something mastered, a level check) → the wallet's events;
+     · the demo (?demo): nothing shared is read for writing or written at all;
+     · the one reader the Hive's report needs (activityRows).
 
-   Nothing here leaves the device. The demo (?demo) never touches either key.
-   This is written to the standard's contract; when the family's drop-in
-   (Bizzing_Schedule integration/) is vendored here it replaces these bodies,
-   and test/family.mjs holds the contract either way. */
+   Nothing here leaves the device. */
+
+import { trackActivity as famTrack, trackMilestone as famMilestone } from './bizzing-activity.js';
+import { earn as famEarn, spend as famSpend, balance as famBalance, ledger as famLedger, DAILY_CAP } from './bizzing-wallet.js';
 
 export const APP = 'geography';
 export const HIVE = 'https://aayuvis.github.io/Bizzing_Schedule/';
-const FEED = 'bizzing.activity', WALLET = 'bizzing.wallet';
+export { DAILY_CAP };
 let off = false;                       // the demo: write nothing shared
 export const familyOff = (v) => { off = !!v; };
-
-const ls = () => { try { return globalThis.localStorage || null; } catch (_) { return null; } };
-const read = (k, d) => { try { const s = ls(); const v = s && JSON.parse(s.getItem(k)); return v && typeof v === 'object' ? v : d; } catch (_) { return d; } };
-const write = (k, v) => { if (off) return; try { const s = ls(); s && s.setItem(k, JSON.stringify(v)); } catch (_) {} };
-const pad = (n) => String(n).padStart(2, '0');
-const dayOf = (t) => { const d = new Date(t); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
-const minOf = (t) => { const d = new Date(t); return d.getHours() * 60 + d.getMinutes(); };
+export const isFamilyOff = () => off;
 
 /* ------------------------------------------------------------------ activity */
 
-/* Active minutes: a minute counts when the page was visible and touched in the
-   two minutes before it. One row per sitting (a gap of 10+ idle minutes, or a
-   new day, or a different child, starts a new one). */
-export function trackActivity(app, who, { now = () => Date.now(), win = globalThis } = {}) {
-  let last = 0, row = null, wrote = 0;   // row: { d, t, who } of this sitting's line in the feed
-  const touch = () => { last = now(); };
-  ['pointerdown', 'keydown', 'scroll', 'touchstart'].forEach((e) => win.addEventListener && win.addEventListener(e, touch, { passive: true, capture: true }));
-  const tickMin = () => {
-    const t = now(), name = who() || '';
-    if (off || !name || (win.document && win.document.hidden) || t - last > 120000) return;
-    const f = read(FEED, { v: 1, s: [] }); if (!Array.isArray(f.s)) f.s = [];
-    const d = dayOf(t);
-    let r = row && row.d === d && row.who === name && t - wrote <= 600000
-      ? f.s.find((x) => x.a === app && !x.ev && x.d === row.d && x.t === row.t && x.who === row.who) : null;
-    if (!r) { r = { a: app, d, t: minOf(t - 60000), m: 0, who: name }; f.s.push(r); }   // the sitting began a minute ago
-    r.m = Math.min(599, r.m + 1);
-    row = { d: r.d, t: r.t, who: r.who }; wrote = t;
-    write(FEED, { v: 1, s: f.s.slice(-600) });
-  };
-  touch();
-  const id = setInterval(tickMin, 60000);
-  return { tick: tickMin, stop: () => clearInterval(id) };
+/* Active minutes for the Hive, through the family's own tracker. The demo never starts it. */
+export function trackActivity(app, who) {
+  if (off) return { stop: () => {} };
+  const stop = famTrack(app, () => (off ? null : who()));
+  return { stop };
 }
-
-export function trackMilestone(app, who, ev, label, t = Date.now()) {
+export function trackMilestone(app, who, ev, label) {
   if (off || !who) return;
-  const f = read(FEED, { v: 1, s: [] }); if (!Array.isArray(f.s)) f.s = [];
-  f.s.push({ a: app, d: dayOf(t), t: minOf(t), m: 0, who, ev, label: String(label).slice(0, 80) });
-  write(FEED, { v: 1, s: f.s.slice(-600) });
+  famMilestone(app, who, ev, label);
 }
-export const activityRows = () => (read(FEED, { s: [] }).s || []);
+const ls = () => { try { return globalThis.localStorage || null; } catch (_) { return null; } };
+export const activityRows = () => { try { const o = JSON.parse((ls() && ls().getItem('bizzing.activity')) || 'null'); return (o && Array.isArray(o.s) && o.s) || []; } catch (_) { return []; } };
 
 /* ------------------------------------------------------------------ the wallet */
 
-/* The standard amounts. An app may not invent a bigger payout. */
+/* The app's words for the standard events, and the wallet's. An app may not invent a payout. */
 export const EARN = { right: 1, stop: 5, mastered: 20, contest: 10 };
-export const DAILY_CAP = 100;
-const kidKey = (who) => String(who || '').trim().toLowerCase();
-function walletOf(who) {
-  const w = read(WALLET, { v: 1, kids: {} }); if (!w.kids) w.kids = {};
-  const k = kidKey(who); const me = w.kids[k] || (w.kids[k] = { coins: 0, ledger: [] });
-  return { w, me };
-}
-export function balance(who) { return who ? (read(WALLET, { kids: {} }).kids || {})[kidKey(who)]?.coins || 0 : 0; }
-export function ledger(who) { return who ? ((read(WALLET, { kids: {} }).kids || {})[kidKey(who)]?.ledger || []) : []; }
-/* Earned today by this app — the cap is per app, per child, per day, and never shown as a target. */
+const EVENT = { right: 'answer', stop: 'stop', mastered: 'mastery', contest: 'contest' };
+export const balance = (who) => (who ? famBalance(who) : 0);
+export const ledger = (who) => (who ? famLedger(who) : []);
+const pad = (n) => String(n).padStart(2, '0');
+const dayOf = (t) => { const d = new Date(t); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+/* earned today by this app — the cap is per app, per child, per day, and never shown as a target */
 export function earnedToday(who, app = APP, t = Date.now()) {
   const d = dayOf(t);
   return ledger(who).filter((x) => x.a === app && x.n > 0 && dayOf(x.t) === d).reduce((a, x) => a + x.n, 0);
 }
 /* why ∈ EARN. Returns the coins actually paid (0 at the cap, in the demo, or for an unknown reason). */
 export function earn(app, who, why, t = Date.now()) {
-  const n = EARN[why]; if (off || !who || !n) return 0;
-  const pay = Math.min(n, Math.max(0, DAILY_CAP - earnedToday(who, app, t))); if (!pay) return 0;
-  const { w, me } = walletOf(who);
-  me.coins += pay; me.ledger.push({ a: app, t, n: pay, why });
-  me.ledger = me.ledger.slice(-2000);
-  write(WALLET, w);
-  return pay;
+  if (off || !who || !EVENT[why]) return 0;
+  return famEarn(app, who, EVENT[why], t);
 }
-/* A fixed price for a named item; refuses rather than going below zero. */
+/* a fixed price for a named thing ("avatar:jaguar", "world:3", "extra:pin:star"); never below zero */
 export function spend(app, who, price, item, t = Date.now()) {
-  if (off || !who || !(price > 0)) return false;
-  const { w, me } = walletOf(who);
-  if (me.coins < price) return false;
-  me.coins -= price; me.ledger.push({ a: app, t, n: -price, why: 'buy:' + item });
-  me.ledger = me.ledger.slice(-2000);
-  write(WALLET, w);
-  return true;
+  if (off || !who) return false;
+  return famSpend(app, who, price, item, t);
+}
+
+/* the ledger as words a child reads (standard §1.1): "+5 · finished a stop · Geography" */
+const APP_NAME = { bee: 'Bee', maths: 'Maths', geography: 'Geography', india: 'India', finance: 'Finance' };
+const WHY = { answer: 'a right answer', stop: 'finished a stop or round', mastery: 'mastered something', contest: 'a level check', migrated: 'coins from before', right: 'a right answer', mastered: 'mastered something' };
+export function ledgerWords(x, name = (id) => id) {
+  const w = String(x.why || '');
+  let what = WHY[w];
+  if (!what && w.startsWith('avatar:')) what = 'bought ' + name(w.slice(7));
+  if (!what && w.startsWith('world:')) what = 'opened world ' + w.slice(6);
+  if (!what && w.startsWith('refund:')) what = 'given back';
+  if (!what && /^(extra:|buy:)/.test(w)) what = 'bought a map look';
+  return { n: x.n, sign: x.n > 0 ? '+' : '−', what: what || w, app: APP_NAME[x.a] || x.a, a: x.a, t: x.t };
 }

@@ -1,7 +1,7 @@
 /* Capital Bazaar — countries, capitals, flags and neighbours, continent by
    continent. Ages 8–10. Every question here is generated from the country
    data; nothing about a country is typed into this file. */
-import { mc, mapQ, mix, FAMOUS } from './kit.js';
+import { mc, mapQ, mix, FAMOUS, typeQ, orderQ } from './kit.js';
 import { pick, shuffle } from '../rand.js';
 import { QUIZ, CONTINENTS, byCc, capOf } from '../geo.js';
 
@@ -25,6 +25,8 @@ export function capitalQ(r, list0, lv) {
   if (lv >= 2 && r() < 0.4) {
     return mc(r, `${capOf(c)} is the capital of which country?`, c.name, others.map((x) => x.name), `${capOf(c)} is the capital of ${c.name}.${note}`);
   }
+  /* the stretch level TYPES the capital: knowing it, not recognising it */
+  if (lv >= 3 && r() < 0.35) return typeQ(`Type the capital of ${c.name}.`, capOf(c), c.cap, `The capital of ${c.name} is ${capOf(c)}.${note}`);
   return mc(r, `What is the capital of ${c.name}?`, capOf(c), others.flatMap((x) => x.cap).filter((n) => !c.cap.includes(n)),
     `The capital of ${c.name} is ${capOf(c)}.${note}`);
 }
@@ -54,6 +56,14 @@ export function neighbourQ(r, list, lv) {
   return mc(r, `Which of these countries shares a land border with ${c.name}?`, yes.name, no.map((x) => x.name),
     `${c.name}’s neighbours by land: ${nbrs(c).map((b) => byCc[b].name).join(', ')}.`);
 }
+/* PUT IN ORDER (E4): countries by area, from the data — sizes at least 25% apart, so it is fair */
+export function areaOrderQ(r, list, lv) {
+  const n = lv >= 3 ? 4 : 3, pool = shuffle(levelPool(list, Math.max(2, lv)).filter((c) => c.area > 0), r), got = [];
+  for (const c of pool) { if (got.length >= n) break; if (got.every((g) => Math.max(g.area, c.area) / Math.min(g.area, c.area) >= 1.25)) got.push(c); }
+  if (got.length < 3) return capitalQ(r, list, lv);
+  const inOrder = got.sort((a, b) => b.area - a.area);
+  return orderQ(`Put these countries in order of size, biggest first: tap them one by one.`, inOrder.map((c) => c.name), `Biggest first: ${inOrder.map((c) => `${c.name} (${Math.round(c.area).toLocaleString('en-US')} km²)`).join(', ')}.`);
+}
 const most = QUIZ.slice().sort((a, b) => nbrs(b).length - nbrs(a).length);
 
 const GROUPS = [
@@ -70,7 +80,7 @@ export const STOPS = [
     hook: g.hook,
     idea: [`${g.name}: <b>${inGroup(g).length} countries</b>.`, 'A <b>capital</b> is the city where a country’s government works — its parliament, its leader’s office.', 'It is not always the biggest city: the capital of Australia is Canberra, not Sydney; of Brazil, Brasília, not São Paulo.', 'Start with the countries you have heard of, then add a few each day.'],
     why: 'Capitals are where the news of a country is made — you will hear these names all your life.',
-    gen: mix((r, lv) => capitalQ(r, inGroup(g), lv), (r, lv) => (lv >= 2 ? findCountry(r, inGroup(g), lv) : capitalQ(r, inGroup(g), lv))),
+    gen: (r, lv) => { const x = r(); return lv >= 2 && x < 0.12 ? areaOrderQ(r, inGroup(g), lv) : x < 0.56 ? capitalQ(r, inGroup(g), lv) : lv >= 2 ? findCountry(r, inGroup(g), lv) : capitalQ(r, inGroup(g), lv); },
     group: g.id,
   })),
   { id: 'flags', title: 'Flags of the world', glyph: '🚩', band: '8-10',
