@@ -358,13 +358,14 @@ export function view(ctx) {
       <input id="t-dictionary-q" class="inp" data-lib-input="q" value="${esc(u.q || '')}" placeholder="Look up a word…" aria-label="Look up a word" autocomplete="off">
       <button class="btn primary" data-act="lib" data-arg="dictionary|quiz">Quiz me${topic ? ` on ${esc(topicOf[topic].name.toLowerCase())}` : ''}</button>
     </div>
+    <div class="card t-dict-card">
     <p class="t-dict-today"><span class="kicker">Word of the day</span> <b>${esc(tw)}</b> — ${esc(td)}.</p>
     <div class="row gap wrap t-dict-topics">
       <button class="chip-btn small${topic ? '' : ' on'}" aria-pressed="${!topic}" data-act="lib" data-arg="dictionary|topic|">All ${WORDS.length}</button>
       ${TOPICS.map((t) => `<button class="chip-btn small${topic === t.id ? ' on' : ''}" aria-pressed="${topic === t.id}" data-act="lib" data-arg="dictionary|topic|${t.id}">${t.glyph} ${esc(t.name)} <span class="muted">${WORDS.filter((x) => x[2] === t.id).length}</span></button>`).join('')}
     </div>
     <p class="muted small">${list.length} of ${WORDS.length} words</p>
-    <dl class="t-dict">${list.map(([w, d, t, ex]) => { const L = w[0].toUpperCase(), head = L !== letter ? `<h3 class="t-dict-l">${(letter = L)}</h3>` : ''; return `${head}<div><dt>${esc(w)} <span class="t-dict-tag" title="${esc(topicOf[t].name)}">${topicOf[t].glyph}</span></dt><dd>${esc(d)}.${ex ? ` <span class="t-dict-ex">Example: ${esc(ex)}.</span>` : ''}</dd></div>`; }).join('')}</dl>`;
+    <dl class="t-dict">${list.map(([w, d, t, ex]) => { const L = w[0].toUpperCase(), head = L !== letter ? `<h3 class="t-dict-l">${(letter = L)}</h3>` : ''; return `${head}<div><dt>${esc(w)} <span class="t-dict-tag" title="${esc(topicOf[t].name)}">${topicOf[t].glyph}</span></dt><dd>${esc(d)}.${ex ? ` <span class="t-dict-ex">Example: ${esc(ex)}.</span>` : ''}</dd></div>`; }).join('')}</dl></div>`;
 }
 export function act(name, arg, ctx) {
   if (name === 'topic') ctx.ui.topic = arg || '';

@@ -17,7 +17,7 @@ const OUT = resolve(HERE, '.build-key'), SITE = resolve(HERE, '.site-key'), SHOT
 execSync(`npx vite build --outDir ${OUT} --emptyOutDir`, { cwd: HERE, env: { ...process.env, VITE_GMAPS_KEY: 'TESTKEY' }, stdio: 'ignore' });
 rmSync(SITE, { recursive: true, force: true }); mkdirSync(SITE, { recursive: true }); mkdirSync(SHOTS, { recursive: true });
 symlinkSync(OUT, resolve(SITE, 'Bizzing_Geography'));
-const port = 8000 + Math.floor(Math.random() * 900);
+const port = +(process.env.PORT || 8000 + Math.floor(Math.random() * 900));
 const srv = spawn('python3', ['-m', 'http.server', String(port), '--bind', '127.0.0.1'], { cwd: SITE, stdio: 'ignore' });
 await new Promise((r) => setTimeout(r, 700));
 

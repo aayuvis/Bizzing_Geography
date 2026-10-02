@@ -17,7 +17,7 @@ const SHOTS = process.env.SHOTS || resolve(HERE, '.shots');
 const SITE = resolve(HERE, '.site');
 rmSync(SITE, { recursive: true, force: true }); mkdirSync(SITE, { recursive: true }); mkdirSync(SHOTS, { recursive: true });
 symlinkSync(resolve(HERE, 'build'), resolve(SITE, 'Bizzing_Geography'));
-const port = 8000 + Math.floor(Math.random() * 900);
+const port = +(process.env.PORT || 8000 + Math.floor(Math.random() * 900));
 const srv = spawn('python3', ['-m', 'http.server', String(port), '--bind', '127.0.0.1'], { cwd: SITE, stdio: 'ignore' });
 await new Promise((r) => setTimeout(r, 700));
 
@@ -70,6 +70,10 @@ async function run(vp, tag) {
       return '';
     }, W);
     ok(!bad, `${where}: nothing past the ${W}px device width${bad ? ' — ' + bad : ''}`);
+    /* N12 grammar, and §16: never "1 points", "[object Object]", "undefined" or a {placeholder} on screen */
+    const txt = await page.evaluate(() => document.body.innerText);
+    const g = /\b1 (points|stars|coins|questions|medals|stations|places|days|countries|capitals|words|stops|answers)\b/.exec(txt) || /\[object Object\]|\bundefined\b|\bNaN\b|\{[a-zA-Z_]+\}/.exec(txt);
+    ok(!g, `${where}: no broken words on screen${g ? ' — "' + g[0] + '"' : ''}`);
   };
 
   await page.goto(`http://127.0.0.1:${port}/Bizzing_Geography/`);
@@ -116,6 +120,12 @@ async function run(vp, tag) {
   await nav('atlas'); await page.waitForSelector('.map-board');
   await page.waitForTimeout(400); await shot('03-atlas'); await noSideways('atlas');
   ok(await page.locator('.map-pin').count() === 10, 'ten places on the atlas');
+  /* N12: no two pins or names on the island touch (the phone's labels once read "als", "ers") */
+  ok(await page.evaluate(() => { const rs = [...document.querySelectorAll('.map-pin .mp-g, .map-pin .mp-t')].filter((e) => e.offsetParent && getComputedStyle(e).display !== 'none').map((e) => ({ e, r: e.getBoundingClientRect() }));
+    const hit = (a, b) => a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1;
+    const board = document.querySelector('.map-board').getBoundingClientRect();
+    for (let i = 0; i < rs.length; i++) { if (rs[i].r.left < board.left - 1 || rs[i].r.right > board.right + 1) return false; for (let j = i + 1; j < rs.length; j++) if (rs[i].e.closest('.map-pin') !== rs[j].e.closest('.map-pin') && hit(rs[i].r, rs[j].r)) return false; }
+    return rs.length >= 10; }), 'atlas: no pin or name overlaps another, and none is cut off by the map’s edge');
   await page.click('.map-pin[data-arg=compass]'); await page.waitForSelector('.world-page');
   await page.waitForTimeout(300); await shot('04-world');
   await page.click('[data-act=openStop]'); await page.waitForSelector('.stop-page');
@@ -232,10 +242,36 @@ async function run(vp, tag) {
   ok(phone ? vbw < 500 : vbw >= 990, phone ? `on a phone the map opens on Europe, not the whole world (${Math.round(vbw)} of 1000 wide)` : 'on a desktop the whole world shows');
   await page.click('[data-act=listMode]'); await page.waitForSelector('.map-list');
   const names = await page.locator('.map-list .opt span').allInnerTexts();
-  ok(names.length === 6 && names.filter((n) => n === 'Belgium').length === 1 && new Set(names).size === 6, `list mode offers six places, Belgium once (${names.join(', ')})`);
+  ok(names.length === 4 && names.filter((n) => n === 'Belgium').length === 1 && new Set(names).size === 4, `list mode offers four places, Belgium once (${names.join(', ')})`);
   await page.keyboard.press(String(names.indexOf('Belgium') + 1)); await page.waitForTimeout(150);
   ok(await page.evaluate(() => window.__bzg.R.run.fb && window.__bzg.R.run.fb.right), 'a number key answers from the list');
+  /* E11: a continent question ("Tap Africa": every African country is right) once listed ONE option — the answer */
+  await page.evaluate(() => { const R = window.__bzg.R, af = ['DZ', 'AO', 'BJ', 'BW', 'BF', 'BI', 'CM', 'CV', 'CF', 'TD', 'KM', 'CD', 'CG', 'CI', 'DJ', 'EG', 'GQ', 'ER', 'SZ', 'ET', 'GA', 'GM', 'GH', 'GN', 'GW', 'KE', 'LS', 'LR', 'LY', 'MG', 'MW', 'ML', 'MR', 'MU', 'MA', 'MZ', 'NA', 'NE', 'NG', 'RW', 'ST', 'SN', 'SC', 'SL', 'SO', 'ZA', 'SS', 'SD', 'TZ', 'TG', 'TN', 'UG', 'ZM', 'ZW'];
+    R.run = { kind: 'drill', title: 'List test', items: [{ kind: 'map', text: 'Tap Africa on the map.', ok: af, why: '', stop: 'find-continent', lv: 1 }], i: 0, results: [], fb: null, over: false, stop: 'find-continent', lv: 1 }; window.__bzg.go('run'); });
+  await page.waitForSelector('.map-list');
+  const contList = await page.evaluate(() => [...document.querySelectorAll('.map-list .opt')].map((b) => b.dataset.arg));
+  ok(contList.length === 4 && await page.evaluate((ids) => ids.filter((id) => window.__bzg.R.run.items[0].ok.includes(id)).length, contList) === 1, `list mode on "Tap Africa": four places, exactly one of them in Africa (${contList.join(', ')})`);
   await page.evaluate(() => { window.__bzg.R.run = null; localStorage.setItem('bzg_device', JSON.stringify({ ...JSON.parse(localStorage.getItem('bzg_device') || '{}'), listMode: false })); });
+
+  /* N12: the compass rose beside a plan is whole — it was drawn off its centre and lost NE, E and SE */
+  let roseOk = null;
+  for (let t = 0; t < 8 && roseOk == null; t++) {
+    await page.evaluate(() => { window.__bzg.R.run = null; window.__bzg.fire('startDrill', 'eight-points'); });
+    roseOk = await page.evaluate(() => { const R = window.__bzg.R, i = R.run.items.findIndex((q) => (q.html || '').includes('plan-rose')); if (i < 0) return null; R.run.i = i; R.render();
+      const g = document.querySelector('.plan-rose'), sv = g && g.closest('svg'); if (!g) return false; const a = g.getBoundingClientRect(), b = sv.getBoundingClientRect();
+      return a.width > 40 && a.left >= b.left - 1 && a.right <= b.right + 1 && a.top >= b.top - 1 && a.bottom <= b.bottom + 1; });
+  }
+  ok(roseOk === true, 'compass drills: the rose beside the plan is whole inside its drawing');
+  await page.evaluate(() => { window.__bzg.R.run = null; window.__bzg.go('home'); });
+  /* the place of the hour opens THAT place (it opened the game's menu) */
+  await page.waitForSelector('[data-act=openPlace]');
+  const placeId = await page.locator('[data-act=openPlace]').getAttribute('data-arg');
+  await page.click('[data-act=openPlace]'); await page.waitForSelector('.wo-hud');
+  ok(await page.evaluate((id) => { const g = window.__bzg.R.ui.lib.geoguess.g; return !!g && g.place && g.cards.length === 1 && g.cards[0].id === id; }, placeId), 'the place-of-the-hour card opens that very place');
+  await page.evaluate(() => { window.__bzg.R.ui.lib.geoguess.g = null; });
+  /* a link to a tool that does not exist lands on the Library and the address says so */
+  await page.evaluate(() => { location.hash = '#/lib/nope'; }); await page.waitForTimeout(200);
+  ok(await page.evaluate(() => location.hash === '#/library' && window.__bzg.R.ui.nav === 'library'), '#/lib/<unknown> becomes #/library, not a bad URL on a good page');
 
   // every Library tool renders
   await nav('library'); await page.waitForSelector('.lib-grid');
@@ -280,6 +316,11 @@ async function run(vp, tag) {
   // Dictionary: a topic, then a quiz
   await page.evaluate(() => window.__bzg.go('lib', 'dictionary')); await page.waitForSelector('.t-dict');
   ok(await page.locator('.t-dict dt').count() >= 300, 'the dictionary lists at least 300 words');
+  /* N12: the words sit on a card, never on the moving scene, and read at AA */
+  ok(await page.evaluate(() => { const dd = document.querySelector('.t-dict dd'), card = dd && dd.closest('.card'); if (!card) return false;
+    const rgb = (c) => (c.match(/[\d.]+/g) || []).map(Number), lum = ([r, g, b]) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
+    const bg = rgb(getComputedStyle(card).backgroundColor); if (bg.length > 3 && bg[3] < 0.95) return false;
+    const a = lum(rgb(getComputedStyle(dd).color)), b = lum(bg); return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05) >= 4.5; }), 'dictionary: the words are on an opaque card and pass AA');
   await page.click('[data-arg="dictionary|topic|water"]'); await page.waitForTimeout(150);
   await shot('18-dictionary-water');
   await page.click('[data-arg="dictionary|quiz"]'); await page.waitForSelector('.qcard');
@@ -434,6 +475,7 @@ async function run(vp, tag) {
   await page.fill('#pin', '1234'); await page.click('[data-act=gate]'); await page.waitForSelector('.report');
   await shot('14-grownups'); await noSideways('grown-ups');
   ok(await page.evaluate(() => [...document.querySelectorAll('[data-act=tester], [data-act=streetview]')].map((i) => i.closest('label')).every((l) => l && l.getBoundingClientRect().width > 240)), 'grown-ups settings: every switch label has room to read (was squeezed into 50px)');
+  ok(await page.evaluate(() => [...document.querySelectorAll('[data-act=tester], [data-act=streetview]')].map((i) => i.closest('label')).every((l) => { const t = l.querySelector(':scope > span'); return t && l.children.length === 2 && t.getBoundingClientRect().width > 0.75 * l.getBoundingClientRect().width; })), 'grown-ups settings: each label is one block of words, not split into columns');
   ok(await page.evaluate((W) => [...document.querySelectorAll('.top button, .top a')].filter((b) => b.offsetParent).every((b) => { const r = b.getBoundingClientRect(); return r.left >= 0 && r.right <= W; }), W), 'the top bar fits the device: every button, the lock included, is whole on screen');
   ok((await page.locator('.report').innerText()).includes('Ahana'), 'the grown-ups page reports the child');
   ok(await page.locator('.report .rc3 section').count() === 3 && /Time[\s\S]*Progress[\s\S]*Mastery/.test(await page.locator('.report .rc3').innerText()), 'the report card is Time · Progress · Mastery');

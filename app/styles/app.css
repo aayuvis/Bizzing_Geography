@@ -223,6 +223,8 @@ button.card:hover{transform:translateY(-2px)}
 .learn{display:grid;grid-template-columns:1fr 1.3fr;gap:16px;align-items:start}
 .learn .why{grid-column:1 / -1}
 @media (max-width:860px){.learn{grid-template-columns:1fr}}
+/* a stop lesson reads top to bottom: hook, idea, why — no empty column beside a long idea (N12) */
+.stop-page .learn{grid-template-columns:1fr}
 .stop-page .hook{background:var(--wt);color:var(--wi);text-align:center;padding:30px 20px}
 .stop-page .hook .kicker{color:var(--wi);opacity:.75}
 .big-q{font-size:clamp(34px,6vw,54px);font-weight:700;margin:6px 0 10px;letter-spacing:-.01em;word-spacing:-.3em}
@@ -536,6 +538,9 @@ button.hcard:hover,.journey:hover,.tile2:hover{transform:translateY(-3px);box-sh
 .map-pin{position:absolute;transform:translate(-50%,-50%);display:flex;align-items:center;gap:8px;border:0;background:none;cursor:pointer;padding:0;z-index:2}
 .mp-g{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;font-size:28px;background:#fff;box-shadow:0 0 0 4px var(--wi),0 6px 16px rgb(0 0 0 / .35);transition:transform .15s}
 .map-pin:hover .mp-g{transform:scale(1.1)}
+.map-pin.lab-l{flex-direction:row-reverse} .map-pin.lab-l .mp-t{text-align:right}
+/* the GLYPH sits on the measured point, whichever side its name is on */
+@media (min-width:761px){.map-pin{transform:translate(-27px,-50%)} .map-pin.lab-l{transform:translate(calc(-100% + 27px),-50%)}}
 .mp-t{display:flex;flex-direction:column;background:rgb(255 255 255 / .94);color:#1B2238;border-radius:12px;padding:5px 11px;box-shadow:0 4px 14px rgb(0 0 0 / .25);text-align:left;white-space:nowrap}
 .mp-t b{font-family:var(--display);font-size:15px} .mp-t i{font-style:normal;font-size:11px;font-weight:700;color:var(--wi)}
 .map-pin.here .mp-g{animation:pinpulse 2.2s ease-in-out infinite}
@@ -544,7 +549,7 @@ button.hcard:hover,.journey:hover,.tile2:hover{transform:translateY(-3px);box-sh
 .map-pin.done .mp-g::after{content:"✓";position:absolute;right:-4px;top:-4px;width:20px;height:20px;border-radius:50%;background:var(--mastered);color:#fff;font:800 12px var(--ui);display:grid;place-items:center}
 .mp-g{position:relative}
 @keyframes pinpulse{50%{box-shadow:0 0 0 4px var(--wi),0 0 0 14px color-mix(in srgb,var(--wi) 25%,transparent),0 6px 16px rgb(0 0 0 / .35)}}
-@media (max-width:760px){.mp-t{display:none}.mp-g{width:40px;height:40px;font-size:21px}}
+
 .map-amb i{position:absolute;width:6px;height:6px;border-radius:50%;background:#fff;opacity:0;left:calc(8% + var(--i) * 15%);top:calc(20% + (var(--i) * 13%) % 60%);animation:glint 5s ease-in-out infinite;animation-delay:calc(var(--i) * -.9s)}
 @keyframes glint{0%,100%{opacity:0;transform:scale(.4)}50%{opacity:.85;transform:scale(1)}}
 .world-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
@@ -1238,6 +1243,16 @@ div.jcard{cursor:default}
   .qcard{padding:18px 12px 18px}
   .runner .qcard .gmap{margin:8px -12px 4px;border-radius:0}
   .runner .qcard .gmap svg{min-height:min(52vh,380px)}
-  .mp-t{display:flex;position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:2px;padding:1px 6px;border-radius:8px;white-space:nowrap}
-  .mp-t b{font-size:10.5px} .mp-t i{display:none}
+  /* the island at a size whose names do not collide (N12): a 760px-wide map the child
+     pans sideways, like the world boards; test/ui.mjs checks no two labels or pins touch */
+  .atlas-scroll{overflow-x:auto;margin:0 -14px 22px;padding:0 14px;scrollbar-width:thin;overscroll-behavior-x:contain}
+  .atlas-scroll .map-board{width:760px;margin-bottom:6px}
+  .mp-g{width:42px;height:42px;font-size:22px}
+  .mp-t{display:flex;position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:3px;padding:1px 7px;border-radius:8px;white-space:nowrap}
+  .mp-t b{font-size:12px} .mp-t i{display:none}
+}
+/* between phone and wide desktop the island keeps the size its names need, and pans */
+@media (min-width:761px) and (max-width:1120px){
+  .atlas-scroll{overflow-x:auto;margin:0 0 22px;scrollbar-width:thin;overscroll-behavior-x:contain;border-radius:var(--r-xl)}
+  .atlas-scroll .map-board{width:1060px;margin-bottom:6px}
 }

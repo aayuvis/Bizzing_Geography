@@ -29,6 +29,8 @@ export const TOOL = GEOGUESS;
 
 const ROUND = 5;
 /* 5,000 for a perfect tap, halving about every 1,400 km. */
+/* "1 point", "2 points": the audit found "1 points" on a results card */
+export const pts = (n) => `${n.toLocaleString('en-US')} ${n === 1 ? 'point' : 'points'}`;
 export const points = (km) => Math.round(5000 * Math.exp(-km / 2000));
 const BANDS = ['6-7', '8-10', '11-14'];
 const bandOK = (p, band) => BANDS.indexOf(p.band) <= BANDS.indexOf(band);
@@ -117,7 +119,7 @@ export function view(ctx) {
       <div class="row gap wrap">
         <button class="btn primary big" data-act="lib" data-arg="geoguess|start">Play a round of ${ROUND}</button>
         <button class="btn big" data-act="lib" data-arg="geoguess|timed">⏱ Against the clock</button>
-        <button class="btn big" data-act="lib" data-arg="geoguess|daily" ${today != null ? 'disabled' : ''}>${today != null ? `Today’s place: ${today.toLocaleString('en-US')} points` : 'Today’s place'}</button>
+        <button class="btn big" data-act="lib" data-arg="geoguess|daily" ${today != null ? 'disabled' : ''}>${today != null ? `Today’s place: ${pts(today)}` : 'Today’s place'}</button>
         ${d.best ? `<span class="muted small">Best round <b>${d.best.toLocaleString('en-US')}</b> · ${d.rounds || 0} played</span>` : ''}
       </div>
       <div class="wo-how" id="wo-how" aria-label="How to play"><button class="read-btn" data-act="read" data-arg="#wo-how" aria-label="Read how to play" title="Read how to play">🔊</button><span>👀 <b>Look</b> at the place</span><span>🗺️ <b>Open</b> the map</span><span>📍 <b>Pin</b> it, then Guess</span></div>
@@ -128,9 +130,9 @@ export function view(ctx) {
   if (g.i >= g.cards.length) {
     const tot = g.done.reduce((a, x) => a + x.pts, 0);
     const near = g.done.filter((x) => x.km != null && x.km < 1000).length;
-    return `<div class="card end-card"><p class="kicker">${g.daily ? 'Today’s place' : g.timed ? 'Timed round complete' : 'Round complete'}</p><h2><span data-count="${tot}">${tot.toLocaleString('en-US')}</span> points</h2>
+    return `<div class="card end-card"><p class="kicker">${g.daily ? 'Today’s place' : g.timed ? 'Timed round complete' : 'Round complete'}</p><h2><span data-count="${tot}">${tot.toLocaleString('en-US')}</span> ${tot === 1 ? 'point' : 'points'}</h2>
       <p>You read ${g.done.length} ${g.done.length === 1 ? 'place' : 'places'} in ${g.done.length} countries${near ? ` — ${near} within 1,000 km` : ''}. The land, the plants and the buildings were your clues.</p>
-      <ul class="t-geo-sum">${g.done.map((x) => `<li><b>${esc(x.place)}</b> — ${x.late ? "time ran out" : fmtKm(x.km) + " away"}, ${x.pts.toLocaleString('en-US')} points</li>`).join('')}</ul>
+      <ul class="t-geo-sum">${g.done.map((x) => `<li><b>${esc(x.place)}</b> — ${x.late ? "time ran out" : fmtKm(x.km) + " away"}, ${pts(x.pts)}</li>`).join('')}</ul>
       <div class="row gap center"><button class="btn primary big" data-act="lib" data-arg="geoguess|start">Play again</button><button class="btn big" data-act="lib" data-arg="geoguess|home">Done</button></div></div>`;
   }
   const c = card(g), last = g.done[g.i], key = MAPK(g), big = !!(g.big || last);
@@ -143,7 +145,7 @@ export function view(ctx) {
   return `<div class="wo${big ? ' big' : ''}${last ? ' res' : ''}">
     ${stagePic(c, g)}
     <div class="wo-hud"><span class="wo-chip">${g.daily ? 'Today’s place' : `Card ${g.i + 1} of ${g.cards.length}`} · ${c.k === 'photo' ? 'a real photo · Imagery © Google' : 'a painting, not a photo'}</span>
-      <span class="row gap">${g.timed && !last ? `<span class="wo-chip wo-clock" role="timer" aria-live="off">⏱ ${Math.max(0, Math.ceil((g.deadline - Date.now()) / 1000))}s</span>` : ''}${g.daily ? '' : `<span class="wo-chip wo-score">${so.toLocaleString('en-US')} points</span>`}</span></div>
+      <span class="row gap">${g.timed && !last ? `<span class="wo-chip wo-clock" role="timer" aria-live="off">⏱ ${Math.max(0, Math.ceil((g.deadline - Date.now()) / 1000))}s</span>` : ''}${g.daily ? '' : `<span class="wo-chip wo-score">${pts(so)}</span>`}</span></div>
     <div class="wo-map"${focus ? ' data-autofocus="1"' : ''}>
       ${big && !last ? `<div class="wo-bar"><button class="btn small" data-act="mapZoom" data-arg="${key}|in" aria-label="Zoom in">＋</button><button class="btn small" data-act="mapZoom" data-arg="${key}|out" aria-label="Zoom out">－</button><button class="btn small" data-act="mapZoom" data-arg="${key}|home" aria-label="Whole map">⟲</button>
         <span class="wo-tip">${g.guess ? 'Drag the pin, or tap somewhere else' : 'Tap or drag to drop your pin'}</span><button class="btn small" data-act="lib" data-arg="geoguess|map|0" aria-label="Close the map (Esc)">✕</button></div>` : ''}
@@ -151,7 +153,7 @@ export function view(ctx) {
       ${big ? '' : `<button class="wo-open" data-act="lib" data-arg="geoguess|map|1" aria-label="Open the map (M)"><span>🗺️ ${g.guess ? 'Your pin' : 'Open the map'} <kbd>M</kbd></span></button>`}
       ${last ? '' : `<button class="btn primary wo-guess" data-act="lib" data-arg="geoguess|guess" ${g.guess ? '' : 'disabled'}>${g.guess ? 'Guess' : 'Place your pin on the map'} <kbd>G</kbd></button>`}
     </div>
-    ${last ? `<div class="card t-geo-res wo-res"><p class="kicker">${last.late ? 'Time ran out — no pin' : `${fmtKm(last.km)} away`} · <b data-count="${last.pts}">${last.pts.toLocaleString('en-US')}</b> points</p><h3>${esc(c.place)}</h3>
+    ${last ? `<div class="card t-geo-res wo-res"><p class="kicker">${last.late ? 'Time ran out — no pin' : `${fmtKm(last.km)} away`} · <b data-count="${last.pts}">${last.pts.toLocaleString('en-US')}</b> ${last.pts === 1 ? 'point' : 'points'}</p><h3>${esc(c.place)}</h3>
         <p class="muted small">${c.k === 'photo' ? 'About this place:' : 'What gave it away:'}</p><ul>${c.clues.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>
         <button class="btn primary big" data-act="lib" data-arg="geoguess|next">${g.i + 1 < g.cards.length ? 'Next place' : 'See the score'} <kbd>Enter</kbd></button></div>` : ''}
   </div>`;
@@ -161,6 +163,8 @@ export function act(name, arg, ctx) {
   const g = ctx.ui.g;
   if (name === 'start') { newRound(ctx, false); ctx.sfx.click(); }
   else if (name === 'daily') newRound(ctx, true);
+  /* the home's "Place of the hour" card opens THAT place, one card (the audit's broken link) */
+  else if (name === 'place' && postcardById[arg]) ctx.ui.g = { cards: [{ k: 'painted', id: arg }], spare: [], i: 0, guess: null, done: [], heading: 0, daily: false, place: true, timed: false };
   else if (name === 'timed') { newRound(ctx, false, true); ctx.sfx.click(); }
   else if (name === 'timeout' && g && g.timed && !g.done[g.i]) {
     if (g.guess) return act('guess', '', ctx);
@@ -187,11 +191,11 @@ export function act(name, arg, ctx) {
     if (g.timed) g.deadline = Date.now() + g.secs * 1000;
     if (g.i >= g.cards.length) {
       const tot = g.done.reduce((a, x) => a + x.pts, 0), d = ctx.data;
-      if (ctx.session) ctx.session();   // a round is one notch on Today’s ring
-      if (ctx.earn) ctx.earn('stop');   // a round finished: the standard 5
+      if (ctx.session && !g.place) ctx.session();   // a round is one notch on Today’s ring
+      if (ctx.earn && !g.place) ctx.earn('stop');   // a round finished: the standard 5 (one place of the hour is not a round)
       if (ctx.kid) ctx.kid.last = { k: 'geo', title: 'Where on Earth?', n: Math.max(tot, d.best || 0), at: Date.now() };
       if (g.daily) { d.daily = d.daily || {}; d.daily[dayKey()] = tot; const ks = Object.keys(d.daily).sort(); while (ks.length > 30) delete d.daily[ks.shift()]; }
-      else { d.rounds = (d.rounds || 0) + 1; if (tot > (d.best || 0)) { d.best = tot; ctx.confetti(40); ctx.sfx.level(); } }
+      else if (!g.place) { d.rounds = (d.rounds || 0) + 1; if (tot > (d.best || 0)) { d.best = tot; ctx.confetti(40); ctx.sfx.level(); } }
       ctx.save();
     }
   }
@@ -207,6 +211,7 @@ export function key(e, ctx) {
 }
 export function selftest(ok) {
   ok(points(0) === 5000, 'a perfect guess scores 5000');
+  ok(pts(1) === '1 point' && pts(2) === '2 points' && pts(5000) === '5,000 points', 'one point is "1 point", never "1 points"');
   ok(points(20000) < 50, 'the far side of the world scores almost nothing');
   ok(points(500) > points(1500), 'closer is better');
   ok(PLACES.length >= 1000, `at least 1,000 real places (${PLACES.length})`);

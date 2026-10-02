@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node test/data.mjs && node test/stops.mjs && node test/levels.mjs && node test/model.mjs && node test/library.mjs && node test/themes.mjs && node test/scenes.mjs && node test/avatars.mjs && node test/expeditions.mjs && node test/family.mjs",
+    "test": "node test/data.mjs && node test/stops.mjs && node test/levels.mjs && node test/model.mjs && node test/library.mjs && node test/themes.mjs && node test/scenes.mjs && node test/avatars.mjs && node test/expeditions.mjs && node test/family.mjs && node test/listmode.mjs",
     "check": "node test/ui.mjs && node test/photos-ui.mjs",
     "deploy": "./deploy.sh"
   },

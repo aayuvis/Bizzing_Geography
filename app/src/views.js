@@ -2,7 +2,7 @@
    Views never compute progress; model.js does. */
 
 import { R } from './runtime.js';
-import { esc, cls } from './ui.js';
+import { esc, cls, plural } from './ui.js';
 export { esc };
 import { WORLDS, STOPS, byId, worldOf, stopsIn } from './stops.js';
 import { LEVELS, ageOf, firstLevel, START } from './levels.js';
@@ -21,6 +21,7 @@ import { SHELF } from './library/index.js';
 import { GKEY } from './photos.js';
 import { byCc, CONTINENTS, QUIZ as COUNTRIES_Q } from './geo.js';
 import { regionsOf } from './library/states.js';
+import { listOptions } from './listmode.js';
 import { HIVE, balance, ledger as walletLedger, APP, activityRows } from './family.js';
 import { MEDALS, earned, medallion, SHOP, shopOf, PIN_PATH, TIER } from './rewards.js';
 import { nextStep, homeExpedition } from './next.js';
@@ -184,7 +185,8 @@ export function viewWelcome() {
 /* ------------------------------------------------------------- home */
 
 const greet = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'; };
-export const todaysCard = () => pick(POSTCARDS, seeded('pc' + dayKey()));
+/* the place of the HOUR: one postcard per hour, the same in every house */
+export const todaysCard = (t = new Date()) => pick(POSTCARDS, seeded('pc' + dayKey(t) + ':' + t.getHours()));
 
 /* What your avatar says (Bizzing Bee's avatar greetings): a line per pack, turned by the day. */
 const SAY = {
@@ -259,7 +261,7 @@ export function viewHome() {
     </div>
     <div class="hm-three" aria-label="Today’s three">
       <button class="card hm-t" data-act="trip"><span class="hm-tg">⏱️</span><span><span class="kicker">5-minute trip</span><b>${trip ? `Done today — ${trip.right} of ${trip.n}` : 'Review, one new thing, one map'}</b><span class="muted small">${trip ? 'Another one any time.' : 'Ends by itself. Nothing lost for skipping.'}</span></span></button>
-      <button class="card hm-t" data-act="openTool" data-arg="geoguess"><img src="art/${pc.id}.webp" alt="" loading="lazy" width="1280" height="720"><span><span class="kicker">Place of the hour</span><b>Where on Earth is this?</b><span class="muted small">${doneToday ? `You scored ${doneToday.toLocaleString('en-US')} today.` : 'Pin it on the map.'}</span></span></button>
+      <button class="card hm-t" data-act="openPlace" data-arg="${pc.id}"><img src="art/${pc.id}.webp" alt="" loading="lazy" width="1280" height="720"><span><span class="kicker">Place of the hour</span><b>Where on Earth is this?</b><span class="muted small">${doneToday ? `You scored ${doneToday.toLocaleString('en-US')} today.` : 'Pin it on the map.'}</span></span></button>
       <button class="card hm-t" data-act="openLandmark" data-arg="${lm.id}"><img src="art/lm-${lm.id}.webp" alt="" loading="lazy" width="960" height="720"><span><span class="kicker">Landmark of the day</span><b>${esc(lm.name)}</b><span class="muted small">${esc(lm.where)}</span></span></button>
     </div>
     <nav class="hm-ways" aria-label="Ways in">
@@ -282,7 +284,7 @@ export const libTile = (t) => `<button class="lib-tile" data-act="openTool" data
    in its own 0–100 space. Regenerating the map means re-measuring. */
 export const MAP_PINS = {
   home: { x: 26, y: 74 }, landwater: { x: 30, y: 50 }, continents: { x: 30, y: 25 }, compass: { x: 42, y: 13 },
-  capitals: { x: 55, y: 27 }, weather: { x: 69, y: 21 }, rivers: { x: 81, y: 47 }, globe: { x: 74.5, y: 64 },
+  capitals: { x: 55, y: 27, side: 'l' }, weather: { x: 69, y: 21 }, rivers: { x: 81, y: 47 }, globe: { x: 74.5, y: 64 },
   restless: { x: 57, y: 76 }, people: { x: 51, y: 47 },
 };
 const worldStars = (k, w) => stopsIn(w.id).reduce((a, s) => a + ((k.stops[s.id] || {}).stars || 0), 0);
@@ -298,15 +300,15 @@ export function viewAtlas() {
   return `<section>
     ${pageHead('The Explorer’s Atlas', '', '', `<span class="chip gold">★ ${starsTotal(k)} / ${maxStars()}</span>`)}
     ${atlasTabs('map')}
-    <div class="map-board">
+    <div class="atlas-scroll" data-center><div class="map-board">
       <img src="art/atlas.webp" alt="A painted map of the Explorer’s Island." width="1920" height="1072">
       ${WORLDS.map((w) => {
         const p = MAP_PINS[w.id], open = stopsIn(w.id).some((s) => stopOpen(h, k, s.id));
         const onroad = road(k).steps.filter((s) => !s.done && byId[s.stop].world === w.id).length;
-        return `<button class="map-pin${open ? '' : ' shut'}" style="left:${p.x}%;top:${p.y}%;--wi:${w.ink};--wt:${w.tint}" data-act="openWorld" data-arg="${w.id}" aria-label="${esc(w.name)}${open ? '' : ', later levels'}">
+        return `<button class="map-pin${open ? '' : ' shut'}${p.side === 'l' ? ' lab-l' : ''}" style="left:${p.x}%;top:${p.y}%;--wi:${w.ink};--wt:${w.tint}" data-act="openWorld" data-arg="${w.id}" aria-label="${esc(w.name)}${open ? '' : ', later levels'}">
           <span class="mp-g">${w.glyph}</span><span class="mp-t"><b>${esc(w.short)}</b>${onroad ? `<i class="mp-road">${onroad} on your road</i>` : open ? '' : '<i>Later levels</i>'}</span></button>`;
       }).join('')}
-    </div>
+    </div></div>
     <div class="world-list">
       ${WORLDS.map((w) => {
         const ss = stopsIn(w.id), open = ss.some((s) => stopOpen(h, k, s.id));
@@ -382,18 +384,11 @@ export function viewStop(id) {
 
 /* ------------------------------------------------------------- the runner */
 
-/* LIST MODE (L5): the same map question as six named choices — one right, five that
-   are not — for a screen reader, or anyone who would rather read than tap a shape.
-   Seeded by the question, so the list does not reshuffle while it is open. */
+/* LIST MODE (L5): the same map question as four named places — one right, three that
+   are not (src/listmode.js, tested on every map question the stops make). */
 function mapList(q) {
-  const r = seeded('list' + q.text + (q.ok || [])[0]);
-  const names = (id) => q.region ? ((regionsOf(q.region).find((x) => x.id === id) || {}).name || id) : (byCc[id] || {}).name || id;
-  const pool = q.region ? regionsOf(q.region).map((x) => x.id) : COUNTRIES_Q.map((c) => c.cc);
-  const right = shuffle(q.ok, r)[0];
-  const near = q.region ? pool : pool.filter((cc) => byCc[cc] && byCc[right] && byCc[cc].cont === byCc[right].cont);
-  const wrong = shuffle((near.length > 8 ? near : pool).filter((x) => !q.ok.includes(x)), r).slice(0, 5);
-  const opts = shuffle([right, ...wrong], r);
-  return `<div class="choice-row map-list" role="group" aria-label="Choose a place">${opts.map((id, i) => `<button class="btn big opt" data-act="choose" data-arg="${esc(id)}"><span>${esc(names(id))}</span> <kbd>${i + 1}</kbd></button>`).join('')}</div>`;
+  const { ids, names } = listOptions(q);
+  return `<p class="muted small list-say">Choose one place from the list.</p><div class="choice-row map-list" role="group" aria-label="Choose a place">${ids.map((id, i) => `<button class="btn big opt" data-act="choose" data-arg="${esc(id)}"><span>${esc(names[id])}</span> <kbd>${i + 1}</kbd></button>`).join('')}</div>`;
 }
 export function questionBody(q, fb, key = 'q') {
   if (q.kind === 'map') {
@@ -566,14 +561,14 @@ function reportCard(k) {
   const L = learnedList(k), on = EXPEDITIONS.filter((e) => (k.exp || {})[e.id]);
   const worlds = WORLDS.map((w) => { const ss = stopsIn(w.id), p = ss.filter((x) => (k.stops[x.id] || {}).stars >= 2).length; return { w, p, n: ss.length }; });
   const slipping = Object.entries((k.lib.capitals || {}).box || {}).filter(([cc, b]) => b === 1 && ((k.lib.capitals || {}).last || {})[cc]).length;
-  return `<div class="card report"><div class="row gap">${av(k.avatar, 44)}<div><h3>${esc(k.name)}</h3><p class="muted small">${BANDS.find((b) => b.id === k.band).label} · Level ${k.road.level} · ${rankOf(k.xp).n} · ${earned(k).length} medals</p></div></div>
+  return `<div class="card report"><div class="row gap">${av(k.avatar, 44)}<div><h3>${esc(k.name)}</h3><p class="muted small">${BANDS.find((b) => b.id === k.band).label} · Level ${k.road.level} · ${rankOf(k.xp).n} · ${plural(earned(k).length, 'medal')}</p></div></div>
     <div class="rc3">
       <section><h4>⏱ Time</h4><p class="rc-big">${mins} <span>active minutes this week</span></p><p class="muted small">On ${days7} of the last 7 days. Active means on screen and touched in the last two minutes.</p>
         <div class="rc-trend" aria-label="Right answers each week, four weeks">${weeks.map((n, i) => `<span style="--h:${Math.round((100 * n) / top)}%" title="${n} right"><i></i><b>${n}</b><em>${['3 wks ago', '2 wks ago', 'last wk', 'this wk'][i]}</em></span>`).join('')}</div></section>
       <section><h4>🛤️ Progress</h4><p class="rc-big">Level ${rd.L.n} <span>of 10 · ${rd.done} of ${rd.steps.length} stations on this road</span></p>
         <span class="hm-bar"><i style="width:${Math.round((100 * rd.done) / rd.steps.length)}%"></i></span>
         <p class="muted small">${on.length ? on.map((e) => `${e.glyph} ${esc(e.name)}: day ${expStats(k, e).done} of ${expStats(k, e).days}`).join(' · ') : 'No expedition started yet.'}</p>
-        <p class="muted small">This week: ${q7} questions, ${ok7} right${q7 ? ` (${Math.round((100 * ok7) / q7)}%)` : ''}.</p></section>
+        <p class="muted small">This week: ${plural(q7, 'question')}, ${ok7} right${q7 ? ` (${Math.round((100 * ok7) / q7)}%)` : ''}.</p></section>
       <section><h4>🧠 Mastery</h4><p class="rc-big">${passed} <span>stations passed · ${capK} capitals · ${flagK} flags · ${stK} state capitals known</span></p>
         <ul class="rc-worlds">${worlds.map(({ w, p, n }) => `<li><span>${w.glyph} ${esc(w.short)}</span><span class="hm-bar thin"><i style="width:${Math.round((100 * p) / n)}%"></i></span><b>${p}/${n}</b></li>`).join('')}</ul>
         ${slipping ? `<p class="muted small">${slipping} capital${slipping > 1 ? 's' : ''} slipped after a miss — they come back in the capitals quiz.</p>` : ''}</section>
@@ -602,8 +597,8 @@ export function viewGrownups() {
     <p class="muted small center-t">The family-wide view, across every Bizzing app, is on <a href="${HIVE}#/grownups">the Hive’s grown-ups page</a>.</p>
     ${h.kids.map(reportCard).join('')}
     <div class="card"><h3>Settings</h3>
-      <label class="set-row"><input type="checkbox" data-act="tester" ${h.parent.tester ? 'checked' : ''}> Tester mode — opens every stop and level for a grown-up to look round. Changes nothing about a child.</label>
-      <label class="set-row${GKEY ? '' : ' off'}"><input type="checkbox" data-act="streetview" ${h.parent.streetview ? 'checked' : ''} ${GKEY ? '' : 'disabled'}> Real photos in Where on Earth? — Google Street View of real places. <b>This is the one thing in the app that contacts another company:</b> while it is on, Where on Earth? loads each photo from Google, so Google sees this device’s internet address and which photo was shown. It sends nothing about your child — no name, no age, no answers, no location. On by default; untick to use paintings only.${GKEY ? '' : ' (Not set up in this copy of the app.)'}</label>
+      <label class="set-row"><input type="checkbox" data-act="tester" ${h.parent.tester ? 'checked' : ''}><span>Tester mode — opens every stop and level for a grown-up to look round. Changes nothing about a child.</span></label>
+      <label class="set-row${GKEY ? '' : ' off'}"><input type="checkbox" data-act="streetview" ${h.parent.streetview ? 'checked' : ''} ${GKEY ? '' : 'disabled'}><span>Real photos in Where on Earth? — Google Street View of real places. <b>This is the one thing in the app that contacts another company:</b> while it is on, Where on Earth? loads each photo from Google, so Google sees this device’s internet address and which photo was shown. It sends nothing about your child — no name, no age, no answers, no location. On by default; untick to use paintings only.${GKEY ? '' : ' (Not set up in this copy of the app.)'}</span></label>
       <div class="row gap wrap">${btn('Back up to a file', 'backup')}${btn('Restore from a file', 'restore')}${btn('Delete everything on this device', 'wipe', '', 'danger')}</div>
       ${R.ui.confirm === 'wipe' ? `<p class="fb bad">This deletes every child’s progress on this device. ${btn('Yes, delete everything', 'wipeYes', '', 'danger small')}</p>` : ''}
     </div>

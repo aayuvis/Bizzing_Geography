@@ -90,7 +90,12 @@ addEventListener('hashchange', () => { if (selfHash) { selfHash = false; return;
 function go(nav, arg = null, fromHash = false) {
   if (nav === 'run' && !R.run) nav = 'home';
   if (nav !== 'run' && R.run) R.run = null;
-  if (nav === 'stop' && !byId[arg]) nav = 'atlas';
+  /* a link to something that is not there lands on its shelf AND says so in the address (#/lib/nope was the audit's trap) */
+  const asked = nav;
+  if (nav === 'stop' && !byId[arg]) { nav = 'atlas'; arg = null; }
+  if (nav === 'lib' && !SHELF.some((t) => t.id === arg)) { nav = 'library'; arg = null; }
+  if (nav === 'world' && !worldOf(arg)) { nav = 'atlas'; arg = null; }
+  if (nav !== asked) fromHash = false;
   if (nav === 'grownups' && R.ui.nav !== 'grownups') { R.ui.gate = false; R.ui.gateIn = ''; }
   R.ui.nav = nav; R.ui.arg = arg; R.ui.confirm = null; R.ui.menu = false;
   hush();
@@ -153,6 +158,7 @@ function render() {
     v.addEventListener('scroll', () => { woPic = { src, x: v.scrollLeft }; }, { passive: true });
     woPic = { src, x: v.scrollLeft };
   });
+  root.querySelectorAll('[data-center]').forEach((v) => { if (v.scrollWidth > v.clientWidth && !v.dataset.done) { v.scrollLeft = (v.scrollWidth - v.clientWidth) / 2; v.dataset.done = '1'; } });
   root.querySelectorAll('.seg .on').forEach((b) => { const s = b.parentElement; if (s.scrollWidth > s.clientWidth) s.scrollLeft = b.offsetLeft - (s.clientWidth - b.offsetWidth) / 2; });
   const af = root.querySelector('.mp-card [data-act=medalOk], [data-autofocus] .gmap, [data-autofocus].pop');
   if (af) af.focus({ preventScroll: true });
@@ -250,6 +256,8 @@ on('openWorld', (w) => { R.ui.pick = null; go('world', w); });
 on('pickStop', (id) => { R.ui.pick = id; render(); });
 on('openStop', (id) => { if (!stopOpen(R.h, kid(R.h), id) && !X.expAllows(kid(R.h), id)) { toast('That stop opens on a later level.'); return; } go('stop', id); });
 on('openTool', (id) => go('lib', id));
+/* the place of the hour: Where on Earth? opens on THAT postcard, not on its menu */
+on('openPlace', (id) => { loadTool('geoguess').then((t) => { t.act('place', id, libCtx('geoguess')); go('lib', 'geoguess'); }); });
 on('openLandmark', (id) => { loadTool('landmarks').then((t) => { t.act('sel', id, libCtx('landmarks')); go('lib', 'landmarks'); }); });
 /* expeditions: the engine decides what a day is; the host only goes, runs or toasts */
 on('expOpen', (id) => { R.ui.part = null; go('expd', id); });

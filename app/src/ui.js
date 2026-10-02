@@ -94,6 +94,8 @@ export function sum(a) { return a.reduce((x, y) => x + y, 0); }
    "all three done", not "all 3 done". Above twelve the digit is clearer. */
 const WORDS = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight',
   'nine', 'ten', 'eleven', 'twelve'];
+/* "1 medal", "2 medals" — never "1 points" (the audit's N12) */
+export const plural = (n, one, many = one + 's') => `${typeof n === 'number' ? n.toLocaleString('en-US') : n} ${n === 1 ? one : many}`;
 export function nWord(n) { return WORDS[n] !== undefined ? WORDS[n] : String(n); }
 
 

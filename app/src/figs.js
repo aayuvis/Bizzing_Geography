@@ -25,7 +25,7 @@ export const SYMBOLS = {
 export const symbol = (id, size = 64) => svg(40, 32, `<g transform="translate(20 16)">${SYMBOLS[id].d}</g>`, 'sym', SYMBOLS[id].name).replace('<svg', `<svg width="${size}" height="${size * 0.8}"`);
 
 /* ---- a compass rose: 4 or 8 points, the app's letters */
-export function rose(points = 4, size = 120) {
+function roseBody(points) {
   const L = points === 4 ? ['N', 'E', 'S', 'W'] : ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
   let b = '<circle r="44" class="r-ring"/>';
   L.forEach((l, i) => {
@@ -34,7 +34,10 @@ export function rose(points = 4, size = 120) {
     const r = long ? 55 : 50, x = Math.sin((a * Math.PI) / 180) * r, y = -Math.cos((a * Math.PI) / 180) * r;
     b += `<text x="${x.toFixed(1)}" y="${(y + 4).toFixed(1)}" class="r-t${long ? '' : ' r-t2'}">${l}</text>`;
   });
-  return svg(140, 140, `<g transform="translate(70 70)">${b}</g>`, 'rose', `${points}-point compass`).replace('<svg', `<svg width="${size}" height="${size}"`);
+  return b;
+}
+export function rose(points = 4, size = 120) {
+  return svg(140, 140, `<g transform="translate(70 70)">${roseBody(points)}</g>`, 'rose', `${points}-point compass`).replace('<svg', `<svg width="${size}" height="${size}"`);
 }
 
 /* ---- a direction board: things placed round a centre on a 5×5 plan.
@@ -46,8 +49,10 @@ export function plan(items, centre = 'school', showRose = true) {
   const put = (sym, dx, dy, cls = '') => `<g transform="translate(${(o + dx) * C + C / 2} ${(o - dy) * C + C / 2}) scale(1.05)" class="${cls}">${SYMBOLS[sym].d}</g>`;
   b += put(centre, 0, 0, 'g-centre');
   for (const it of items) b += put(it.sym, it.dx, it.dy);
-  const rs = showRose ? `<g transform="translate(${N * C + 34} 34) scale(.42)">${rose(8).replace(/^<svg[^>]*>|<\/svg>$/g, '')}</g>` : '';
-  return svg(N * C + 70, N * C, `<rect width="${N * C}" height="${N * C}" class="g-bg"/>${b}${rs}`, 'plan', 'A plan seen from above, north at the top');
+  /* the rose sits in its own column beside the plan, centred in it and wholly inside the
+     drawing (it was once drawn 70 units off its centre and lost NE, E and SE — the audit's N12) */
+  const RW = 104, rs = showRose ? `<g class="plan-rose" transform="translate(${N * C + RW / 2} ${RW / 2}) scale(.68)">${roseBody(8)}</g>` : '';
+  return svg(N * C + (showRose ? RW : 0), N * C, `<rect width="${N * C}" height="${N * C}" class="g-bg"/>${b}${rs}`, 'plan', 'A plan seen from above, north at the top');
 }
 
 /* ---- a grid-reference map: letters along the bottom, numbers up the side */
