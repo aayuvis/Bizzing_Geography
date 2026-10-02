@@ -15,7 +15,7 @@ else. Sixth app in the Bizzing family.
 | The Number Atlas: painted worlds with stops | **The Explorer's Atlas**: one painted island, ten worlds, 45 stops |
 | Ten levels by maths age | **Ten roads by geography age** (6 → 15+), walked in order, a level check to move up |
 | A stop: the trick, why it works, a drill | A stop: a hook, the idea, why it matters, where it is checked, ten questions |
-| The Library: one-file tools | **The Library**: GeoGuesser, Country Capitals, State Capitals, Famous Landmarks, Earth Through Time, Flags, Map Explorer, Dictionary |
+| The Library: one-file tools | **The Library**: Where on Earth?, Country Capitals, State Capitals, Famous Landmarks, Earth Through Time, Flags, Map Explorer, Dictionary |
 | Ranks named for how people learned to count | Ranks named for how people learned the world: Wanderer → Globe Master |
 
 The worlds, from a front door to the planet: Home Street (maps, symbols, directions) · Land &

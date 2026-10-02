@@ -45,15 +45,14 @@ export function view(ctx) {
   const fill = Object.fromEntries(regs.filter((x) => known(ctx.data, x.id)).map((x) => [x.id, 'kn']));
   if (sel) fill[sel.id] = 'hl';
   const nk = regs.filter((x) => known(ctx.data, x.id)).length;
-  return `<div class="seg" role="tablist" aria-label="Country">${COUNTRY.map((x) => `<button role="tab" aria-selected="${x.c === c}" class="${x.c === c ? 'on' : ''}" data-act="lib" data-arg="states|c|${x.c}"><img src="flags/${x.c.toLowerCase()}.svg" alt="" width="20" height="15"> ${esc(x.name)}</button>`).join('')}</div>
-    <p class="muted center-t">${esc(C.note)}</p>
-    <div class="t-cap-bar"><span><b class="t-cap-n">${nk}</b> <span class="muted">of ${regs.length} capitals known — right on two different days, typed or picked</span></span>
+  return `<div class="seg" role="tablist" aria-label="Country">${COUNTRY.map((x) => `<button role="tab" aria-selected="${x.c === c}" class="${x.c === c ? 'on' : ''}" title="${esc(x.note)}" data-act="lib" data-arg="states|c|${x.c}"><img src="flags/${x.c.toLowerCase()}.svg" alt="" width="20" height="15"> ${esc(x.name)}</button>`).join('')}</div>
+    <div class="t-cap-bar"><span><b class="t-cap-n">${nk}</b> <span class="muted" title="Known = right on two different days, typed or picked">/ ${regs.length} known</span></span>
       <span class="row gap"><button class="btn primary" data-act="lib" data-arg="states|quiz">Quiz: capitals</button><button class="btn" data-act="lib" data-arg="states|find">Quiz: find it on the map</button></span></div>
     <div class="t-cap-wide">
       ${regionSVG(c, { key: 'st-' + c, tap: true, fill, pins, label: `Map of ${C.name}: tap a ${C.unit}, then type its capital` })}
-      <div class="row gap center map-ctl"><button class="btn small" data-act="mapZoom" data-arg="st-${c}|in" aria-label="Zoom in">＋</button><button class="btn small" data-act="mapZoom" data-arg="st-${c}|out" aria-label="Zoom out">－</button><button class="btn small" data-act="mapZoom" data-arg="st-${c}|home" aria-label="Whole map">⟲</button><span class="muted small">Tap a ${esc(C.unit)} — or arrows and Enter — then type its capital.</span></div>
+      <div class="row gap center map-ctl"><button class="btn small" data-act="mapZoom" data-arg="st-${c}|in" aria-label="Zoom in">＋</button><button class="btn small" data-act="mapZoom" data-arg="st-${c}|out" aria-label="Zoom out">－</button><button class="btn small" data-act="mapZoom" data-arg="st-${c}|home" aria-label="Whole map">⟲</button><span class="muted small">Tap a ${esc(C.unit)}</span></div>
     </div>
-    ${sel ? panel('states', askOf(sel, regs, C), st) : `<div class="card t-ask"><p class="muted">Tap a ${esc(C.unit)} on the map. You’ll be asked for its capital.</p></div>`}
+    ${sel ? panel('states', askOf(sel, regs, C), st) : ''}
     <details class="card"><summary><b>Every ${esc(C.unit)} of ${esc(C.name)}</b></summary><ul class="t-cap-list">${regs.map((s) => `<li class="${known(ctx.data, s.id) ? 'k' : ''}"><button class="linkish" data-act="lib" data-arg="states|sel|${s.id}">${esc(s.name)}</button> — ${esc(s.capFull)}</li>`).join('')}</ul></details>`;
 }
 
@@ -71,6 +70,7 @@ export function act(name, arg, ctx) {
   const choose = (id) => { if (ctx.ui.sel !== id) { ctx.ui.sel = id; ctx.ui.ask = {}; setTimeout(() => { const i = document.getElementById('t-states-ans'); if (i) i.focus({ preventScroll: true }); }, 30); } };
   if (name === 'c') { ctx.ui.c = arg; ctx.ui.sel = null; ctx.ui.ask = {}; }
   else if (name === 'sel') choose(arg);
+  else if (name === 'close') { ctx.ui.sel = null; ctx.ui.ask = {}; }
   else if (name === 'tap') { const t = JSON.parse(arg); if (t.cc && regionsOf(c).some((s) => s.id === t.cc)) choose(t.cc); }
   else if (['check', 'four', 'pick', 'reveal'].includes(name) && ctx.ui.sel) {
     const regs = regionsOf(c), s = regs.find((x) => x.id === ctx.ui.sel), st = ctx.ui.ask || (ctx.ui.ask = {});
@@ -86,6 +86,7 @@ export function act(name, arg, ctx) {
 }
 export function key(e, ctx) {
   const st = ctx.ui.ask || {};
+  if (e.key === 'Escape' && ctx.ui.sel) { act('close', '', ctx); return true; }
   if (!ctx.ui.sel || ['right', 'picked', 'revealed'].includes(st.state)) return false;
   if (e.key === 'Enter' && e.target && e.target.id === 't-states-ans') { ctx.ui.ans = e.target.value; act('check', '', ctx); return true; }
   const n = parseInt(e.key, 10);

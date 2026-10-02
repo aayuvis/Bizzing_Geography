@@ -7,7 +7,7 @@ Read this first, then [CONCEPT.md](CONCEPT.md), then [app/README.md](app/README.
 **Bizzing Geography** — a map-first web app for kids **6–14**: maps and compasses, landforms,
 continents and oceans, countries and capitals, weather and climate, rivers and mountains,
 latitude and time, the restless Earth, and people and places — ending in a Library of
-GeoGuesser, Country Capitals, State Capitals, Famous Landmarks, Earth Through Time, Flags,
+Where on Earth?, Country Capitals, State Capitals, Famous Landmarks, Earth Through Time, Flags,
 a Map Explorer and a Dictionary. Sixth app in the Bizzing family (Bee, India, Finance, Maths,
 Schedule), built on **Bizzing Maths's architecture**: an Atlas of painted worlds, ten
 levelled roads, a Library of one-file tools.
@@ -70,10 +70,10 @@ Inherited from the family, and it holds here:
 ### Art
 
 - **Painted plates, drawn structure** (the Videos/Maths doctrine). `tools/art/gen.py` paints
-  PLACES only — no people, no lettering (a sign would give a GeoGuesser answer away). A model
+  PLACES only — no people, no lettering (a sign would give a Where on Earth? answer away). A model
   **never draws a real map**: a wrong coastline in a geography app teaches the error. Every
   map, pin, road and compass letter is drawn by the app.
-- **Every painting says it is a painting.** GeoGuesser: "a painting, not a photo". Landmarks:
+- **Every painting says it is a painting.** Where on Earth?: "a painting, not a photo". Landmarks:
   "made with an AI image model — not a photograph". Earth Through Time: "an artist's
   impression — not a map".
 - **Prompts live with their facts** (`app/src/data/{postcards,landmarks,eras}.js` `paint`),
@@ -98,8 +98,8 @@ Inherited from the family, and it holds here:
   a map question both ways.
 - **A wrong answer holds until dismissed; a right one auto-advances.**
 - **Child data is minimal by construction**: first name, age band, avatar. Never a birthdate,
-  surname, school, photo or **location** — GeoGuesser never uses the device's position.
-  **Nothing is transmitted** but GeoGuesser's Street View photos (below): no accounts,
+  surname, school, photo or **location** — Where on Earth? never uses the device's position.
+  **Nothing is transmitted** but Where on Earth?'s Street View photos (below): no accounts,
   analytics, ads or other third-party requests (`test/ui.mjs` fails on any). The privacy page
   and footer say exactly this and must stay true.
 - **No ads, no streaks, no loot.** Rank moves only with right answers.
@@ -139,10 +139,21 @@ Inherited from the family, and it holds here:
   Every fact a goal checks (neighbours, landlocked, hemisphere, continent, east-to-west order)
   comes from the data. `selftest` proves every project is solvable and not done at init. A
   project's size field is `count`, never `n` — `daysOf` numbers days with `n` and overwrote it.
-- **Earth Through Time is the painting.** No slider, no numbered buttons: the plate carries a
-  text overlay (when, title, the story in an accordion), arrows on its edges and dots below;
-  maps, sites and sources sit in a card under it. The title must be visible without scrolling
-  (`test/ui.mjs`).
+- **Earth Through Time is the painting.** No slider, no numbered buttons: the plate carries
+  when, title and the story in an accordion, arrows on its edges and dots along its top. On a
+  desktop (≥1000px) the painting and its card (map, sites, moments, quizzes, sources) sit side
+  by side in one screen — `test/ui.mjs` asserts it fits. On a phone the words are one dark panel
+  right under the picture (never clipped) and a swipe across the painting steps through time.
+- **Where on Earth?** (the place-guessing game; never call it by a trademarked game's name —
+  the internal id stays `geoguess`, because stored data is keyed by it) is laid out like the
+  real thing: the picture is the screen, the map a small inset in the corner. Click it or press
+  M to open it; tap, or drag the pin (on the whole-world view a drag anywhere places it),
+  then **Guess** confirms. A photo is two Street View views side by side (180°); drag the
+  picture, ‹ › or [ ] to look around. On a phone the picture keeps its shape at full height
+  and scrolls sideways under the finger.
+- **A capital card pops up over the map** (Country and State Capitals, `ask.js` `panel`), never
+  below the fold; ✕ or Esc closes it. No explanatory text blocks on those pages — a count
+  ("12 / 50 known") and the map.
 - **The welcome is Bizzing Finance's**: a landing page, then one question a screen with Compass
   Owl as guide — name, age, **five** companions, **two** worlds. The other 35 faces and four worlds
   are on the child's page from minute one, all free.
@@ -156,7 +167,7 @@ Inherited from the family, and it holds here:
 
 ## Real photos — Google Street View, on by default (the owner's decision)
 
-GeoGuesser is **one journey**: every round mixes 3 real photos and 2 painted postcards, five
+Where on Earth? is **one journey**: every round mixes 3 real photos and 2 painted postcards, five
 different countries (all paintings if photos are off). **1,518 verified real places in 116 countries** — from a pool of
 2,641 in 191 countries (`data/places.js`, generated by `tools/geo/places.mjs` from Natural
 Earth, each inside its own country on the map) — shown as live Street View photos, and 42

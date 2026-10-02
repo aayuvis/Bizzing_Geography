@@ -22,7 +22,7 @@ import { esc } from './ui.js';
 import { ENGINES, ENGINE_NAME } from './projects.js';
 
 export const CHECK_RIGHT = 8;          // of 10
-const TOOLN = { geoguess: 'GeoGuesser', capitals: 'Country Capitals', states: 'State Capitals', landmarks: 'Famous Landmarks', time: 'Earth Through Time', flags: 'Flags', explorer: 'Map Explorer', dictionary: 'Dictionary' };
+const TOOLN = { geoguess: 'Where on Earth?', capitals: 'Country Capitals', states: 'State Capitals', landmarks: 'Famous Landmarks', time: 'Earth Through Time', flags: 'Flags', explorer: 'Map Explorer', dictionary: 'Dictionary' };
 export const KIND = { t: 'Learn', p: 'Practise', c: 'Test', m: 'Make', f: 'Final test' };
 export const GLYPH = { t: '📖', p: '🎯', c: '📝', m: '🛠️', f: '🏅' };
 

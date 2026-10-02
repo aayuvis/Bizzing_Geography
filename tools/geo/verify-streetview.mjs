@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* verify-streetview.mjs — which GeoGuesser places have Street View imagery.
+/* verify-streetview.mjs — which Where on Earth? places have Street View imagery.
 
    Asks Google's Street View METADATA endpoint (free: it costs no quota and
    returns no image) whether outdoor imagery exists within 5 km of each place

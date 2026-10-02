@@ -21,7 +21,7 @@ export const SCHEMA = 4;
 const STEPS = {
   // v0 is "no version field at all": anything from a pre-release build
   0: (h) => { h.v = 1; h.kids = h.kids || []; h.parent = h.parent || { pin: null, tester: false }; return h; },
-  // v2: real Street View photos in GeoGuesser — off until a grown-up switches them on
+  // v2: real Street View photos in Where on Earth? — off until a grown-up switches them on
   1: (h) => { h.v = 2; h.parent.streetview = !!h.parent.streetview; return h; },
   // v3: real photos become the default (the owner's decision); a grown-up can switch them off
   2: (h) => { h.v = 3; h.parent.streetview = true; return h; },

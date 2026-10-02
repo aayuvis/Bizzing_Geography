@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* places.mjs — the GeoGuesser photo pool: real places, at least a thousand.
+/* places.mjs — the Where on Earth? photo pool: real places, at least a thousand.
 
    Every place is a Natural Earth populated place (public domain), in one of
    the 195 quizzed countries, and is kept only if it lies inside its own

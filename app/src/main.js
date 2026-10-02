@@ -102,7 +102,7 @@ function toolView(tool) {
   return `<section class="tool-page tool-${tool.TOOL.id}">${V.pageHead(`${tool.TOOL.glyph} ${tool.TOOL.name}`, '', V.back('nav', 'Library', 'library'))}${body}</section>`;
 }
 
-let focusId = null;
+let focusId = null, woPic = {};
 function render() {
   const a = document.activeElement;
   focusId = a && a.id ? a.id : null;
@@ -113,8 +113,16 @@ function render() {
   syncScene(th, R.ui.nav === 'run' || Store.loadDevice('still', false));   // a quiz run gets a still, faded scene
   root.innerHTML = V.shell(screen());
   restoreMaps(root);
+  root.querySelectorAll('.wo-view').forEach((v) => {   // a new picture starts in the middle; a re-render keeps where the child looked
+    const src = (v.querySelector('img:not(.wo-bg)') || {}).src;
+    if (v.scrollWidth > v.clientWidth) v.scrollLeft = src === woPic.src ? woPic.x : (v.scrollWidth - v.clientWidth) / 2;
+    v.addEventListener('scroll', () => { woPic = { src, x: v.scrollLeft }; }, { passive: true });
+    woPic = { src, x: v.scrollLeft };
+  });
   root.querySelectorAll('.seg .on').forEach((b) => { const s = b.parentElement; if (s.scrollWidth > s.clientWidth) s.scrollLeft = b.offsetLeft - (s.clientWidth - b.offsetWidth) / 2; });
-  if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); if (caret != null && el.setSelectionRange) try { el.setSelectionRange(caret, caret); } catch (_) {} } }
+  const af = root.querySelector('[data-autofocus] .gmap, [data-autofocus].pop');
+  if (af) af.focus({ preventScroll: true });
+  else if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); if (caret != null && el.setSelectionRange) try { el.setSelectionRange(caret, caret); } catch (_) {} } }
   document.title = 'Bizzing Geography';
 }
 R.render = render;
@@ -233,6 +241,39 @@ function mapTap(t) {
 }
 bindMaps(root, mapTap);
 
+/* Earth Through Time: a swipe across the painting steps through time */
+{
+  let sw = null;
+  root.addEventListener('pointerdown', (e) => {
+    const st = e.target.closest && e.target.closest('[data-swipe]');
+    sw = st && e.pointerType !== 'mouse' && !e.target.closest('button, a, summary, details') ? { x: e.clientX, y: e.clientY, id: e.pointerId, k: st.dataset.swipe } : null;
+  });
+  root.addEventListener('pointerup', (e) => {
+    if (!sw || e.pointerId !== sw.id) return;
+    const dx = e.clientX - sw.x, dy = e.clientY - sw.y, k = sw.k; sw = null;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) fire('lib', `${k}|step|${dx < 0 ? 1 : -1}`);
+  });
+  root.addEventListener('pointercancel', () => { sw = null; });
+}
+
+/* Where on Earth: drag the photo to look around (it slides with the finger,
+   then turns by as much as it was dragged, in 15° steps) */
+{
+  let d = null;
+  root.addEventListener('pointerdown', (e) => {
+    const v = e.target.closest && e.target.closest('[data-wo-drag]'); if (!v || v.scrollWidth > v.clientWidth + 4) return;   // a phone scrolls it natively
+    d = { x: e.clientX, v, w: v.getBoundingClientRect().width, id: e.pointerId };
+    try { v.setPointerCapture(e.pointerId); } catch (_) {}
+  });
+  root.addEventListener('pointermove', (e) => { if (d && e.pointerId === d.id) d.v.style.transform = `translateX(${e.clientX - d.x}px)`; });
+  const up = (e) => {
+    if (!d || e.pointerId !== d.id) return;
+    const dx = e.clientX - d.x, turn = Math.round((-dx / d.w) * 180 / 15) * 15; d.v.style.transform = ''; d = null;
+    if (turn) fire('lib', 'geoguess|turn|' + turn);
+  };
+  root.addEventListener('pointerup', up); root.addEventListener('pointercancel', up);
+}
+
 /* welcome */
 on('obStart', () => { R.ui.draft.step = 0; render(); });
 on('obNext', () => { const d = R.ui.draft; if (d.step === 0 && !d.name.trim()) return; d.step++; sfx.click && sfx.click(); render(); scrollTo(0, 0); });
@@ -300,7 +341,7 @@ bindRoot(root);
 /* a Street View photo with no imagery answers 404: swap in another place, uncounted */
 root.addEventListener('error', (e) => {
   const t = e.target;
-  if (t && t.tagName === 'IMG' && t.dataset.sv && !t.dataset.gone) { t.dataset.gone = '1'; fire('lib', 'geoguess|skip'); }
+  if (t && t.tagName === 'IMG' && t.dataset.sv && !t.dataset.gone) { t.dataset.gone = '1'; fire('lib', 'geoguess|skip|' + t.dataset.sv); }
 }, true);
 let inT = null;
 root.addEventListener('input', (e) => {
@@ -335,7 +376,7 @@ addEventListener('keydown', (e) => {
   }
   if (R.run && R.run.over && e.key === 'Enter' && !typing) { e.preventDefault(); fire('endRun'); return; }
   if (R.ui.nav === 'lib' && toolById[R.ui.arg] && toolById[R.ui.arg].key) {
-    if ((!typing || e.key === 'Enter') && toolById[R.ui.arg].key(e, libCtx(R.ui.arg))) { e.preventDefault(); render(); }
+    if ((!typing || e.key === 'Enter' || e.key === 'Escape') && toolById[R.ui.arg].key(e, libCtx(R.ui.arg))) { e.preventDefault(); render(); }
   }
 });
 /* avatar grid: arrow keys move through the faces */

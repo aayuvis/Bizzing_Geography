@@ -1,4 +1,4 @@
-/* photos.js — real Street View photos for GeoGuesser, and the rules round them.
+/* photos.js — real Street View photos for Where on Earth?, and the rules round them.
 
    The photos come from Google, live, into the child's browser: the one
    request to a third party in the app. It happens when both are true —

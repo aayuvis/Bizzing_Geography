@@ -1,7 +1,9 @@
 /* mapui.js — how a child moves and taps a map, by touch, mouse or keyboard
    (the family's hard rule: every interaction works both ways).
 
-     touch / mouse   drag to pan, pinch or wheel to zoom, tap to choose
+     touch / mouse   drag to pan, pinch or wheel to zoom, tap to choose;
+                     on a 'drag' map, drag the pin (or drag anywhere on the
+                     whole world, which does not pan) to place it
      keyboard        focus the map; arrows move the cross (Shift: faster),
                      + and − zoom, 0 resets, Enter or Space chooses
 
@@ -93,8 +95,12 @@ export function bindMaps(root, onTap) {
     const el = e.target.closest('.gmap'); if (!el) return;
     const svg = el.querySelector('svg');
     pts.set(e.pointerId, [e.clientX, e.clientY]);
-    if (pts.size === 1) { start = { x: e.clientX, y: e.clientY, vb: vbOf(svg), el, target: e.target }; moved = false; }
-    if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), vb: vbOf(svg) }; }
+    if (pts.size === 1) {
+      const home = el.dataset.home.split(' ').map(Number), whole = vbOf(svg)[2] >= home[2] * 0.99;
+      const pin = el.classList.contains('drag') && (e.target.closest('.pin.guess') || whole);
+      start = { x: e.clientX, y: e.clientY, vb: vbOf(svg), el, target: e.target, pin }; moved = false;
+    }
+    if (pts.size === 2) { if (start) start.pin = false; const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), vb: vbOf(svg) }; }
     try { el.setPointerCapture(e.pointerId); } catch (_) {}
   });
   root.addEventListener('pointermove', (e) => {
@@ -109,6 +115,11 @@ export function bindMaps(root, onTap) {
     const dx = e.clientX - start.x, dy = e.clientY - start.y;
     if (Math.hypot(dx, dy) > 6) moved = true;
     if (!moved) return;
+    if (start.pin) {                                       // the pin follows the finger
+      const at = toSvg(svg, e.clientX, e.clientY), m = svg.querySelector('.pin.guess') || svg.querySelector('.cross');
+      if (at && m) m.setAttribute('transform', `translate(${at[0].toFixed(1)} ${at[1].toFixed(1)}) scale(${(vbOf(svg)[2] / 1000).toFixed(3)})`);
+      return;
+    }
     const home = start.el.dataset.home.split(' ').map(Number);
     if (start.vb[2] >= home[2] * 0.99) return;          // the whole map does not pan
     const k = start.vb[2] / r.width;
@@ -121,7 +132,7 @@ export function bindMaps(root, onTap) {
     const s = start; start = null; pinch = null;
     if (!s) return;
     keep(s.el);
-    if (!moved && s.el.classList.contains('tap')) {
+    if ((!moved || s.pin) && s.el.classList.contains('tap')) {
       const at = toSvg(s.el.querySelector('svg'), e.clientX, e.clientY);
       if (at) tapAt(s.el, at[0], at[1], s.target);
     }

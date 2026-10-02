@@ -1,4 +1,4 @@
-/* photos-ui.mjs — real photos in GeoGuesser, driven in Chromium.
+/* photos-ui.mjs — real photos in Where on Earth?, driven in Chromium.
    Builds the app WITH a stand-in Maps key into .build-key/, and answers
    Google's image requests locally (a real key never enters a test). Proves:
      · real photos are on by default, and ONE round mixes photos and paintings;
@@ -43,27 +43,31 @@ try {
   await page.evaluate(() => window.__bzg.go('lib', 'geoguess')); await page.waitForSelector('.t-geo-intro');
   await page.screenshot({ path: `${SHOTS}/photo-00-intro.png` });
   ok(await page.locator('[data-arg="geoguess|start"]').count() === 1, 'one journey: a single Play button');
-  await page.click('[data-arg="geoguess|start"]'); await page.waitForSelector('.t-geo-card');
+  await page.click('[data-arg="geoguess|start"]'); await page.waitForSelector('.wo');
   const g = await page.evaluate(() => window.__bzg.R.ui.lib.geoguess.g);
   ok(g.cards.length === 5 && g.cards.filter((c) => c.k === 'photo').length === 3 && g.cards.filter((c) => c.k === 'painted').length === 2, 'a round mixes three photos and two paintings');
   /* play all five; on each photo card, look around once */
   let sawPhoto = false, turned = false;
   for (let i = 0; i < 5; i++) {
-    await page.waitForSelector('.t-geo-card'); await page.waitForTimeout(700);
+    await page.waitForSelector('.wo'); await page.waitForTimeout(700);
     const k = await page.evaluate(() => { const g = window.__bzg.R.ui.lib.geoguess.g; return g.cards[g.i].k; });
     if (k === 'photo') {
-      ok(await page.evaluate(() => { const i = document.querySelector('.t-geo-card.photo img'); return i && i.complete && i.naturalWidth > 0; }), 'a photo card shows its photo');
-      ok((await page.locator('.t-geo-card figcaption').innerText()).includes('Imagery © Google'), 'Google is credited on the photo');
+      ok(await page.evaluate(() => { const im = [...document.querySelectorAll('.wo-view.photo img')]; return im.length === 2 && im.every((i) => i.complete && i.naturalWidth > 0); }), 'a photo card shows its two halves');
+      ok((await page.locator('.wo-hud').innerText()).includes('Imagery © Google'), 'Google is credited on the photo');
       if (!turned) {
         const h0 = await page.evaluate(() => window.__bzg.R.ui.lib.geoguess.g.heading);
-        await page.click('[data-arg="geoguess|turn|90"]'); await page.keyboard.press(']');
-        ok(await page.evaluate(() => window.__bzg.R.ui.lib.geoguess.g.heading) === (h0 + 180) % 360, '▶ and ] look around');
+        await page.click('[data-arg="geoguess|turn|45"]'); await page.keyboard.press(']');
+        ok(await page.evaluate(() => window.__bzg.R.ui.lib.geoguess.g.heading) === (h0 + 90) % 360, '› and ] look around');
+        const v = await page.locator('.wo-view.photo').boundingBox();
+        await page.mouse.move(v.x + v.width * 0.7, v.y + v.height / 2); await page.mouse.down(); await page.mouse.move(v.x + v.width * 0.2, v.y + v.height / 2, { steps: 6 }); await page.mouse.up(); await page.waitForTimeout(200);
+        ok(await page.evaluate(() => window.__bzg.R.ui.lib.geoguess.g.heading) === (h0 + 180) % 360, 'dragging the photo looks around');
         turned = true;
       }
       if (!sawPhoto) { await page.screenshot({ path: `${SHOTS}/photo-01-card.png` }); sawPhoto = true; }
-    } else ok((await page.locator('.t-geo-card figcaption').innerText()).includes('a painting, not a photo'), 'a painted card says it is a painting');
-    const b = await page.locator('.t-geo-map .gmap').boundingBox();
-    await page.mouse.click(b.x + b.width * 0.5, b.y + b.height * 0.4); await page.keyboard.press('g');
+    } else ok((await page.locator('.wo-hud').innerText()).includes('a painting, not a photo'), 'a painted card says it is a painting');
+    await page.keyboard.press('m'); await page.waitForSelector('.wo.big .gmap.tap');
+    const b = await page.locator('.wo-map .gmap').boundingBox();
+    await page.mouse.click(b.x + b.width * 0.5, b.y + b.height * 0.4); await page.click('.wo-guess');
     await page.waitForSelector('.t-geo-res');
     if (i === 0) await page.screenshot({ path: `${SHOTS}/photo-02-reveal.png` });
     await page.keyboard.press('Enter'); await page.waitForTimeout(300);
@@ -78,7 +82,7 @@ try {
   await page.click('[data-act=streetview]');
   ok(await page.evaluate(() => window.__bzg.R.h.parent.streetview) === false, 'the switch turns real photos off');
   const before = google.length;
-  await page.evaluate(() => window.__bzg.go('lib', 'geoguess')); await page.click('[data-arg="geoguess|start"]'); await page.waitForSelector('.t-geo-card');
+  await page.evaluate(() => window.__bzg.go('lib', 'geoguess')); await page.click('[data-arg="geoguess|start"]'); await page.waitForSelector('.wo');
   await page.waitForTimeout(500);
   ok(await page.evaluate(() => window.__bzg.R.ui.lib.geoguess.g.cards.every((c) => c.k === 'painted')), 'with photos off, a round is all paintings');
   ok(google.length === before, 'with photos off, nothing is asked of Google');

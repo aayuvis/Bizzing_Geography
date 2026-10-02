@@ -1,4 +1,4 @@
-/* GeoGuesser — look at a place, tap where in the world you think it is. The
+/* Where on Earth? — look at a place, pin where in the world you think it is. The
    score is the distance; the reason is shown after.
 
    One journey, two kinds of card, mixed in every round (3 photos, 2 paintings):
@@ -7,7 +7,7 @@
      Google: on by default wherever a key is built in, and a grown-up can
      switch them off (photos.js; the privacy page says so). A place with no
      imagery answers 404 and is swapped for another, never counted. Look
-     around with ◀ ▶. Credited "Imagery © Google".
+     around by dragging the picture, ‹ › or [ ]. Credited "Imagery © Google".
    · PAINTED POSTCARDS — 42 paintings (tools/art/gen.py), no request to
      anyone, labelled "a painting, not a photo". Without photos, a round is
      all paintings.
@@ -23,7 +23,7 @@ import { FAMOUS } from '../chapters/kit.js';
 import { seeded, shuffle, dayKey } from '../rand.js';
 import { svUrl, GKEY } from '../photos.js';
 
-export const TOOL = { id: 'geoguess', name: 'GeoGuesser', glyph: '🌍', art: 'lib-geoguess', blurb: 'A real place somewhere on Earth. Read the land, the roads and the buildings — then tap where you think it is.' };
+export const TOOL = { id: 'geoguess', name: 'Where on Earth?', glyph: '🌍', art: 'lib-geoguess', blurb: 'A real place somewhere on Earth. Read the land, the roads and the buildings — then pin where you think it is.' };
 
 const ROUND = 5;
 /* 5,000 for a perfect tap, halving about every 1,400 km. */
@@ -86,6 +86,22 @@ function card(g) {
   return { k, id, cc: p.cc, at: p.at, place: p.place, short: p.place.split(',')[0], clues: p.clues };
 }
 
+/* The play screen is the picture (GeoGuessr's lesson): the place fills the
+   stage, the map waits as a small inset in the corner. Click it (or M) and it
+   opens; tap or drag to drop a pin; Guess confirms. A photo is two Street
+   View views side by side — 180° of the place, sharp at full width — and
+   dragging the picture looks around. */
+const MAPK = (g) => 'geo' + (g.daily ? 'd' : 'r') + g.i;
+function stagePic(c, g) {
+  if (c.k === 'photo') {
+    const h = g.heading || 0, pano = SV_PANO[c.id];
+    const img = (hd, side) => `<img data-sv="${esc(c.id)}" src="${esc(svUrl(c.at, (hd + 360) % 360, GKEY, pano))}" alt="${side ? '' : 'A Street View photo. Where in the world is it?'}" width="640" height="400" referrerpolicy="origin" draggable="false">`;
+    return `<div class="wo-view photo" data-wo-drag="1">${img(h - 45, 0)}${img(h + 45, 1)}</div>
+      <button class="wo-turn l" data-act="lib" data-arg="geoguess|turn|-45" aria-label="Look left">‹</button>
+      <button class="wo-turn r" data-act="lib" data-arg="geoguess|turn|45" aria-label="Look right">›</button>`;
+  }
+  return `<div class="wo-view painted"><img class="wo-bg" src="art/${c.id}.webp" alt="" draggable="false"><img src="art/${c.id}.webp" alt="A painted scene. Where in the world is it?" width="1280" height="720" draggable="false"></div>`;
+}
 export function view(ctx) {
   const g = ctx.ui.g, d = ctx.data, on = !!ctx.photos;
   if (!g) {
@@ -96,7 +112,7 @@ export function view(ctx) {
         <button class="btn big" data-act="lib" data-arg="geoguess|daily" ${today != null ? 'disabled' : ''}>${today != null ? `Today’s place: ${today.toLocaleString('en-US')} points` : 'Today’s place'}</button>
         ${d.best ? `<span class="muted small">Best round <b>${d.best.toLocaleString('en-US')}</b> · ${d.rounds || 0} played</span>` : ''}
       </div>
-      <p class="muted small">Look at the place, then tap the map where you think it is — up to 5,000 points a card. ${on ? `Rounds mix <b>real Street View photos</b> (${photoPool('11-14').length.toLocaleString('en-US')} places in ${new Set(photoPool('11-14').map((p) => p.cc)).size} countries, shot by Google) with <b>painted postcards</b> made with an AI image model; every card says which it is.`
+      <p class="muted small">Look at the place, open the map in the corner and drop your pin where you think it is — up to 5,000 points a card. ${on ? `Rounds mix <b>real Street View photos</b> (${photoPool('11-14').length.toLocaleString('en-US')} places in ${new Set(photoPool('11-14').map((p) => p.cc)).size} countries, shot by Google) with <b>painted postcards</b> made with an AI image model; every card says which it is.`
         : `${POSTCARDS.length} painted postcards of real kinds of places, made with an AI image model.${ctx.photosReady ? ' Real photos are switched off on this device (grown-ups’ page).' : ''}`}</p>
     </div>`;
   }
@@ -106,26 +122,27 @@ export function view(ctx) {
       <ul class="t-geo-sum">${g.done.map((x) => `<li><b>${esc(x.place)}</b> — ${fmtKm(x.km)} away, ${x.pts.toLocaleString('en-US')} points</li>`).join('')}</ul>
       <div class="row gap center"><button class="btn primary big" data-act="lib" data-arg="geoguess|start">Play again</button><button class="btn big" data-act="lib" data-arg="geoguess|home">Done</button></div></div>`;
   }
-  const c = card(g), last = g.done[g.i];
+  const c = card(g), last = g.done[g.i], key = MAPK(g), big = !!(g.big || last);
+  const so = g.done.reduce((a, x) => a + (x ? x.pts : 0), 0);
   const pins = [];
   if (g.guess) pins.push({ at: g.guess, cls: 'guess', r: 7 });
   if (last) pins.push({ at: c.at, cls: 'good', r: 8, label: c.short });
-  const pic = c.k === 'photo'
-    ? `<figure class="t-geo-card photo"><img data-sv="1" src="${esc(svUrl(c.at, g.heading, GKEY, SV_PANO[c.id]))}" alt="A Street View photo. Where in the world is it?" width="640" height="400" referrerpolicy="origin">
-        <figcaption><span>Card ${g.i + 1} of ${g.cards.length} · a real photo · Imagery © Google</span>
-        <span class="row gap"><button class="btn small" data-act="lib" data-arg="geoguess|turn|-90" aria-label="Look left">◀</button><span class="muted small">look around</span><button class="btn small" data-act="lib" data-arg="geoguess|turn|90" aria-label="Look right">▶</button></span></figcaption></figure>`
-    : `<figure class="t-geo-card"><img src="art/${c.id}.webp" alt="A painted scene. Where in the world is it?" width="1280" height="720"><figcaption>Card ${g.i + 1} of ${g.cards.length} · a painting, not a photo</figcaption></figure>`;
-  return `<div class="t-geo">
-    ${pic}
-    <div class="t-geo-map">
-      ${worldSVG({ key: 'geo' + (g.daily ? 'd' : 'r') + g.i, tap: !last, pins, fill: last ? { [c.cc]: 'ok' } : {}, arcs: last && g.guess ? [[g.guess, c.at]] : [], label: 'Tap where you think this is' })}
-      ${last ? `<div class="card t-geo-res"><p class="kicker">${fmtKm(last.km)} away · ${last.pts.toLocaleString('en-US')} points</p><h3>${esc(c.place)}</h3>
-          <p class="muted">${c.k === 'photo' ? 'About this place:' : 'What gave it away:'}</p><ul>${c.clues.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>
-          <button class="btn primary big" data-act="lib" data-arg="geoguess|next">${g.i + 1 < g.cards.length ? 'Next place' : 'See the score'} <kbd>Enter</kbd></button></div>`
-        : `<div class="row gap center map-ctl"><button class="btn small" data-act="mapZoom" data-arg="geo${g.daily ? 'd' : 'r'}${g.i}|in" aria-label="Zoom in">＋</button><button class="btn small" data-act="mapZoom" data-arg="geo${g.daily ? 'd' : 'r'}${g.i}|out" aria-label="Zoom out">－</button><button class="btn small" data-act="mapZoom" data-arg="geo${g.daily ? 'd' : 'r'}${g.i}|home" aria-label="Whole map">⟲</button>
-          <button class="btn primary" data-act="lib" data-arg="geoguess|guess" ${g.guess ? '' : 'disabled'}>Guess here <kbd>G</kbd></button></div>
-          <p class="muted small center-t">${g.guess ? 'Move the pin with another tap, or press Guess.' : `Tap the map to drop your pin — or use the arrow keys and Enter.${c.k === 'photo' ? ' ◀ ▶ (or [ and ]) look around.' : ''}`}</p>`}
-    </div></div>`;
+  const focus = g.focusMap; g.focusMap = false;   // focus the map once, when it opens
+  return `<div class="wo${big ? ' big' : ''}${last ? ' res' : ''}">
+    ${stagePic(c, g)}
+    <div class="wo-hud"><span class="wo-chip">${g.daily ? 'Today’s place' : `Card ${g.i + 1} of ${g.cards.length}`} · ${c.k === 'photo' ? 'a real photo · Imagery © Google' : 'a painting, not a photo'}</span>
+      ${g.daily ? '' : `<span class="wo-chip wo-score">${so.toLocaleString('en-US')} points</span>`}</div>
+    <div class="wo-map"${focus ? ' data-autofocus="1"' : ''}>
+      ${big && !last ? `<div class="wo-bar"><button class="btn small" data-act="mapZoom" data-arg="${key}|in" aria-label="Zoom in">＋</button><button class="btn small" data-act="mapZoom" data-arg="${key}|out" aria-label="Zoom out">－</button><button class="btn small" data-act="mapZoom" data-arg="${key}|home" aria-label="Whole map">⟲</button>
+        <span class="wo-tip">${g.guess ? 'Drag the pin, or tap somewhere else' : 'Tap or drag to drop your pin'}</span><button class="btn small" data-act="lib" data-arg="geoguess|map|0" aria-label="Close the map (Esc)">✕</button></div>` : ''}
+      ${worldSVG({ key, tap: big && !last, drag: big && !last, pins, fill: last ? { [c.cc]: 'ok' } : {}, arcs: last && g.guess ? [[g.guess, c.at]] : [], label: 'Drop your pin where you think this is' })}
+      ${big ? '' : `<button class="wo-open" data-act="lib" data-arg="geoguess|map|1" aria-label="Open the map (M)"><span>🗺️ ${g.guess ? 'Your pin' : 'Open the map'} <kbd>M</kbd></span></button>`}
+      ${last ? '' : `<button class="btn primary wo-guess" data-act="lib" data-arg="geoguess|guess" ${g.guess ? '' : 'disabled'}>${g.guess ? 'Guess' : 'Place your pin on the map'} <kbd>G</kbd></button>`}
+    </div>
+    ${last ? `<div class="card t-geo-res wo-res"><p class="kicker">${fmtKm(last.km)} away · ${last.pts.toLocaleString('en-US')} points</p><h3>${esc(c.place)}</h3>
+        <p class="muted small">${c.k === 'photo' ? 'About this place:' : 'What gave it away:'}</p><ul>${c.clues.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>
+        <button class="btn primary big" data-act="lib" data-arg="geoguess|next">${g.i + 1 < g.cards.length ? 'Next place' : 'See the score'} <kbd>Enter</kbd></button></div>` : ''}
+  </div>`;
 }
 
 export function act(name, arg, ctx) {
@@ -134,8 +151,9 @@ export function act(name, arg, ctx) {
   else if (name === 'daily') newRound(ctx, true);
   else if (name === 'home') ctx.ui.g = null;
   else if (name === 'turn' && g && g.cards[g.i] && g.cards[g.i].k === 'photo') g.heading = ((g.heading || 0) + Number(arg) + 360) % 360;
+  else if (name === 'map' && g && !g.done[g.i]) { g.big = arg === '1'; g.focusMap = g.big; }
   /* no imagery here: swap in a spare, never counted */
-  else if (name === 'skip' && g && g.cards[g.i] && g.cards[g.i].k === 'photo' && !g.done[g.i]) {
+  else if (name === 'skip' && g && g.cards[g.i] && g.cards[g.i].k === 'photo' && !g.done[g.i] && (!arg || arg === g.cards[g.i].id)) {
     const used = new Set(g.cards.map((x) => (x.k === 'photo' ? placeById[x.id].cc : postcardById[x.id].cc)));
     const nx = g.spare.findIndex((id) => !used.has(placeById[id].cc));
     if (nx >= 0) { g.cards[g.i] = { k: 'photo', id: g.spare.splice(nx, 1)[0] }; g.heading = 0; }
@@ -144,10 +162,10 @@ export function act(name, arg, ctx) {
   else if (name === 'tap' && g && !g.done[g.i]) { const t = JSON.parse(arg); if (t.lat != null) g.guess = [t.lat, t.lng]; }
   else if (name === 'guess' && g && g.guess && !g.done[g.i]) {
     const c = card(g), km = haversine(g.guess, c.at), pts = points(km);
-    g.done[g.i] = { id: c.id, place: c.place, km, pts };
+    g.done[g.i] = { id: c.id, place: c.place, km, pts }; g.big = false;
     if (pts >= 2500) { ctx.sfx.good(); ctx.tick(true, pts >= 4500 ? 3 : pts >= 3500 ? 2 : 1); } else ctx.sfx.bad();
   } else if (name === 'next' && g && g.done[g.i]) {
-    g.i++; g.guess = null; g.heading = 0;
+    g.i++; g.guess = null; g.heading = 0; g.big = false;
     if (g.i >= g.cards.length) {
       const tot = g.done.reduce((a, x) => a + x.pts, 0), d = ctx.data;
       if (ctx.session) ctx.session();   // a round is one notch on Today’s ring
@@ -161,7 +179,9 @@ export function key(e, ctx) {
   const g = ctx.ui.g; if (!g) return false;
   if ((e.key === 'g' || e.key === 'G') && g.guess && !g.done[g.i]) { act('guess', '', ctx); return true; }
   if (e.key === 'Enter' && g.done[g.i]) { act('next', '', ctx); return true; }
-  if (g.cards[g.i] && g.cards[g.i].k === 'photo' && !g.done[g.i] && (e.key === '[' || e.key === ']')) { act('turn', e.key === '[' ? '-90' : '90', ctx); return true; }
+  if ((e.key === 'm' || e.key === 'M') && g.i < g.cards.length && !g.done[g.i]) { act('map', g.big ? '0' : '1', ctx); return true; }
+  if (e.key === 'Escape' && g.big && !g.done[g.i]) { act('map', '0', ctx); return true; }
+  if (g.cards[g.i] && g.cards[g.i].k === 'photo' && !g.done[g.i] && (e.key === '[' || e.key === ']')) { act('turn', e.key === '[' ? '-45' : '45', ctx); return true; }
   return false;
 }
 export function selftest(ok) {

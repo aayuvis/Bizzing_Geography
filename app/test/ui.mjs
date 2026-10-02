@@ -2,7 +2,7 @@
    Serves build/ under /Bizzing_Geography/ (the GitHub Pages sub-path), then
    walks: onboarding → home → Atlas → a world → a stop → a drill (multiple
    choice by keyboard, map taps by touch AND by the keyboard cross) → My road
-   → every Library tool → GeoGuesser → state capitals → grown-ups. Any page
+   → every Library tool → Where on Earth? → state capitals → grown-ups. Any page
    error, 404 or sideways scroll on a phone fails it. Screenshots in .shots/. */
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
@@ -219,14 +219,32 @@ async function run(vp, tag) {
   ok(await page.evaluate(() => window.__bzg.R.run.items.length) === 10, 'the dictionary quiz asks ten');
   await page.evaluate(() => { window.__bzg.R.run = null; });
 
-  // GeoGuesser: a round, a guess, the reveal
+  // Where on Earth?: the picture fills the stage, the map is an inset; open it, pin by tap and by drag, confirm
   await page.evaluate(() => window.__bzg.go('lib', 'geoguess'));
-  await page.click('[data-arg="geoguess|start"]'); await page.waitForSelector('.t-geo-card');
+  await page.click('[data-arg="geoguess|start"]'); await page.waitForSelector('.wo');
   ok(await page.evaluate(() => window.__bzg.R.ui.lib.geoguess.g.cards.every((c) => c.k === 'painted')), 'with no Maps key built in, a round is all paintings');
-  const g = await page.locator('.t-geo-map .gmap').boundingBox();
+  { const st = await page.locator('.wo').boundingBox(), m = await page.locator('.wo-map .gmap').boundingBox();
+    ok(m.width * m.height < st.width * st.height * 0.2, `the map starts as a small inset (${Math.round(m.width)}×${Math.round(m.height)} on a ${Math.round(st.width)}×${Math.round(st.height)} picture)`);
+    const vh = await page.evaluate(() => innerHeight);
+    ok(st.y + st.height <= vh + 2 && st.height >= vh * 0.4, `the picture is the screen and fits on it (${Math.round(st.y)}+${Math.round(st.height)} of ${vh})`); }
+  await page.waitForTimeout(300); await shot('12a-where-stage');
+  await page.click('.wo-open'); await page.waitForSelector('.wo.big .gmap.tap');
+  ok(await page.evaluate(() => document.activeElement && document.activeElement.classList.contains('gmap')), 'opening the map puts the keyboard on it');
+  ok(await page.locator('.wo-guess').isDisabled(), 'Guess waits for a pin');
+  const g = await page.locator('.wo-map .gmap').boundingBox();
   if (phone) await page.touchscreen.tap(g.x + g.width * 0.6, g.y + g.height * 0.4); else await page.mouse.click(g.x + g.width * 0.6, g.y + g.height * 0.4);
   await page.waitForTimeout(200);
-  ok(await page.evaluate(() => !!window.__bzg.R.ui.lib.geoguess.g.guess), 'a tap drops the GeoGuesser pin');
+  const p1 = await page.evaluate(() => window.__bzg.R.ui.lib.geoguess.g.guess);
+  ok(!!p1, 'a tap drops the pin');
+  if (!phone) {   // drag the pin somewhere else
+    const pin = await page.locator('.wo-map .pin.guess').boundingBox();
+    await page.mouse.move(pin.x + pin.width / 2, pin.y + pin.height / 2); await page.mouse.down();
+    await page.mouse.move(g.x + g.width * 0.3, g.y + g.height * 0.6, { steps: 8 }); await page.mouse.up(); await page.waitForTimeout(200);
+    const p2 = await page.evaluate(() => window.__bzg.R.ui.lib.geoguess.g.guess);
+    ok(p2 && Math.abs(p2[1] - p1[1]) > 20, `dragging the pin moves it (${p1.map(Math.round)} → ${p2 && p2.map(Math.round)})`);
+  }
+  ok(!(await page.locator('.wo-guess').isDisabled()), 'with a pin, Guess is ready');
+  await shot('12b-where-map');
   await page.keyboard.press('g'); await page.waitForTimeout(300);
   ok(await page.locator('.t-geo-res').count() === 1, 'G guesses and shows the answer and clues');
   await shot('12-geoguess');
@@ -238,12 +256,13 @@ async function run(vp, tag) {
   await page.waitForTimeout(200);
   ok(await page.evaluate(() => window.__bzg.R.ui.lib.states.sel) === 'IN-RJ', 'tapping Rajasthan selects it');
   await page.waitForSelector('#t-states-ans');
+  ok(await page.evaluate(() => { const b = document.querySelector('.t-ask.pop').getBoundingClientRect(); return b.top >= 0 && b.bottom <= innerHeight; }), 'the capital card pops up on screen, not below the fold');
   ok(!(await page.locator('.t-ask').innerText()).includes('Jaipur'), 'the capital is not shown before the child answers');
   await page.fill('#t-states-ans', 'jaipur'); await page.press('#t-states-ans', 'Enter');
   await page.waitForTimeout(150);
   ok(await page.evaluate(() => window.__bzg.R.ui.lib.states.ask.state) === 'right', 'typing “jaipur” + Enter is right');
   ok(await page.evaluate(() => (window.__bzg.R.h.kids[0].lib.states.box || {})['IN-RJ']) === 1, 'a right state capital climbs its box');
-  ok(/\b0\s+of 36 capitals known/.test(await page.locator('.t-cap-bar').innerText()), 'State Capitals shows a known count (one right answer is not yet known)');
+  ok(/\b0\s*\/ 36 known/.test(await page.locator('.t-cap-bar').innerText()), 'State Capitals shows a known count (one right answer is not yet known)');
   await shot('13-states-india');
   ok(await page.locator('.reg-IN path.ct').count() === 36, 'India draws 36 states and union territories');
 
@@ -266,6 +285,7 @@ async function run(vp, tag) {
   if (phone) await page.touchscreen.tap(br[0], br[1]); else await page.mouse.click(br[0], br[1]);
   await page.waitForSelector('#t-capitals-ans');
   ok(await page.evaluate(() => window.__bzg.R.ui.lib.capitals.sel) === 'BR', 'tapping Brazil asks for its capital');
+  ok(await page.evaluate(() => { const b = document.querySelector('.t-ask.pop').getBoundingClientRect(); return b.top >= 0 && b.bottom <= innerHeight; }), 'the capital card pops up on screen, not below the fold');
   await page.fill('#t-capitals-ans', 'Rio'); await page.press('#t-capitals-ans', 'Enter'); await page.waitForTimeout(150);
   ok(await page.evaluate(() => window.__bzg.R.ui.lib.capitals.ask.state) === 'wrong' && !(await page.locator('.t-ask').innerText()).includes('Brasília'), 'a wrong answer holds without giving it away');
   await page.click('[data-arg="capitals|four"]'); await page.waitForSelector('.t-ask-opts');
@@ -275,6 +295,8 @@ async function run(vp, tag) {
   ok((await page.locator('.t-ask').innerText()).includes('Brasília'), 'reveal shows the answer');
   ok(await page.evaluate(() => (window.__bzg.R.h.kids[0].lib.capitals.box || {}).BR) === 0, 'a revealed capital is not counted as known');
   await noSideways('capitals ask');
+  await page.keyboard.press('Escape'); await page.waitForTimeout(120);
+  ok(await page.locator('.t-ask.pop').count() === 0, 'Esc closes the card');
   // a right pick from the four choices counts toward "known"
   const ar = await inside(page, '.gmap path[data-cc=AR]');
   if (phone) await page.touchscreen.tap(ar[0], ar[1]); else await page.mouse.click(ar[0], ar[1]);
@@ -304,7 +326,7 @@ async function run(vp, tag) {
   await page.click('#theme-atlas'); await page.waitForTimeout(100);
   // above the fold: on every key screen the core content starts in the top half of the first screen
   for (const [nav, arg, sel, what] of [['home', null, '.h-ring [data-act]', 'the Start button'], ['home', null, '.h-journey', 'the journey card'], ['atlas', null, '.map-board', 'the island map'], ['road', null, '.jsteps', 'the road'],
-    ['exp', null, '.crs-card', 'the first expedition'], ['expd', 'capitals', '.crs-board', 'the expedition board'], ['library', null, '.lib-tile', 'the first tool'], ['lib', 'capitals', '.gmap', 'the map'], ['lib', 'time', '.t-stage', 'the painting'], ['lib', 'geoguess', '.t-geo-intro .btn, .t-geo-card', 'Play or the game'], ['lib', 'dictionary', '#t-dictionary-q', 'the search box']]) {
+    ['exp', null, '.crs-card', 'the first expedition'], ['expd', 'capitals', '.crs-board', 'the expedition board'], ['library', null, '.lib-tile', 'the first tool'], ['lib', 'capitals', '.gmap', 'the map'], ['lib', 'time', '.t-stage', 'the painting'], ['lib', 'geoguess', '.t-geo-intro .btn, .wo', 'Play or the game'], ['lib', 'dictionary', '#t-dictionary-q', 'the search box']]) {
     await page.evaluate(([n, a]) => { window.__bzg.go(n, a); scrollTo(0, 0); }, [nav, arg]); await page.waitForTimeout(120);
     const top = await page.evaluate((sel) => { const e = document.querySelector(sel); return e ? e.getBoundingClientRect().top : 1e9; }, sel);
     const h = await page.evaluate(() => innerHeight);
@@ -312,6 +334,7 @@ async function run(vp, tag) {
   }
   await page.evaluate(() => { window.__bzg.go('lib', 'time'); scrollTo(0, 0); }); await page.waitForTimeout(150);
   ok(await page.evaluate(() => { const b = document.querySelector('.t-ov h2').getBoundingClientRect(); return b.bottom <= innerHeight; }), 'Earth Through Time: the step’s title is on screen without scrolling');
+  if (!phone) ok(await page.evaluate(() => { const b = document.querySelector('.t-split').getBoundingClientRect(); return b.bottom <= innerHeight + 1; }), 'Earth Through Time: on a desktop the painting and its card fit one screen');
   // grown-ups
   await page.evaluate(() => window.__bzg.go('grownups'));
   await page.fill('#pin', '1234'); await page.click('[data-act=gate]'); await page.waitForSelector('.report');

@@ -1,4 +1,4 @@
-/* postcards.js — the scenes GeoGuesser shows.
+/* postcards.js — the scenes Where on Earth? shows.
 
    A postcard is a PAINTED view of a real kind of place, and the game says
    so on every card: "a painting, not a photo". It is painted by

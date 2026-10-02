@@ -99,11 +99,11 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
      zones:  [{ at, km, name, cls }] — a SOFT ZONE of influence, blurred, never a
              line (Bizzing India's rule for anything before modern borders)
      borders: false — no country lines at all, for an age before them */
-export function worldSVG({ fill = {}, pins = [], lines = [], view = null, key = 'w', tap = false, grat = true, label = 'World map', arcs = [], zones = [], borders = true, rot = 0 } = {}) {
+export function worldSVG({ fill = {}, pins = [], lines = [], view = null, key = 'w', tap = false, grat = true, label = 'World map', arcs = [], zones = [], borders = true, rot = 0, drag = false } = {}) {
   const M = world(rot);
   const vb = (view || [0, 0, W, H]).join(' ');
   const scale = view ? view[2] / W : 1;
-  return `<div class="gmap${tap ? ' tap' : ''}${borders ? '' : ' noborders'}" data-gmap="${esc(key)}" data-home="${vb}"${rot ? ` data-rot="${rot}"` : ''} ${tap ? 'tabindex="0" role="application"' : ''} aria-label="${esc(label)}${tap ? '. Tap a place, or use the arrow keys to move the cross and Enter to choose.' : ''}">
+  return `<div class="gmap${tap ? ' tap' : ''}${drag ? ' drag' : ''}${borders ? '' : ' noborders'}" data-gmap="${esc(key)}" data-home="${vb}"${rot ? ` data-rot="${rot}"` : ''} ${tap ? 'tabindex="0" role="application"' : ''} aria-label="${esc(label)}${tap ? '. Tap a place, or use the arrow keys to move the cross and Enter to choose.' : ''}">
     <svg viewBox="${vb}" preserveAspectRatio="xMidYMid meet" style="--s:${scale.toFixed(3)}">
       <path class="sea" d="${M.sphere}"/>
       ${grat ? `<path class="grat" d="${M.grat}"/>` : ''}

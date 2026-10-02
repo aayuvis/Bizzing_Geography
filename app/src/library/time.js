@@ -56,22 +56,25 @@ export function view(ctx) {
 /* THE STAGE: the painting IS the page. The step's when, title and story sit on the
    picture in a readable panel; ‹ › ride its edges; a thin row of dots along the top is
    the timeline (each one a button). The slider and the eighteen numbered buttons that
-   stood above the picture are gone — they took a screenful and said less. ← → still step. */
+   stood above the picture are gone — they took a screenful and said less. ← → still step,
+   and on a touch screen a swipe across the picture does too. On a desktop the painting
+   and its card sit side by side so a step fits one screen; on a phone the words sit
+   right under the picture as one panel, so nothing is clipped. */
 function stage(T, i, img, alt, cap, overlay) {
   const n = T.list.length;
-  return `<div class="t-stage${img ? '' : ' noimg'}">
+  return `<div class="t-stage${img ? '' : ' noimg'}" data-swipe="time">
     ${img ? `<img src="${img}" alt="${esc(alt)}" width="1280" height="720">` : ''}
     <ol class="t-dots" aria-label="Timeline">${T.list.map((x, j) => `<li><button class="${j === i ? 'on' : j < i ? 'past' : ''}" data-act="lib" data-arg="time|i|${j}" aria-label="${esc(x.when)}: ${esc(x.title)}" title="${esc(x.title)}"></button></li>`).join('')}</ol>
     <button class="t-nav prev" data-act="lib" data-arg="time|step|-1" ${i ? '' : 'disabled'} aria-label="Earlier">‹</button>
     <button class="t-nav next" data-act="lib" data-arg="time|step|1" ${i < n - 1 ? '' : 'disabled'} aria-label="Later">›</button>
     <div class="t-ov">${overlay}</div>
-    ${cap ? `<span class="t-cap">${cap}</span>` : ''}
+    ${cap ? `<span class="t-credit">${cap}</span>` : ''}
   </div>`;
 }
 
 function earthCard(T, e, i) {
   const earth = T.list === EARTH;
-  return `${stage(T, i, earth ? `art/era-${e.id.slice(2)}.webp` : '', `A painting imagining ${e.title.toLowerCase()}`, earth ? 'An artist’s impression — not a map' : '',
+  return `<div class="t-split">${stage(T, i, earth ? `art/era-${e.id.slice(2)}.webp` : '', `A painting imagining ${e.title.toLowerCase()}`, earth ? 'An artist’s impression — not a map' : '',
       `<p class="kicker">${esc(e.when)} · ${i + 1} of ${T.list.length}</p><h2>${esc(e.title)}</h2><p>${esc(e.body)}</p>`)}
     <div class="card t-more">
       ${e.look ? `<p class="why-line">${esc(e.look)}</p>` : ''}
@@ -79,7 +82,7 @@ function earthCard(T, e, i) {
       <div class="row gap wrap"><button class="btn primary" data-act="lib" data-arg="time|quiz">Quiz: which came first?</button></div>
       <details class="src"><summary>Where this is checked</summary><ul>${e.src.map((s) => `<li>${esc(s)}</li>`).join('')}</ul></details>
       ${ERAS_NEED_REVIEW ? '<p class="t-review">✎ Awaiting a second reader. Dates this old are scientists’ best estimates, and they get revised.</p>' : ''}
-    </div>`;
+    </div></div>`;
 }
 
 function continentCard(ctx, T, e, i) {
@@ -88,12 +91,12 @@ function continentCard(ctx, T, e, i) {
   const zones = e.zones.map(([lat, lng, km, name]) => ({ at: [lat, lng], km, name }));
   const pins = e.sites.map(([name, lat, lng], j) => ({ at: [lat, lng], cls: j === u.site ? 'red' : 'site', r: j === u.site ? 7 : 5, label: j === u.site ? name : '' }));
   const moments = e.moments.filter((m) => older || !m.hard), hidden = e.moments.length - moments.length;
-  return `${stage(T, i, `art/hist-${e.id}.webp`, `A painting imagining a place in the age of ${e.title.toLowerCase()}`, 'An artist’s impression of a place — not a map',
+  return `<div class="t-split">${stage(T, i, `art/hist-${e.id}.webp`, `A painting imagining a place in the age of ${e.title.toLowerCase()}`, 'An artist’s impression of a place — not a map',
       `<p class="kicker">${esc(T.cont)} · ${esc(e.when)} · ${i + 1} of ${T.list.length}</p><h2>${esc(e.title)}</h2><p>${esc(e.hook)}</p>
        <details class="t-read"><summary>Read the story</summary><p>${esc(e.kid)}</p></details>`)}
     <div class="card t-hist">
       ${worldSVG({ key: 'hist-' + T.cont.replace(/\s/g, ''), tap: true, view: viewFor(FRAME[T.cont].box, 0.06, FRAME[T.cont].rot), rot: FRAME[T.cont].rot, zones, pins, borders: !!e.today, grat: false, label: `${T.cont}, ${e.when}: ${e.zones.map((z) => z[3]).join(', ') || 'the countries of today'}` })}
-      <p class="muted small center-t">${e.today ? 'Today’s countries, drawn the one way this app draws them everywhere.' : !e.zones.length ? 'In this age the map was a tangle of empires, colonies and changing lines — too tangled for soft colours. The dots are places you can still visit.' : 'Soft colours show where a people or an empire held sway. Their edges faded, moved and were argued over, so they are not borders — and today’s borders did not exist yet.'} Tap a dot to visit a place.</p>
+      <p class="muted small center-t" title="${e.today ? 'Today’s countries, drawn the one way this app draws them everywhere.' : !e.zones.length ? 'In this age the map was a tangle of empires, colonies and changing lines — too tangled for soft colours.' : 'Soft colours show where a people or an empire held sway. Their edges faded, moved and were argued over, so they are not borders.'}">${e.today ? 'Today’s countries.' : !e.zones.length ? 'Too tangled for soft colours — the dots are places to visit.' : 'Soft colours, not borders — today’s borders did not exist yet.'} Tap a dot to visit.</p>
       ${site ? `<p class="t-hist-site" role="status"><b>📍 ${esc(site[0])}</b> — ${esc(site[3])}</p>` : ''}
       ${e.sites.length ? `<div class="row gap wrap t-hist-sites" aria-label="Places you can still visit">${e.sites.map((s, j) => `<button class="chip-btn small${j === u.site ? ' on' : ''}" aria-pressed="${j === u.site}" data-act="lib" data-arg="time|site|${j}">📍 ${esc(s[0])}</button>`).join('')}</div>` : ''}
       <details class="t-acc" open><summary><h3>What happened</h3></summary>
@@ -103,7 +106,7 @@ function continentCard(ctx, T, e, i) {
       ${T.cont === 'Asia' ? '<p class="muted small">India’s own story, age by age, is told in depth in Bizzing India’s Itihaas.</p>' : ''}
       <details class="src"><summary>Where this is checked</summary><ul>${e.src.map((s) => `<li>${esc(s)}</li>`).join('')}</ul></details>
       ${HISTORY_NEEDS_REVIEW ? '<p class="t-review">✎ Awaiting a second reader. Dates are approximate, and historians still discuss many of them.</p>' : ''}
-    </div>`;
+    </div></div>`;
 }
 
 /* "Which came first?" — pairs far enough apart that the order is not in doubt */

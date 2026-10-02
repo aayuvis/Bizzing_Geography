@@ -1,6 +1,6 @@
 # Bizzing Geography
 
-Maps, continents, capitals, weather and the restless Earth for kids 6–14 — then GeoGuesser,
+Maps, continents, capitals, weather and the restless Earth for kids 6–14 — then Where on Earth?,
 flags, state capitals, landmarks and Earth Through Time in the Library.
 
 **Live:** <https://aayuvis.github.io/Bizzing_Geography/>

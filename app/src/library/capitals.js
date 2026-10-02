@@ -41,13 +41,13 @@ export function view(ctx) {
   if (sel && answered) pins.push({ at: sel.capAt[0], cls: 'red', r: 6, label: capOf(sel) });
   const nk = list.filter((c) => known(d, c.cc)).length;
   return `<div class="seg" role="tablist" aria-label="Continent">${CONTS.map((c) => `<button role="tab" aria-selected="${c === cont}" class="${c === cont ? 'on' : ''}" data-act="lib" data-arg="capitals|cont|${c}">${esc(c)}</button>`).join('')}</div>
-    <div class="t-cap-bar"><span><b class="t-cap-n">${nk}</b> <span class="muted">of ${list.length} capitals known — right on two different days, typed or picked</span></span>
+    <div class="t-cap-bar"><span><b class="t-cap-n">${nk}</b> <span class="muted" title="Known = right on two different days, typed or picked">/ ${list.length} known</span></span>
       <button class="btn primary" data-act="lib" data-arg="capitals|quiz">Quiz me on ${cont === 'All' ? 'the world' : esc(cont)}</button></div>
     <div class="t-cap-wide">
       ${worldSVG({ key: 'cap-' + cont, tap: true, view, pins, fill: sel ? { [sel.cc]: 'hl' } : {}, label: 'Tap a country, then type its capital' })}
-      <div class="row gap center map-ctl"><button class="btn small" data-act="mapZoom" data-arg="cap-${cont}|in" aria-label="Zoom in">＋</button><button class="btn small" data-act="mapZoom" data-arg="cap-${cont}|out" aria-label="Zoom out">－</button><button class="btn small" data-act="mapZoom" data-arg="cap-${cont}|home" aria-label="Whole map">⟲</button><span class="muted small">Tap a country — or arrows and Enter — then type its capital.</span></div>
+      <div class="row gap center map-ctl"><button class="btn small" data-act="mapZoom" data-arg="cap-${cont}|in" aria-label="Zoom in">＋</button><button class="btn small" data-act="mapZoom" data-arg="cap-${cont}|out" aria-label="Zoom out">－</button><button class="btn small" data-act="mapZoom" data-arg="cap-${cont}|home" aria-label="Whole map">⟲</button><span class="muted small">Tap a country</span></div>
     </div>
-    ${sel ? panel('capitals', askOf(sel, QUIZ), st) : '<div class="card t-ask"><p class="muted">Tap a country on the map. You’ll be asked for its capital.</p></div>'}
+    ${sel ? panel('capitals', askOf(sel, QUIZ), st) : ''}
     <details class="card"><summary><b>Every capital in ${cont === 'All' ? 'the world' : esc(cont)}</b></summary>
       <ul class="t-cap-list">${list.map((c) => `<li class="${known(d, c.cc) ? 'k' : ''}"><button class="linkish" data-act="lib" data-arg="capitals|sel|${c.cc}">${esc(c.name)}</button> — ${esc(capsText(c))}</li>`).join('')}</ul></details>`;
 }
@@ -69,6 +69,7 @@ export function act(name, arg, ctx) {
   const choose = (cc) => { if (ctx.ui.sel !== cc) { ctx.ui.sel = cc; ctx.ui.ask = {}; setTimeout(() => { const i = document.getElementById('t-capitals-ans'); if (i) i.focus({ preventScroll: true }); }, 30); } };
   if (name === 'cont') { ctx.ui.cont = arg; ctx.ui.sel = null; ctx.ui.ask = {}; }
   else if (name === 'sel') choose(arg);
+  else if (name === 'close') { ctx.ui.sel = null; ctx.ui.ask = {}; }
   else if (name === 'tap') { const t = JSON.parse(arg); if (t.cc && byCc[t.cc] && byCc[t.cc].quiz) choose(t.cc); }
   else if (['check', 'four', 'pick', 'reveal'].includes(name) && ctx.ui.sel) {
     const c = byCc[ctx.ui.sel], st = ctx.ui.ask || (ctx.ui.ask = {});
@@ -84,6 +85,7 @@ export function act(name, arg, ctx) {
 /* after each answer in a run the host calls answered(q, right, ctx) */
 export function key(e, ctx) {
   const st = ctx.ui.ask || {};
+  if (e.key === 'Escape' && ctx.ui.sel) { act('close', '', ctx); return true; }
   if (!ctx.ui.sel || ['right', 'picked', 'revealed'].includes(st.state)) return false;
   if (e.key === 'Enter' && e.target && e.target.id === 't-capitals-ans') { ctx.ui.ans = e.target.value; act('check', '', ctx); return true; }
   const n = parseInt(e.key, 10);

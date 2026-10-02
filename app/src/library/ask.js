@@ -33,11 +33,14 @@ export function judge(typed, answers) {
   return false;
 }
 
-/* The panel. q = { key, name, answers[], display, note, others[] (wrong capitals to choose from), flag } */
+/* The panel. q = { key, name, answers[], display, note, others[] (wrong capitals to choose from), flag }
+   It pops up over the map the moment a place is tapped — never below the
+   fold — and leaves the map tappable around it. ✕ or Esc closes it. */
 export function panel(tool, q, st) {
   const done = st.state === 'right' || st.state === 'revealed' || st.state === 'picked';
   const opts = st.opts || [];
-  return `<div class="card t-ask" aria-live="polite">
+  return `<div class="card t-ask pop" role="dialog" aria-label="The capital of ${esc(q.name)}" aria-live="polite">
+    <button class="t-ask-x" data-act="lib" data-arg="${tool}|close" aria-label="Close (Esc)">✕</button>
     <div class="t-ask-h">${q.flag ? `<img src="flags/${q.flag}.svg" alt="" width="54" height="40">` : ''}<div><p class="kicker">${esc(q.kicker || '')}</p><h3>What is the capital of ${esc(q.name)}?</h3></div></div>
     ${done ? `<p class="fb ${st.state === 'revealed' ? '' : 'good'}">${st.state === 'right' ? (st.close ? `Right — it’s spelled <b>${esc(q.display)}</b>.` : `Right — <b>${esc(q.display)}</b>.`) : st.state === 'picked' ? `Right — <b>${esc(q.display)}</b>.` : `The capital is <b>${esc(q.display)}</b>.`}</p>${q.note ? `<p class="muted small">${esc(q.note)}</p>` : ''}
         <p class="muted small">Tap another ${esc(q.unit || 'place')} on the map to keep going.</p>`

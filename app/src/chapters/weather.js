@@ -82,7 +82,7 @@ export const STOPS = [
   { id: 'biomes', title: 'Biomes', glyph: '🌴', band: '8-10',
     hook: 'A rainforest and a desert can be at the same distance from the equator. Rain makes the difference.',
     idea: ['A <b>biome</b> is a big area with its own climate, plants and animals.', ...BIOMES.map(([n, d, e]) => `<b>${n[0].toUpperCase() + n.slice(1)}</b>: ${d} — like ${e}.`)],
-    why: 'Biomes tell you what a place looks like before you get there — the best clue in GeoGuesser.',
+    why: 'Biomes tell you what a place looks like before you get there — the best clue in Where on Earth?',
     gen: (r, lv) => {
       const [n, d, e] = pick(lv === 1 ? BIOMES.slice(0, 4) : BIOMES, r);
       if (lv >= 2 && r() < 0.5) return mc(r, `Which biome is ${e}?`, n, BIOMES.map((b) => b[0]), `${e[0].toUpperCase() + e.slice(1)} is ${n}: ${d}.`);
