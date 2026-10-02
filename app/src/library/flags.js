@@ -4,6 +4,8 @@ import { QUIZ, CONTINENTS, byCc, capOf } from '../geo.js';
 import { flagQ } from '../chapters/capitals.js';
 import { FAMOUS } from '../chapters/kit.js';
 import { rnd } from '../rand.js';
+import { record } from './capitals.js';
+const byName = Object.fromEntries(QUIZ.map((c) => [c.name, c.cc]));
 
 export const TOOL = { id: 'flags', name: 'Flags of the World', glyph: '🚩', art: 'lib-flags', blurb: 'All 195 flags, continent by continent, and a quiz to learn them.' };
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -25,6 +27,12 @@ export function act(name, arg, ctx) {
     for (let t = 0; out.length < 10 && t < 300; t++) { const q = flagQ(rnd, list, lv); if (!seen.has(q.ans)) { seen.add(q.ans); out.push(q); } }
     ctx.startRun('Flags', out);
   }
+}
+/* a flag is KNOWN when it is right on two different days (the capitals' rule) — the 50-flags medal reads this */
+export function answered(q, right, ctx) {
+  const cc = byName[q.ans]; if (!cc) return;
+  const b0 = (ctx.data.box || {})[cc] || 0; record(ctx.data, cc, right);
+  if (b0 < 2 && ctx.data.box[cc] >= 2 && ctx.known) ctx.known(); ctx.save();
 }
 export function done(run) { const right = run.results.filter((x) => x.right).length; return { stars: right >= 9 ? 3 : right >= 7 ? 2 : 1, lines: [] }; }
 export function selftest(ok) {

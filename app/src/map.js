@@ -113,7 +113,7 @@ export function worldSVG({ fill = {}, pins = [], lines = [], view = null, key = 
       <g class="zone-names">${zones.map((z) => { const c = zoneCircle(z.at, z.km, rot); return c && z.name ? `<text transform="translate(${c[0]} ${(c[1] - c[2] * 0.55).toFixed(1)}) scale(${scale.toFixed(3)})">${esc(z.name)}</text>` : ''; }).join('')}</g>` : ''}
       ${lines.map((l) => `<path class="gl gl-${l}" d="${M.lines[l]}"/>`).join('')}
       ${arcs.map((a) => `<path class="arc" d="${M.path({ type: 'LineString', coordinates: [[a[0][1], a[0][0]], [a[1][1], a[1][0]]] })}"/>`).join('')}
-      ${pins.map((p) => { const xy = M.proj([p.at[1], p.at[0]]); return xy ? `<g class="pin ${p.cls || ''}" transform="translate(${xy[0].toFixed(1)} ${xy[1].toFixed(1)}) scale(${scale.toFixed(3)})"><circle r="${p.r || 6}"/>${p.label ? `<text y="-11">${esc(p.label)}</text>` : ''}</g>` : ''; }).join('')}
+      ${pins.map((p) => { const xy = M.proj([p.at[1], p.at[0]]); return xy ? `<g class="pin ${p.cls || ''}" transform="translate(${xy[0].toFixed(1)} ${xy[1].toFixed(1)}) scale(${scale.toFixed(3)})">${p.shape ? `<path class="pin-shape" d="${p.shape}"/>` : `<circle r="${p.r || 6}"/>`}${p.label ? `<text y="-11">${esc(p.label)}</text>` : ''}</g>` : ''; }).join('')}
       ${tap ? `<g class="cross" transform="translate(-99 -99) scale(${scale.toFixed(3)})"><circle r="9"/><path d="M-15 0H-5M5 0H15M0 -15V-5M0 5V15"/></g>` : ''}
     </svg></div>`;
 }

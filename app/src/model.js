@@ -70,7 +70,7 @@ export function rankOf(xp) {
 
 /* ---------------------------------------------------------------- kids */
 
-export function newHousehold() { return { v: 4, kids: [], active: null, parent: { pin: null, tester: false, streetview: true } }; }
+export function newHousehold() { return { v: 5, kids: [], active: null, parent: { pin: null, tester: false, streetview: true } }; }
 
 export function newKid(name, band, avatar) {
   return {
@@ -86,6 +86,8 @@ export function newKid(name, band, avatar) {
     exp: {},              // expedition id → { at, seen, m } (src/expeditions.js ledger)
     created: Date.now(),
     prefs: {},
+    shop: { owned: ['pin:dot', 'frame:plain'], pin: 'dot', frame: 'plain' },   // looks bought from the family wallet
+    medals: {},           // medal id → the day it was first earned (each celebrated once)
   };
 }
 export const kid = (h) => h.kids.find((k) => k.id === h.active) || null;
@@ -118,8 +120,8 @@ export function scoreRun(k, id, lv, right, total) {
   let s = r.learned ? 1 : 0;
   if (pct >= PASS) { s = Math.max(s, 2); r.lv[lv] = true; }
   if (pct >= ACE) s = 3;
-  const before = r.stars; r.stars = Math.max(r.stars, s);
-  return { pct, stars: r.stars, gained: r.stars - before, passed: pct >= PASS };
+  const before = r.stars, firstPass = pct >= PASS && before < 2; r.stars = Math.max(r.stars, s);
+  return { pct, stars: r.stars, gained: r.stars - before, passed: pct >= PASS, firstPass };
 }
 
 /* ---------------------------------------------------------------- the road */

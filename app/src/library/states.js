@@ -75,10 +75,12 @@ export function act(name, arg, ctx) {
   else if (['check', 'four', 'pick', 'reveal'].includes(name) && ctx.ui.sel) {
     const regs = regionsOf(c), s = regs.find((x) => x.id === ctx.ui.sel), st = ctx.ui.ask || (ctx.ui.ask = {});
     const how = handle(name, arg, askOf(s, regs, C), st, name === 'check' ? ctx.ui.ans : null);
+    const b0 = (ctx.data.box || {})[s.id] || 0;
     if (how === 'typed') { record(ctx.data, s.id, true); ctx.tick(true, 2); ctx.sfx.good(); ctx.save(); }
     else if (how === 'picked') { record(ctx.data, s.id, true); ctx.tick(true, 1); ctx.sfx.good(); ctx.save(); }
     else if (how === 'revealed') { record(ctx.data, s.id, false); ctx.save(); }
     else if (!how && (name === 'check' || name === 'pick')) ctx.sfx.bad();
+    if (b0 < 2 && ((ctx.data.box || {})[s.id] || 0) >= 2 && ctx.known) ctx.known();
     if (how) ctx.ui.ans = '';
   }
   else if (name === 'quiz') ctx.startRun(`${C.name}: capitals`, capQuiz(c));

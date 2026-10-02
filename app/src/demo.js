@@ -16,7 +16,7 @@ export function demoHousehold() {
   const r = seeded('bizzing-demo'), h = newHousehold();
   h.demo = true; h.parent.pin = null;
   const k = newKid('Sample', '8-10', 'savannalion');
-  k.id = 'kdemo'; k.prefs.theme = 'atlas';
+  k.id = 'kdemo'; k.prefs.theme = 'atlas'; k.medalsQuiet = true;
   /* the levels before this band's start are behind it; three stations into its own road */
   const start = k.road.level;
   for (const L of LEVELS) if (L.n < start) for (const s of L.steps) { const x = stopRec(k, s.stop); x.learned = true; x.stars = Math.max(x.stars, 2 + (r() < 0.4 ? 1 : 0)); x.best = Math.max(x.best, 80); x.runs++; x.lv[s.lv] = true; }

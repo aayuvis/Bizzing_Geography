@@ -50,7 +50,7 @@ async function run(vp, tag) {
   const shot = (n) => page.screenshot({ path: `${SHOTS}/${tag}-${n}.png` });
   const S = () => page.evaluate(() => { const r = window.__bzg.R, q = r.run && r.run.items[r.run.i]; return { nav: r.ui.nav, run: r.run && { kind: r.run.kind, i: r.run.i, n: r.run.items.length, over: r.run.over, fb: r.run.fb, q } }; });
   const phone = vp.width < 760;
-  const nav = (k) => page.click(phone ? `.tb[data-arg=${k}]` : `.tab[data-arg=${k}]`);
+  const nav = async (k) => { await page.evaluate(() => { window.__bzg.R.ui.medalPop = []; }); return page.click(phone ? `.tb[data-arg=${k}]` : `.tab[data-arg=${k}]`); };
   /* measured against the viewport WE set: Chromium widens innerWidth/clientWidth to fit overflow under
      mobile emulation, so a check against them passes on a broken page */
   const W = vp.width;
@@ -131,6 +131,12 @@ async function run(vp, tag) {
   ok((await S()).run.over, 'the drill finishes');
   ok(await page.evaluate(() => window.__bzg.R.h.kids[0].stops['eight-points'].stars) === 3, 'ten right earns three stars');
   await shot('07-end');
+  /* I4/J1: the first medal spins in once, with what earned it; coins only from the standard events */
+  ok(await page.locator('.mp-card').count() === 1 && (await page.locator('.mp-card').innerText()).includes('First station'), 'passing a first station celebrates the "First station" medal');
+  await shot('07b-medal');
+  await page.keyboard.press('Enter'); await page.waitForTimeout(150);
+  ok(await page.locator('.mp-card').count() === 0, 'Enter puts the medal on the shelf');
+  ok(await page.evaluate(() => { const w = JSON.parse(localStorage.getItem('bizzing.wallet') || '{}'), me = (w.kids || {}).ahana; return me && me.coins > 0 && me.ledger.every((x) => x.a === 'geography' && ['right', 'stop', 'mastered', 'contest'].includes(x.why) && [1, 5, 10, 20].includes(x.n)); }), 'coins are earned only by the standard events, at the standard amounts');
   await page.keyboard.press('Enter');
 
   // a map question: find a country, by a real tap on its shape
@@ -205,6 +211,8 @@ async function run(vp, tag) {
   await page.click('[data-act=projDone]'); await page.waitForSelector('.crs-board');
   ok(await page.evaluate(() => !!window.__bzg.R.h.kids[0].exp['first-maps'].art['fm1.project']), 'finishing saves what was made');
   ok(await page.locator('.crs-gal .crs-gi').count() === 1, 'and it appears in the gallery');
+  ok((await page.locator('.mp-card').innerText().catch(() => '')).includes('Maker'), 'the first thing made earns the Maker medal');
+  await page.click('[data-act=medalOk]');
   await page.evaluate(() => { window.__bzg.R.run = null; window.__bzg.go('home'); });
 
   // every Library tool renders
@@ -359,6 +367,17 @@ async function run(vp, tag) {
   for (const t of ['desert', 'aurora', 'orbit']) { await page.click(`#theme-${t}`); await page.waitForTimeout(250); await page.evaluate(() => scrollTo(0, 0)); await shot(`21-theme-${t}`); }
   await page.evaluate(() => window.__bzg.go('lib', 'capitals')); await page.waitForSelector('.gmap'); await page.waitForTimeout(200); await shot('22-orbit-map');
   await page.evaluate(() => window.__bzg.go('me')); await page.waitForSelector('.av-packs');
+  ok(await page.locator('.medal-shelf li').count() >= 30 && await page.locator('.medal-shelf li.got').count() >= 1, 'the medal shelf shows every medal and what earned it');
+  ok(await page.evaluate(() => Object.keys(window.__bzg.R.h.kids[0].medals).filter((m) => m === 'first-station').length) === 1, 'a medal is recorded once');
+  /* the shop: a printed price from the family wallet; a look, never rank */
+  const xp0 = await page.evaluate(() => window.__bzg.R.h.kids[0].xp);
+  await page.evaluate(() => { const w = JSON.parse(localStorage.getItem('bizzing.wallet')); w.kids.ahana.coins = 60; localStorage.setItem('bizzing.wallet', JSON.stringify(w)); window.__bzg.fire('nav', 'me'); });
+  await page.click('[data-act=buy][data-arg="pin:star"]'); await page.waitForTimeout(150);
+  ok(await page.evaluate(() => { const k = window.__bzg.R.h.kids[0]; return k.shop.owned.includes('pin:star') && k.shop.pin === 'star' && JSON.parse(localStorage.getItem('bizzing.wallet')).kids.ahana.coins === 40; }), 'buying the star pin costs its printed 20 coins and puts it in use');
+  ok(await page.evaluate(() => window.__bzg.R.h.kids[0].xp) === xp0, 'buying never moves rank');
+  await page.click('[data-act=buy][data-arg="frame:wood"]', { force: true }); await page.waitForTimeout(150);
+  ok(await page.evaluate(() => !window.__bzg.R.h.kids[0].shop.owned.includes('frame:wood')), 'a look the wallet cannot pay for is refused');
+  await shot('28-me-shop'); await noSideways('me');
   ok(await page.locator('.av-packs .av-pick').count() === 40, 'the avatar picker offers 40 faces');
   await page.click('#theme-atlas'); await page.waitForTimeout(100);
   // above the fold: on every key screen the core content starts in the top half of the first screen

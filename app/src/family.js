@@ -44,7 +44,7 @@ export function trackActivity(app, who, { now = () => Date.now(), win = globalTh
     const d = dayOf(t);
     let r = row && row.d === d && row.who === name && t - wrote <= 600000
       ? f.s.find((x) => x.a === app && !x.ev && x.d === row.d && x.t === row.t && x.who === row.who) : null;
-    if (!r) { r = { a: app, d, t: minOf(t), m: 0, who: name }; f.s.push(r); }
+    if (!r) { r = { a: app, d, t: minOf(t - 60000), m: 0, who: name }; f.s.push(r); }   // the sitting began a minute ago
     r.m = Math.min(599, r.m + 1);
     row = { d: r.d, t: r.t, who: r.who }; wrote = t;
     write(FEED, { v: 1, s: f.s.slice(-600) });

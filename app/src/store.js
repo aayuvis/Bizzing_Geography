@@ -16,7 +16,7 @@
 
 const KEY = 'bzg_household';
 const DEV = 'bzg_device';
-export const SCHEMA = 4;
+export const SCHEMA = 5;
 
 const STEPS = {
   // v0 is "no version field at all": anything from a pre-release build
@@ -27,6 +27,9 @@ const STEPS = {
   2: (h) => { h.v = 3; h.parent.streetview = true; return h; },
   // v4: Expeditions — each child gets an empty record of the ten learning sprints
   3: (h) => { h.v = 4; (h.kids || []).forEach((k) => { k.exp = k.exp || {}; }); return h; },
+  // v5: the family layer — a shop of map looks, medals from evidence. Medals already deserved
+  //     are recorded quietly on first sight (medalsQuiet), never re-celebrated as new.
+  4: (h) => { h.v = 5; (h.kids || []).forEach((k) => { k.shop = k.shop || { owned: ['pin:dot', 'frame:plain'], pin: 'dot', frame: 'plain' }; k.medals = k.medals || {}; k.medalsQuiet = true; }); return h; },
 };
 
 export function migrate(h) {

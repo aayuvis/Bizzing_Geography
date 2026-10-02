@@ -74,10 +74,12 @@ export function act(name, arg, ctx) {
   else if (['check', 'four', 'pick', 'reveal'].includes(name) && ctx.ui.sel) {
     const c = byCc[ctx.ui.sel], st = ctx.ui.ask || (ctx.ui.ask = {});
     const how = handle(name, arg, askOf(c, QUIZ), st, name === 'check' ? ctx.ui.ans : null);
+    const b0 = (ctx.data.box || {})[c.cc] || 0;
     if (how === 'typed') { record(ctx.data, c.cc, true); ctx.tick(true, 2); ctx.sfx.good(); ctx.save(); }
     else if (how === 'picked') { record(ctx.data, c.cc, true); ctx.tick(true, 1); ctx.sfx.good(); ctx.save(); }
     else if (how === 'revealed') { record(ctx.data, c.cc, false); ctx.save(); }
     else if (name === 'check' || name === 'pick') ctx.sfx.bad();
+    if (b0 < 2 && ((ctx.data.box || {})[c.cc] || 0) >= 2 && ctx.known) ctx.known();
     if (how) ctx.ui.ans = '';
   }
   else if (name === 'quiz') ctx.startRun(`Capitals · ${ctx.ui.cont || 'All'}`, quiz(ctx.data, ctx.ui.cont || 'All', ctx.band));
@@ -92,7 +94,7 @@ export function key(e, ctx) {
   if (st.opts && n >= 1 && n <= st.opts.length && !(e.target && e.target.tagName === 'INPUT')) { act('pick', st.opts[n - 1], ctx); return true; }
   return false;
 }
-export function answered(q, right, ctx) { if (q.cc) { record(ctx.data, q.cc, right); ctx.save(); } }
+export function answered(q, right, ctx) { if (q.cc) { const b0 = (ctx.data.box || {})[q.cc] || 0; record(ctx.data, q.cc, right); if (b0 < 2 && ctx.data.box[q.cc] >= 2 && ctx.known) ctx.known(); ctx.save(); } }
 export function done(run, ctx) {
   const right = run.results.filter((x) => x.right).length;
   return { stars: right >= 9 ? 3 : right >= 7 ? 2 : 1, lines: [`You now know ${QUIZ.filter((c) => known(ctx.data, c.cc)).length} of 195 capitals.`] };

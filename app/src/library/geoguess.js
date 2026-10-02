@@ -22,6 +22,7 @@ import { haversine, fmtKm, byCc, capOf, hemiNS, hemiEW } from '../geo.js';
 import { FAMOUS } from '../chapters/kit.js';
 import { seeded, shuffle, dayKey } from '../rand.js';
 import { svUrl, GKEY } from '../photos.js';
+import { PIN_PATH } from '../rewards.js';
 
 export const TOOL = { id: 'geoguess', name: 'Where on Earth?', glyph: '🌍', art: 'lib-geoguess', blurb: 'A real place somewhere on Earth. Read the land, the roads and the buildings — then pin where you think it is.' };
 
@@ -125,7 +126,8 @@ export function view(ctx) {
   const c = card(g), last = g.done[g.i], key = MAPK(g), big = !!(g.big || last);
   const so = g.done.reduce((a, x) => a + (x ? x.pts : 0), 0);
   const pins = [];
-  if (g.guess) pins.push({ at: g.guess, cls: 'guess', r: 7 });
+  const skin = ((ctx.kid && ctx.kid.shop) || {}).pin;
+  if (g.guess) pins.push({ at: g.guess, cls: 'guess', r: 7, shape: PIN_PATH[skin] || null });
   if (last) pins.push({ at: c.at, cls: 'good', r: 8, label: c.short });
   const focus = g.focusMap; g.focusMap = false;   // focus the map once, when it opens
   return `<div class="wo${big ? ' big' : ''}${last ? ' res' : ''}">
@@ -163,12 +165,14 @@ export function act(name, arg, ctx) {
   else if (name === 'guess' && g && g.guess && !g.done[g.i]) {
     const c = card(g), km = haversine(g.guess, c.at), pts = points(km);
     g.done[g.i] = { id: c.id, place: c.place, km, pts }; g.big = false;
+    ctx.data.bestKm = Math.min(ctx.data.bestKm ?? 1e9, Math.round(km));
     if (pts >= 2500) { ctx.sfx.good(); ctx.tick(true, pts >= 4500 ? 3 : pts >= 3500 ? 2 : 1); } else ctx.sfx.bad();
   } else if (name === 'next' && g && g.done[g.i]) {
     g.i++; g.guess = null; g.heading = 0; g.big = false;
     if (g.i >= g.cards.length) {
       const tot = g.done.reduce((a, x) => a + x.pts, 0), d = ctx.data;
       if (ctx.session) ctx.session();   // a round is one notch on Today’s ring
+      if (ctx.earn) ctx.earn('stop');   // a round finished: the standard 5
       if (ctx.kid) ctx.kid.last = { k: 'geo', title: 'Where on Earth?', n: Math.max(tot, d.best || 0), at: Date.now() };
       if (g.daily) { d.daily = d.daily || {}; d.daily[dayKey()] = tot; const ks = Object.keys(d.daily).sort(); while (ks.length > 30) delete d.daily[ks.shift()]; }
       else { d.rounds = (d.rounds || 0) + 1; if (tot > (d.best || 0)) { d.best = tot; ctx.confetti(40); ctx.sfx.level(); } }

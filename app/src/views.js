@@ -3,6 +3,7 @@
 
 import { R } from './runtime.js';
 import { esc, cls } from './ui.js';
+export { esc };
 import { WORLDS, STOPS, byId, worldOf, stopsIn } from './stops.js';
 import { LEVELS, ageOf, firstLevel, START } from './levels.js';
 import { THEMES, themeOf, themePicker } from './themes.js';
@@ -18,7 +19,8 @@ import { POSTCARDS } from './data/postcards.js';
 import { dayKey, seeded, pick } from './rand.js';
 import { SHELF } from './library/index.js';
 import { GKEY } from './photos.js';
-import { HIVE, balance } from './family.js';
+import { HIVE, balance, ledger as walletLedger, APP } from './family.js';
+import { MEDALS, earned, medallion, SHOP, shopOf, PIN_PATH, TIER } from './rewards.js';
 import { nextStep, homeExpedition } from './next.js';
 
 /* ------------------------------------------------------------- helpers */
@@ -89,6 +91,13 @@ function whoMenu(k) {
   </div>`;
 }
 
+/* A medal, celebrated once: it spins in with what earned it — never compared with anyone. */
+function medalPop(m) {
+  return `<div class="mp-veil" role="dialog" aria-modal="true" aria-label="New medal: ${esc(m.name)}"><div class="card mp-card">
+    <p class="kicker">New medal</p><div class="mp-spin">${medallion(m, 132)}</div><h2>${esc(m.name)}</h2><p class="muted">${esc(m.how)}</p>
+    <button class="btn primary big" data-act="medalOk" autofocus>Put it on my shelf</button></div></div>`;
+}
+
 export function shell(body) {
   const h = R.h, k = kid(h);
   const nav = NAV_OF[R.ui.nav] !== undefined ? NAV_OF[R.ui.nav] : R.ui.nav;
@@ -114,6 +123,7 @@ export function shell(body) {
   ${R.fromHive && !inRun ? `<a class="hive-chip" href="${HIVE}">← back to my day</a>` : ''}
   ${h.parent.tester ? '<div class="tester" role="note">TESTER MODE — every stop is open. Nothing about the child changes. <button data-act="testerOff">Turn off</button></div>' : ''}
   <main id="main" class="content" tabindex="-1">${body}</main>
+  ${k && (R.ui.medalPop || []).length ? medalPop(R.ui.medalPop[0]) : ''}
   ${k ? `<nav class="tabbar" aria-label="Main">${tabs('tb')}</nav>` : ''}
   <footer class="foot">Bizzing Geography · part of the Bizzing family with
     <a href="https://www.bizzingbee.com/" rel="noopener">Bizzing Bee</a>,
@@ -382,9 +392,17 @@ export function questionBody(q, fb, key = 'q') {
     <div class="choice-row${q.opts.length <= 2 ? ' two' : ''}">${q.opts.map((c, i) => `<button class="btn big opt${fb && c === q.ans ? ' right' : ''}${fb && !fb.right && c === fb.given ? ' wrong' : ''}" data-act="choose" data-arg="${esc(c)}" ${fb ? 'disabled' : ''}><span>${esc(c)}</span> <kbd>${i + 1}</kbd></button>`).join('')}</div>`;
 }
 
-export function feedback(q, fb) {
+/* Praise names what was done (J1): the place found, the answer, a run of right
+   ones in THIS quiz — never a comparison with anyone. */
+export function praise(q, run) {
+  let n = 0; for (let i = (run ? run.results.length : 0) - 1; i >= 0 && run.results[i].right; i--) n++;
+  const what = q.kind === 'map' ? `Right — you found ${esc(q.targetName || 'it')} on the map.` : `Right — <b>${esc(q.ans)}</b>.`;
+  const more = n >= 5 ? ` That is ${n} in a row.` : n === 3 ? ' Three in a row.' : '';
+  return what + more;
+}
+export function feedback(q, fb, run) {
   const name = q.kind === 'map' ? (fb.givenName || '') : '';
-  if (fb.right) return `<p class="fb good">Right.</p>${q.why ? `<p class="why-chip">${esc(q.why)}</p>` : ''}`;
+  if (fb.right) return `<p class="fb good">${praise(q, run)}</p>${q.why ? `<p class="why-chip">${esc(q.why)}</p>` : ''}`;
   const ans = q.kind === 'map' ? (q.targetName || q.target || 'the place in green') : q.ans;
   return `<p class="fb bad">${name ? `That’s ${esc(name)}. ` : 'Not this time. '}The answer is <b>${esc(ans)}</b>${q.kind === 'map' ? ', shown in green' : ''}.</p>${q.why ? `<p class="why-chip">${esc(q.why)}</p>` : ''}`;
 }
@@ -400,7 +418,7 @@ export function viewRun() {
       <p class="ns-hook">${esc(byId[run.stop].hook)}</p>${byId[run.stop].idea.slice(0, 2).map((x) => `<p>${x}</p>`).join('')}<p class="why-line"><b>Why it matters:</b> ${esc(byId[run.stop].why)}</p></details>` : ''}
     <div class="card qcard">
       ${questionBody(q, fb, 'q' + run.i)}
-      ${fb ? feedback(q, fb) : ''}
+      ${fb ? feedback(q, fb, run) : ''}
     </div>
     ${fb && !fb.right ? `<div class="row center">${btn('Next <kbd>Enter</kbd>', 'nextQ', '', 'primary big')}</div>` : ''}
   </section>`;
@@ -459,10 +477,30 @@ export function viewRoad() {
 
 /* ------------------------------------------------------------- me */
 
+function medalShelf(k) {
+  const got = earned(k).length;
+  return `<div class="card" id="medals"><div class="row between wrap"><h3>Medals <span class="muted small">${got} of ${MEDALS.length}</span></h3><span class="muted small">Each one is earned by what you did — never by luck, never by days in a row.</span></div>
+    <ol class="medal-shelf">${MEDALS.map((m) => { const on = (k.medals || {})[m.id]; return `<li class="${on ? 'got' : ''}" title="${esc(m.how)}">${medallion(m, 64, !!on)}<b>${esc(m.name)}</b><span>${on ? `Earned ${esc(on)}` : esc(m.how)}</span></li>`; }).join('')}</ol></div>`;
+}
+function walletCard(k) {
+  const sh = shopOf(k), c = balance(k.name), recent = walletLedger(k.name).filter((x) => x.a === APP).slice(-5).reverse();
+  const WHY = { right: 'right answers', stop: 'a station, day or round finished', mastered: 'something mastered', contest: 'a level check' };
+  const item = (it) => { const own = sh.owned.includes(it.id), use = sh[it.kind] === it.id.split(':')[1];
+    return `<li class="shop-i${use ? ' on' : ''}"><span class="shop-look ${it.kind}" data-look="${it.id.split(':')[1]}">${it.kind === 'pin' ? pinSwatch(it.id.split(':')[1]) : ''}</span><b>${esc(it.name)}</b><span class="muted small">${esc(it.blurb)}</span>
+      ${use ? '<span class="chip">In use</span>' : own ? btn('Use', 'use', it.id, 'small') : btn(`🪙 ${it.price}`, 'buy', it.id, 'small', c < it.price ? 'aria-disabled="true"' : '')}</li>`; };
+  return `<div class="card" id="wallet"><div class="row between wrap"><h3>🪙 ${c} Bizzing coins</h3><span class="muted small">Earned for learning — the same coins in every Bizzing app. Never bought, never by chance.</span></div>
+    ${recent.length ? `<p class="muted small">Lately: ${recent.map((x) => `${x.n > 0 ? '+' : ''}${x.n} ${x.n > 0 ? (WHY[x.why] || x.why) : 'spent'}`).join(' · ')}</p>` : ''}
+    <h4>The map shop</h4><p class="muted small">Looks for your maps at printed prices. Nothing here changes your rank or opens a lesson — every lesson is already yours.</p>
+    <ul class="shop">${SHOP.map(item).join('')}</ul></div>`;
+}
+export const pinSwatch = (shape) => `<svg viewBox="-12 -12 24 24" width="34" height="34" aria-hidden="true">${PIN_PATH[shape] ? `<path d="${PIN_PATH[shape]}" class="pin-shape"/>` : '<circle r="7" class="pin-shape"/>'}</svg>`;
+
 export function viewMe() {
   const k = kid(R.h), rk = rankOf(k.xp);
   return `<section class="narrow">
     ${pageHead(esc(k.name), `${BANDS.find((b) => b.id === k.band).label} · Level ${k.road.level}`)}
+    ${medalShelf(k)}
+    ${walletCard(k)}
     <div class="card"><h3>Change your face</h3>${avatarPicker(k.avatar, 'setAv', 'me')}</div>
     ${themePicker(k)}
     <div class="card row gap wrap"><div style="flex:1;min-width:200px"><h3>Moving background</h3><p class="muted small">The world behind the page moves. Switch it to a still picture on this device if it distracts. It always holds still during a quiz.</p></div>

@@ -17,7 +17,8 @@ import { GKEY, photosOn } from './photos.js';
 import { THEMES, themeOf, isTheme, applyTheme, syncThemeColor } from './themes.js';
 import { syncScene } from './scenes.js';
 import * as X from './expeditions.js';
-import { APP, trackActivity, trackMilestone, familyOff } from './family.js';
+import { APP, trackActivity, trackMilestone, familyOff, earn as famEarn, spend } from './family.js';
+import { xpFor, bonus, newMedals, SHOP, shopOf } from './rewards.js';
 import { nextStep } from './next.js';
 import { demoHousehold } from './demo.js';
 import { expeditionById } from './data/expeditions.js';
@@ -41,7 +42,16 @@ const sysDark = matchMedia('(prefers-color-scheme: dark)');
 document.documentElement.setAttribute('data-mode', mode || (sysDark.matches ? 'dark' : 'light'));
 sysDark.addEventListener && sysDark.addEventListener('change', (e) => { if (!Store.loadDevice('mode', null)) document.documentElement.setAttribute('data-mode', e.matches ? 'dark' : 'light'); });
 
-function save() { if (!R.demo) Store.saveHousehold(R.h); }
+/* coins only through the family wallet, only for the standard events; a toast says so */
+function earn(why, quiet = false) { const k = kid(R.h); if (!k) return 0; const n = famEarn(APP, k.name, why); if (n && !quiet) R.ui.coinToast = (R.ui.coinToast || 0) + n; return n; }
+/* every save is a moment to notice a medal: recorded once, so celebrated once */
+function checkMedals() {
+  const k = kid(R.h); if (!k) return;
+  const quiet = k.medalsQuiet; const got = newMedals(k);
+  if (quiet) { delete k.medalsQuiet; return; }     // medals earned before medals existed: kept, not re-celebrated
+  if (got.length) { R.ui.medalPop = [...(R.ui.medalPop || []), ...got]; for (const m of got) trackMilestone(APP, k.name, 'mastery', `Medal: ${m.name}`); sfx.level(); confetti(70); }
+}
+function save() { checkMedals(); if (!R.demo) Store.saveHousehold(R.h); }
 
 /* The Library's context: everything a tool may touch, and no more. */
 function libCtx(id) {
@@ -51,7 +61,9 @@ function libCtx(id) {
   return {
     id, kid: k, band: k.band, ui, data, save, render, toast, sfx, confetti, say,
     photos: photosOn(R.h), photosReady: !!GKEY,
-    tick: (right, xp = 1) => { tick(k, right, xp); save(); },
+    tick: (right) => { tick(k, right, right ? xpFor(k, id) : 0); if (right) earn('right'); save(); },
+    known: () => bonus(k, 'known'),             // a capital or flag just became known (two different days)
+    earn: (why) => earn(why),
     session: () => session(k),
     startRun: (title, items, extra = {}) => startRun('lib', title, items, { ...extra, lib: id }),
     go: (nav, arg) => go(nav, arg), openStop: (sid) => fire('openStop', sid),
@@ -125,6 +137,8 @@ function render() {
   /* the active child's theme; on the welcome's last step, the world being chosen */
   const th = (!kid(R.h) || R.ui.nav === 'welcome') && R.ui.draft && R.ui.draft.step === 3 ? R.ui.draft.theme : themeOf(kid(R.h));
   applyTheme(th);
+  const kk = kid(R.h); document.documentElement.setAttribute('data-frame', kk ? shopOf(kk).frame : 'plain');
+  if (R.ui.coinToast) { const c = R.ui.coinToast; R.ui.coinToast = 0; setTimeout(() => toast(`+${c} 🪙 for learning`), 0); }
   syncScene(th, R.ui.nav === 'run' || Store.loadDevice('still', false));   // a quiz run gets a still, faded scene
   root.innerHTML = V.shell(screen());
   restoreMaps(root);
@@ -135,7 +149,7 @@ function render() {
     woPic = { src, x: v.scrollLeft };
   });
   root.querySelectorAll('.seg .on').forEach((b) => { const s = b.parentElement; if (s.scrollWidth > s.clientWidth) s.scrollLeft = b.offsetLeft - (s.clientWidth - b.offsetWidth) / 2; });
-  const af = root.querySelector('[data-autofocus] .gmap, [data-autofocus].pop');
+  const af = root.querySelector('.mp-card [data-act=medalOk], [data-autofocus] .gmap, [data-autofocus].pop');
   if (af) af.focus({ preventScroll: true });
   else if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); if (caret != null && el.setSelectionRange) try { el.setSelectionRange(caret, caret); } catch (_) {} } }
   document.title = 'Bizzing Geography';
@@ -157,7 +171,11 @@ function answer(given) {
   run.fb = { right, given, givenName };
   if (q.kind === 'map' && !q.targetName) q.targetName = byCc[q.target] ? byCc[q.target].name : q.target;
   run.results.push({ right });
-  if (k && run.kind !== 'trial') tick(k, right, 1);
+  if (k && run.kind !== 'trial') {
+    const src = run.kind === 'drill' ? run.stop : run.kind === 'lib' ? run.lib : run.kind === 'sprint' ? 'exp:' + run.exp : run.kind;
+    tick(k, right, right ? xpFor(k, src, run.kind === 'drill' ? { stop: run.stop, lv: run.lv } : {}) : 0);
+    if (right) earn('right', true);
+  }
   if (run.kind === 'lib' && toolById[run.lib] && toolById[run.lib].answered) toolById[run.lib].answered(q, right, libCtx(run.lib));
   save();
   right ? sfx.good() : sfx.bad();
@@ -179,21 +197,26 @@ function finish(run) {
   if (run.kind === 'drill') {
     const res = scoreRun(k, run.stop, run.lv, right, n);
     const rd = road(k);
-    run.summary = { stars: res.stars, lines: [res.passed ? `Station passed${res.gained ? ` — ${'★'.repeat(res.stars)}` : ''}.` : 'Seven right passes this station. Read the lesson again, then have another go.'] };
+    const best = Math.round((100 * right) / n) >= (stopRec(k, run.stop).best || 0) && res.passed;
+    run.summary = { stars: res.stars, lines: [res.passed ? `You ${res.firstPass ? 'passed' : 'walked'} <b>${V.esc(byId[run.stop].title)}</b> with ${right} of ${n}${best && stopRec(k, run.stop).runs > 1 ? ' — your best yet' : ''}${res.gained ? ` · ${'★'.repeat(res.stars)}` : ''}.` : `${right} of ${n} on ${V.esc(byId[run.stop].title)}. Seven right passes it — read the lesson again, then have another go.`] };
     if (res.passed && rd.next) run.summary.buttons = [V.btn(`Next station: ${byId[rd.next.stop].title} →`, 'openStop', rd.next.stop, 'big')];
     if (res.passed && rd.all) run.summary.lines.push(`Every station on Level ${rd.L.n} is done. Take the level check to open the next level.`);
     if (res.gained) { sfx.level(); confetti(30); }
     k.last = { k: res.passed ? 'stop' : 'try', title: byId[run.stop].title, at: Date.now() };
+    if (res.passed && res.firstPass) { bonus(k, 'stop'); earn('stop'); }
     if (res.passed && res.gained) trackMilestone(APP, k.name, 'stop', `Passed ${byId[run.stop].title}`);
   } else if (run.kind === 'check') {
     const pass = right / n >= CHECK_PASS;
-    if (pass) { const L = passLevel(k); k.last = { k: 'check', title: `Level ${L}`, at: Date.now() }; trackMilestone(APP, k.name, 'band', `Reached Level ${L}: ${levelOf(L).name}`); run.summary = { stars: 3, lines: [`Level check passed. Welcome to Level ${L}: ${levelOf(L).name}.`] }; sfx.level(); confetti(60); }
+    earn('contest');
+    if (pass) { bonus(k, 'level'); earn('mastered'); const L = passLevel(k); k.last = { k: 'check', title: `Level ${L}`, at: Date.now() }; trackMilestone(APP, k.name, 'band', `Reached Level ${L}: ${levelOf(L).name}`); run.summary = { stars: 3, lines: [`Level check passed. Welcome to Level ${L}: ${levelOf(L).name}.`] }; sfx.level(); confetti(60); }
     else run.summary = { stars: right / n >= 0.6 ? 1 : 0, lines: [`Ten right opens the next level. Walk a few more stations on your road, then try again.`] };
   } else if (run.kind === 'sprint') {
     run.summary = X.finishDay(k, run, right, n);
+    earn('stop'); if (run.summary.big) { bonus(k, 'part'); earn('mastered'); }
     k.last = { k: 'exp', title: (expeditionById[run.exp] || {}).name || run.title, at: Date.now() };
     if (run.summary.big) { sfx.level(); confetti(40); }
   } else if (run.kind === 'trip') {
+    earn('stop');
     k.trips = k.trips || {}; k.trips[dayKey()] = { n, right };
     const ks = Object.keys(k.trips).sort(); while (ks.length > 30) delete k.trips[ks.shift()];
     run.summary = { lines: [`You practised ${[...new Set(run.items.map((q) => q.from).filter(Boolean))].join(', ')}.`, 'That is today’s trip done. Nothing more is needed — and another is always here.'] };
@@ -222,6 +245,7 @@ on('projDone', () => {
   const k = kid(R.h), msg = X.projAct(k, R.ui.arg, 'done');
   if (msg !== 'made') { toast(msg); return; }
   k.last = { k: 'made', title: (X.projOf(...String(R.ui.arg).split('|')) || { d: {} }).d.name || 'your project', at: Date.now() };
+  bonus(k, 'made'); earn('stop');
   session(k); save(); sfx.level(); confetti(50); toast('Made! It is in your expedition gallery.');
   go('expd', String(R.ui.arg).split('|')[0]);
 });
@@ -251,6 +275,15 @@ on('trip', () => {
   while (items.length < 5) items.push(...tag(drill(byId[nx], lvFor(k, nx), 1), nx));
   startRun('trip', '5-minute trip', items.slice(0, 5), { sub: '⏱️ Review · one new · one map' });
 });
+/* the shop: printed prices, from the family wallet; a look, never content */
+on('buy', (id) => {
+  const k = kid(R.h), it = SHOP.find((x) => x.id === id), sh = shopOf(k); if (!it || sh.owned.includes(id)) return;
+  if (R.demo) { toast('The sample cannot buy — make your own explorer.'); return; }
+  if (!spend(APP, k.name, it.price, id)) { toast(`${it.price} coins needed — earn them by learning.`); return; }
+  sh.owned.push(id); sh[it.kind] = id.split(':')[1]; sfx.coin(); toast(`${it.name} is yours — and in use.`); save(); render();
+});
+on('use', (id) => { const k = kid(R.h), it = SHOP.find((x) => x.id === id), sh = shopOf(k); if (!it || !sh.owned.includes(id)) return; sh[it.kind] = id.split(':')[1]; save(); render(); });
+on('medalOk', () => { R.ui.medalPop = (R.ui.medalPop || []).slice(1); render(); });
 on('openWord', (w) => { libCtx('dictionary').ui.q = w; go('lib', 'dictionary'); });
 on('menu', () => { R.ui.menu = !R.ui.menu; render(); if (R.ui.menu) { const f = root.querySelector('.who-menu button'); if (f) f.focus(); } });
 on('levelCheck', () => {
@@ -410,6 +443,7 @@ root.addEventListener('change', (e) => { if (e.target.dataset.act === 'tester') 
 
 addEventListener('keydown', (e) => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if ((R.ui.medalPop || []).length && (e.key === 'Enter' || e.key === 'Escape' || e.key === ' ')) { e.preventDefault(); fire('medalOk'); return; }
   if (R.ui.menu && e.key === 'Escape') { R.ui.menu = false; render(); const w = root.querySelector('.who'); if (w) w.focus(); return; }
   const typing = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA');
   if (R.ui.nav === 'grownups' && e.key === 'Enter' && e.target.id === 'pin') { fire('gate'); return; }
