@@ -17,7 +17,7 @@
 
 const HIVE = 'https://aayuvis.github.io/Bizzing_Schedule/';
 /* Bee gives every tab icon its own colour (white on the active pill). An app may pass t.color. */
-const TAB_INK = ['#6C4FE0', '#6C4FE0', '#E0457B', '#16956B', '#3D7DF0'];
+const TAB_INK = ['#6C4FE0', '#6C4FE0', '#E0457B', '#16956B', '#3D7DF0', '#E8842C'];
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 /* The family line icons: 24 grid, 2px round stroke, currentColor. */
@@ -55,6 +55,7 @@ const P = {
   quote: '<path d="M10 7H6.5A1.5 1.5 0 0 0 5 8.5V12h5v5H5M19 7h-3.5A1.5 1.5 0 0 0 14 8.5V12h5v5h-5"/>',
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   path: '<path d="M4 19c3 0 3-4 6-4s3 4 6 4M8 9c3 0 3-4 6-4s3 4 6 4"/><circle cx="4" cy="19" r="1.4"/><circle cx="20" cy="9" r="1.4"/>',
+  feed: '<rect x="4" y="3" width="16" height="8" rx="2.5"/><rect x="4" y="13" width="16" height="8" rx="2.5"/><path d="M7.5 6.5h6M7.5 16.5h9"/>',
   globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z"/>',
 };
 export const icon = (n) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n] || P.star}</svg>`;
@@ -84,8 +85,8 @@ function drawerHTML(o) {
 
 /* The whole chrome around a screen. `content` is the screen's own HTML. */
 export function shell(o) {
-  const tabs = (o.tabs || []).slice(0, 5);
-  if (tabs.length < 4) throw new Error('bizzing-shell: an app has 4 or 5 tabs (FAMILY-STANDARD §4)');
+  const tabs = (o.tabs || []);
+  if (tabs.length < 4 || tabs.length > 6) throw new Error('bizzing-shell: an app has 4 to 6 tabs (FAMILY-STANDARD §4)');
   if (tabs[0].id !== 'home') throw new Error('bizzing-shell: Home is always the first tab');
   const cur = (t) => (t.id === o.active ? ' aria-current="page"' : '');
   const inRun = !!o.inRun;   // inside a timed drill: ⬡ hides, nothing else moves
@@ -130,6 +131,21 @@ export function home(h) {
   </div>
   ${h.foot ? `<div class="bz-foot">${h.foot}</div>` : ''}
 </div>`;
+}
+
+/* Every screen below Home opens with one of Bee's two heads (measured from Bee's #/atlas and
+   #/library): a TAB ROOT gets the title on the left and its actions as chips on the right; a
+   page DEEPER than a tab gets a back pill to its parent and a centred title with a subtitle.
+   `tabs` (optional) is a sub-nav of 2–6 chips under the head; `strip` an optional progress card. */
+export function pageHead(p) {
+  const chips = (p.actions || []).map((a) => `<a class="bz-chip" href="${esc(a.href)}">${a.icon ? icon(a.icon) : ''}${esc(a.label)}</a>`).join('');
+  const head = p.back
+    ? `<div class="bz-phead bz-phead-back" data-bz="phead"><a class="bz-backpill" data-bz="back" href="${esc(p.back.href)}">${icon('back')}${esc(p.back.label || 'Home')}</a>
+        <h1><span>${esc(p.title)}</span>${p.sub ? `<small>${esc(p.sub)}</small>` : ''}</h1>${chips ? `<span class="bz-pactions">${chips}</span>` : '<span></span>'}</div>`
+    : `<div class="bz-phead bz-phead-root" data-bz="phead"><h1><span>${esc(p.title)}</span>${p.sub ? `<small>${esc(p.sub)}</small>` : ''}</h1>${chips ? `<span class="bz-pactions">${chips}</span>` : ''}</div>`;
+  const sub = (p.tabs || []).length ? `<nav class="bz-subnav" data-bz="subnav" aria-label="${esc(p.title)} sections">${p.tabs.slice(0, 6).map((t) => `<a class="bz-chip" href="${esc(t.href)}"${t.id === p.active ? ' aria-current="page"' : ''}>${t.icon ? icon(t.icon) : ''}${esc(t.label)}</a>`).join('')}</nav>` : '';
+  const strip = p.strip ? `<div class="bz-strip" data-bz="strip">${p.strip.chip ? `<span class="bz-stripchip">${esc(p.strip.chip)}</span>` : ''}<span class="bz-prog"><i><b style="width:${Math.max(0, Math.min(100, p.strip.pct || 0))}%"></b></i></span>${p.strip.label ? `<small>${esc(p.strip.label)}</small>` : ''}</div>` : '';
+  return head + sub + strip;
 }
 
 /* Wire the chrome once. Delegated, so it survives every re-render. */
