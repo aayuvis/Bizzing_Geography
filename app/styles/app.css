@@ -1184,3 +1184,33 @@ div.jcard{cursor:default}
 :root[data-frame=rope] .gmap::after{border:5px dashed #b08a4e}
 :root[data-frame=brass] .gmap::after{box-shadow:inset 0 0 0 5px #c9a227,inset 0 0 0 7px #f5df8a}
 :root[data-frame=wood] .gmap::after{box-shadow:inset 0 0 0 7px #6b4423,inset 0 0 0 9px #9b6a3c}
+
+/* ---------------------------------------------------------------- read it to me (K1) */
+.q-head{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+.q-head > p{flex:1;min-width:0}
+.read-btn{flex:none;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--surface);font-size:20px;line-height:1;cursor:pointer;display:inline-grid;place-items:center;vertical-align:middle}
+.read-btn:hover{border-color:var(--action);background:var(--action-tint)}
+.crs-obj .read-btn,.pj-brief .read-btn{float:right;margin:0 0 6px 10px}
+.t-ask-read{position:absolute;top:8px;right:50px;width:34px;height:34px;font-size:16px}
+.t-ov-read{float:right;margin:0 0 6px 10px;background:rgb(255 255 255 / .9);color:#1b1b1b}
+.reading{background:color-mix(in srgb,var(--treasure) 22%,transparent);border-radius:8px;transition:background .2s}
+.why-card summary .read-btn{width:34px;height:34px;font-size:16px;margin-left:6px}
+
+/* ---------------------------------------------------------------- motion on every answer (F3) */
+@keyframes popIn{0%{transform:scale(1)}40%{transform:scale(1.07)}100%{transform:scale(1)}}
+@keyframes shake{0%,100%{transform:none}20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+@keyframes fillIn{from{fill-opacity:.15}to{fill-opacity:1}}
+@keyframes pinDrop{0%{transform:translateY(-34px);opacity:0}60%{transform:translateY(3px);opacity:1}100%{transform:none}}
+@keyframes drawArc{from{stroke-dashoffset:var(--len,1200)}to{stroke-dashoffset:0}}
+.opt.right{animation:popIn .35s ease-out}
+.opt.wrong{animation:shake .4s ease-out}
+.dots i.r:last-of-type,.dots i.r{transition:background .3s}
+.is-right .qcard{box-shadow:var(--sh-raised),0 0 0 3px color-mix(in srgb,var(--mastered,#2e9d5b) 45%,transparent);transition:box-shadow .3s}
+.qcard .gmap .ct.ok,.qcard .gmap .ct.bad,.wo .gmap .ct.ok{animation:fillIn .45s ease-out}
+.pin.guess > *{animation:pinDrop .38s cubic-bezier(.3,1.4,.5,1)}
+.pin.good > *{animation:popIn .5s .35s ease-out both}
+.gmap .arc{stroke-dasharray:1200;animation:drawArc .7s ease-out}
+.wo-how{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:4px 0 10px}
+.wo-how span{background:var(--action-tint);border-radius:var(--r-pill);padding:6px 12px;font-size:14px}
+.wo-clock.low{background:#C4453C!important}
+@media (prefers-reduced-motion:reduce){.opt.right,.opt.wrong,.qcard .gmap .ct.ok,.qcard .gmap .ct.bad,.wo .gmap .ct.ok,.pin.guess > *,.pin.good > *,.gmap .arc{animation:none}}

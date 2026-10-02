@@ -156,7 +156,7 @@ export function viewExpedition(k, eid, { pageHead, back, btn }, ui = {}) {
     <div class="card pick-card crs-part">
       <p class="kicker">${cp.id === 'final' ? 'The finish' : `Part ${cp.n} of ${e.modules.length}`} · ${md.filter((d) => dayState(k, e, d) === 'done').length} of ${md.length} done</p>
       <h2>${esc(cp.id === 'final' ? 'Final test and final project' : m.name)}</h2>
-      <p class="crs-obj">${cp.id === 'final' ? 'Everything this expedition taught, mixed and cold — then one big thing to make.' : `After this part you can <b>${esc(m.objective)}</b>.${(r.m[m.id] || {}).on ? ' <span class="chip ok">learned ✓</span>' : ''}`}</p>
+      <p class="crs-obj" id="crs-obj"><button class="read-btn" data-act="read" data-arg="#crs-obj" aria-label="Read this to me" title="Read this to me">🔊</button>${cp.id === 'final' ? 'Everything this expedition taught, mixed and cold — then one big thing to make.' : `After this part you can <b>${esc(m.objective)}</b>.${(r.m[m.id] || {}).on ? ' <span class="chip ok">learned ✓</span>' : ''}`}</p>
       <ol class="crs-steps">${md.map((d) => { const st = dayState(k, e, d);
         return `<li><button class="crs-step ${d.k} ${st}${nextHere && nextHere.key === d.key ? ' cur' : ''}" data-act="expDay" data-arg="${e.id}|${d.n}">
           <span class="cs-g">${st === 'done' ? '✓' : GLYPH[d.k]}</span><span class="cs-k">${KIND[d.k]}</span><b>${dayTitle(d)}</b><i>${d.k === 'm' ? ENGINE_NAME[d.engine] : `${d.m} min`}</i></button></li>`; }).join('')}</ol>
@@ -197,7 +197,7 @@ export function viewProject(k, arg, { pageHead, back, btn }) {
       <div class="card pj-build">${E.view(d, st)}</div>
       <aside class="card pj-side">
         <p class="kicker">${d.mod === 'final' ? 'Final project' : `Part ${e.modules.findIndex((m) => m.id === d.mod) + 1} project`}</p>
-        <p class="pj-brief">${esc(d.brief)}</p>
+        <p class="pj-brief" id="pj-brief"><button class="read-btn" data-act="read" data-arg="#pj-brief, .pj-goals" aria-label="Read the brief and the checklist to me" title="Read the brief and the checklist to me">🔊</button>${esc(d.brief)}</p>
         <h3>Your checklist</h3>
         <ul class="pj-goals">${goals.map((g) => `<li class="${g.ok ? 'ok' : ''}"><span>${g.ok ? '✓' : '○'}</span>${esc(g.t)}</li>`).join('')}</ul>
         ${btn(made && all ? 'Save my changes ✓' : all ? 'Finish project 🎉' : `${goals.filter((g) => !g.ok).length} to go`, 'projDone', '', all ? 'primary big wide' : 'big wide', all ? '' : 'disabled')}

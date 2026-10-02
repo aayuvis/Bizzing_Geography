@@ -67,7 +67,7 @@ function stage(T, i, img, alt, cap, overlay) {
     <ol class="t-dots" aria-label="Timeline">${T.list.map((x, j) => `<li><button class="${j === i ? 'on' : j < i ? 'past' : ''}" data-act="lib" data-arg="time|i|${j}" aria-label="${esc(x.when)}: ${esc(x.title)}" title="${esc(x.title)}"></button></li>`).join('')}</ol>
     <button class="t-nav prev" data-act="lib" data-arg="time|step|-1" ${i ? '' : 'disabled'} aria-label="Earlier">‹</button>
     <button class="t-nav next" data-act="lib" data-arg="time|step|1" ${i < n - 1 ? '' : 'disabled'} aria-label="Later">›</button>
-    <div class="t-ov">${overlay}</div>
+    <div class="t-ov" id="t-ov"><button class="read-btn t-ov-read" data-act="read" data-arg="#t-ov h2, #t-ov p" aria-label="Read this to me" title="Read this to me">🔊</button>${overlay}</div>
     ${cap ? `<span class="t-credit">${cap}</span>` : ''}
   </div>`;
 }

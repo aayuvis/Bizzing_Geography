@@ -68,9 +68,14 @@ export function buildRound(band, photos, r, daily = false) {
   const cards = shuffle([...ph.slice(0, PHOTOS_PER_ROUND).map((id) => ({ k: 'photo', id })), ...painted], r);
   return { cards, spare: ph.slice(PHOTOS_PER_ROUND) };
 }
-function newRound(ctx, daily) {
+/* A timed round gives each card TIMED seconds (more for the youngest); when the clock
+   runs out the pin on the map is the guess — or, with no pin, the card scores nothing.
+   The score is still the distance: the clock adds pace, never luck. */
+export const TIMED = { '6-7': 75, '8-10': 60, '11-14': 45 };
+function newRound(ctx, daily, timed = false) {
   const r = seeded(Date.now() + ':' + (ctx.data.rounds || 0));
-  ctx.ui.g = { ...buildRound(ctx.band, !!ctx.photos, r, daily), i: 0, guess: null, done: [], heading: 0, daily };
+  ctx.ui.g = { ...buildRound(ctx.band, !!ctx.photos, r, daily), i: 0, guess: null, done: [], heading: 0, daily, timed, secs: TIMED[ctx.band] || 60 };
+  if (timed) ctx.ui.g.deadline = Date.now() + ctx.ui.g.secs * 1000;
 }
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -110,17 +115,21 @@ export function view(ctx) {
     return `<div class="card t-geo-intro">
       <div class="row gap wrap">
         <button class="btn primary big" data-act="lib" data-arg="geoguess|start">Play a round of ${ROUND}</button>
+        <button class="btn big" data-act="lib" data-arg="geoguess|timed">⏱ Against the clock</button>
         <button class="btn big" data-act="lib" data-arg="geoguess|daily" ${today != null ? 'disabled' : ''}>${today != null ? `Today’s place: ${today.toLocaleString('en-US')} points` : 'Today’s place'}</button>
         ${d.best ? `<span class="muted small">Best round <b>${d.best.toLocaleString('en-US')}</b> · ${d.rounds || 0} played</span>` : ''}
       </div>
+      <div class="wo-how" id="wo-how" aria-label="How to play"><button class="read-btn" data-act="read" data-arg="#wo-how" aria-label="Read how to play" title="Read how to play">🔊</button><span>👀 <b>Look</b> at the place</span><span>🗺️ <b>Open</b> the map</span><span>📍 <b>Pin</b> it, then Guess</span></div>
       <p class="muted small">Look at the place, open the map in the corner and drop your pin where you think it is — up to 5,000 points a card. ${on ? `Rounds mix <b>real Street View photos</b> (${photoPool('11-14').length.toLocaleString('en-US')} places in ${new Set(photoPool('11-14').map((p) => p.cc)).size} countries, shot by Google) with <b>painted postcards</b> made with an AI image model; every card says which it is.`
         : `${POSTCARDS.length} painted postcards of real kinds of places, made with an AI image model.${ctx.photosReady ? ' Real photos are switched off on this device (grown-ups’ page).' : ''}`}</p>
     </div>`;
   }
   if (g.i >= g.cards.length) {
     const tot = g.done.reduce((a, x) => a + x.pts, 0);
-    return `<div class="card end-card"><p class="kicker">${g.daily ? 'Today’s place' : 'Round complete'}</p><h2>${tot.toLocaleString('en-US')} points</h2>
-      <ul class="t-geo-sum">${g.done.map((x) => `<li><b>${esc(x.place)}</b> — ${fmtKm(x.km)} away, ${x.pts.toLocaleString('en-US')} points</li>`).join('')}</ul>
+    const near = g.done.filter((x) => x.km != null && x.km < 1000).length;
+    return `<div class="card end-card"><p class="kicker">${g.daily ? 'Today’s place' : g.timed ? 'Timed round complete' : 'Round complete'}</p><h2><span data-count="${tot}">${tot.toLocaleString('en-US')}</span> points</h2>
+      <p>You read ${g.done.length} ${g.done.length === 1 ? 'place' : 'places'} in ${g.done.length} countries${near ? ` — ${near} within 1,000 km` : ''}. The land, the plants and the buildings were your clues.</p>
+      <ul class="t-geo-sum">${g.done.map((x) => `<li><b>${esc(x.place)}</b> — ${x.late ? "time ran out" : fmtKm(x.km) + " away"}, ${x.pts.toLocaleString('en-US')} points</li>`).join('')}</ul>
       <div class="row gap center"><button class="btn primary big" data-act="lib" data-arg="geoguess|start">Play again</button><button class="btn big" data-act="lib" data-arg="geoguess|home">Done</button></div></div>`;
   }
   const c = card(g), last = g.done[g.i], key = MAPK(g), big = !!(g.big || last);
@@ -133,7 +142,7 @@ export function view(ctx) {
   return `<div class="wo${big ? ' big' : ''}${last ? ' res' : ''}">
     ${stagePic(c, g)}
     <div class="wo-hud"><span class="wo-chip">${g.daily ? 'Today’s place' : `Card ${g.i + 1} of ${g.cards.length}`} · ${c.k === 'photo' ? 'a real photo · Imagery © Google' : 'a painting, not a photo'}</span>
-      ${g.daily ? '' : `<span class="wo-chip wo-score">${so.toLocaleString('en-US')} points</span>`}</div>
+      <span class="row gap">${g.timed && !last ? `<span class="wo-chip wo-clock" role="timer" aria-live="off">⏱ ${Math.max(0, Math.ceil((g.deadline - Date.now()) / 1000))}s</span>` : ''}${g.daily ? '' : `<span class="wo-chip wo-score">${so.toLocaleString('en-US')} points</span>`}</span></div>
     <div class="wo-map"${focus ? ' data-autofocus="1"' : ''}>
       ${big && !last ? `<div class="wo-bar"><button class="btn small" data-act="mapZoom" data-arg="${key}|in" aria-label="Zoom in">＋</button><button class="btn small" data-act="mapZoom" data-arg="${key}|out" aria-label="Zoom out">－</button><button class="btn small" data-act="mapZoom" data-arg="${key}|home" aria-label="Whole map">⟲</button>
         <span class="wo-tip">${g.guess ? 'Drag the pin, or tap somewhere else' : 'Tap or drag to drop your pin'}</span><button class="btn small" data-act="lib" data-arg="geoguess|map|0" aria-label="Close the map (Esc)">✕</button></div>` : ''}
@@ -141,7 +150,7 @@ export function view(ctx) {
       ${big ? '' : `<button class="wo-open" data-act="lib" data-arg="geoguess|map|1" aria-label="Open the map (M)"><span>🗺️ ${g.guess ? 'Your pin' : 'Open the map'} <kbd>M</kbd></span></button>`}
       ${last ? '' : `<button class="btn primary wo-guess" data-act="lib" data-arg="geoguess|guess" ${g.guess ? '' : 'disabled'}>${g.guess ? 'Guess' : 'Place your pin on the map'} <kbd>G</kbd></button>`}
     </div>
-    ${last ? `<div class="card t-geo-res wo-res"><p class="kicker">${fmtKm(last.km)} away · ${last.pts.toLocaleString('en-US')} points</p><h3>${esc(c.place)}</h3>
+    ${last ? `<div class="card t-geo-res wo-res"><p class="kicker">${last.late ? 'Time ran out — no pin' : `${fmtKm(last.km)} away`} · <b data-count="${last.pts}">${last.pts.toLocaleString('en-US')}</b> points</p><h3>${esc(c.place)}</h3>
         <p class="muted small">${c.k === 'photo' ? 'About this place:' : 'What gave it away:'}</p><ul>${c.clues.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>
         <button class="btn primary big" data-act="lib" data-arg="geoguess|next">${g.i + 1 < g.cards.length ? 'Next place' : 'See the score'} <kbd>Enter</kbd></button></div>` : ''}
   </div>`;
@@ -151,6 +160,11 @@ export function act(name, arg, ctx) {
   const g = ctx.ui.g;
   if (name === 'start') { newRound(ctx, false); ctx.sfx.click(); }
   else if (name === 'daily') newRound(ctx, true);
+  else if (name === 'timed') { newRound(ctx, false, true); ctx.sfx.click(); }
+  else if (name === 'timeout' && g && g.timed && !g.done[g.i]) {
+    if (g.guess) return act('guess', '', ctx);
+    const c = card(g); g.done[g.i] = { id: c.id, place: c.place, km: null, pts: 0, late: true }; g.big = false; ctx.sfx.bad();
+  }
   else if (name === 'home') ctx.ui.g = null;
   else if (name === 'turn' && g && g.cards[g.i] && g.cards[g.i].k === 'photo') g.heading = ((g.heading || 0) + Number(arg) + 360) % 360;
   else if (name === 'map' && g && !g.done[g.i]) { g.big = arg === '1'; g.focusMap = g.big; }
@@ -169,6 +183,7 @@ export function act(name, arg, ctx) {
     if (pts >= 2500) { ctx.sfx.good(); ctx.tick(true, pts >= 4500 ? 3 : pts >= 3500 ? 2 : 1); } else ctx.sfx.bad();
   } else if (name === 'next' && g && g.done[g.i]) {
     g.i++; g.guess = null; g.heading = 0; g.big = false;
+    if (g.timed) g.deadline = Date.now() + g.secs * 1000;
     if (g.i >= g.cards.length) {
       const tot = g.done.reduce((a, x) => a + x.pts, 0), d = ctx.data;
       if (ctx.session) ctx.session();   // a round is one notch on Today’s ring

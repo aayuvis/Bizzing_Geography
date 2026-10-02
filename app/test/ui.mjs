@@ -43,6 +43,8 @@ const inside = (page, sel) => page.evaluate((sel) => {
 
 async function run(vp, tag) {
   const page = await browser.newPage({ viewport: vp, deviceScaleFactor: 1, hasTouch: vp.width < 760 });
+  /* the device voice, stubbed: what would be spoken is kept in window.__spoken */
+  await page.addInitScript(() => { window.__spoken = []; try { window.speechSynthesis.speak = (u) => { window.__spoken.push(u.text); setTimeout(() => u.onend && u.onend(), 10); }; window.speechSynthesis.cancel = () => {}; } catch (_) {} });
   page.on('pageerror', (e) => errors.push(`${tag}: ${e.message}`));
   page.on('response', (r) => { if (r.status() >= 400) errors.push(`${tag} ${r.status()}: ${r.url()}`); });
   page.on('request', (r) => { if (!r.url().startsWith(`http://127.0.0.1:${port}/`) && !r.url().startsWith('data:')) errors.push(`${tag} third-party request: ${r.url()}`); });
@@ -124,7 +126,13 @@ async function run(vp, tag) {
   await page.click('[data-act=startDrill]'); await page.waitForSelector('.qcard');
   for (let i = 0; i < 12; i++) {
     const s = await S(); if (!s.run || s.run.over) break;
-    if (i === 0) await shot('06-question');
+    if (i === 0) {
+      await shot('06-question');
+      ok(await page.locator('.qcard .read-btn').count() === 1, 'every question has a 🔊 read-it-to-me button');
+      await page.click('.qcard .read-btn'); await page.waitForTimeout(80);
+      const said = await page.evaluate(() => window.__spoken.at(-1) || '');
+      ok(said.includes(s.run.q.text) && !said.includes('🔊') && (s.run.q.kind !== 'mc' || said.includes(s.run.q.opts[0])), `🔊 reads the question${s.run.q.kind === 'mc' ? ' and its answers' : ''} in the device voice`);
+    }
     if (s.run.q.kind === 'mc') await page.keyboard.press(String(s.run.q.opts.indexOf(s.run.q.ans) + 1));
     await page.waitForTimeout(1700);
   }
@@ -293,6 +301,15 @@ async function run(vp, tag) {
   await page.keyboard.press('g'); await page.waitForTimeout(300);
   ok(await page.locator('.t-geo-res').count() === 1, 'G guesses and shows the answer and clues');
   await shot('12-geoguess');
+  /* E2: against the clock — the pin on the map is the guess when time runs out, or the card scores nothing */
+  await page.evaluate(() => { window.__bzg.R.ui.lib.geoguess.g = null; window.__bzg.fire('lib', 'geoguess|timed'); });
+  await page.waitForSelector('.wo-clock');
+  ok(/⏱ \d+s/.test(await page.locator('.wo-clock').innerText()), 'a timed round shows its clock');
+  await page.evaluate(() => { window.__bzg.R.ui.lib.geoguess.g.deadline = Date.now() - 1; });
+  await page.waitForTimeout(900);
+  ok(await page.evaluate(() => { const g = window.__bzg.R.ui.lib.geoguess.g; return !!g.done[0] && g.done[0].late && g.done[0].pts === 0; }), 'time out with no pin scores nothing — never a random guess');
+  ok(await page.locator('.wo-res [data-count]').count() === 1, 'the score counts up');
+  await page.evaluate(() => { window.__bzg.R.ui.lib.geoguess.g = null; });
   // State capitals: India's map is the Survey of India depiction from Bizzing India; tap a state
   await page.evaluate(() => window.__bzg.go('lib', 'states'));
   await page.click('[data-arg="states|c|IN"]'); await page.waitForSelector('.reg-IN');
@@ -401,7 +418,9 @@ async function run(vp, tag) {
   /* B7: a second explorer, switched from the top bar; switching never mixes their data */
   await page.evaluate(() => window.__bzg.go('welcome')); await page.waitForSelector('#kname');
   await page.fill('#kname', 'Kabir'); await page.press('#kname', 'Enter'); await page.click('[data-act=draftBand][data-arg="6-7"]');
-  await page.click('[data-act=obNext]'); await page.click('[data-act=createKid]'); await page.waitForSelector('.runner');
+  await page.evaluate(() => { window.__spoken = []; });
+  await page.click('[data-act=obNext]'); await page.click('[data-act=createKid]'); await page.waitForSelector('.runner'); await page.waitForTimeout(600);
+  ok(await page.evaluate(() => window.__spoken.length >= 1 && window.__spoken[0].includes(window.__bzg.R.run.items[0].text)), 'for a 6–7 explorer each question reads itself aloud');
   await page.click('[data-act=quitRun]'); await page.evaluate(() => window.__bzg.go('home')); await page.waitForSelector('.hm');
   await page.click('.top .who'); await page.waitForSelector('.who-menu');
   ok(await page.locator('.who-menu .wm-kid').count() === 2, 'the top bar menu lists both explorers');

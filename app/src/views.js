@@ -46,6 +46,9 @@ export const back = (act, label = 'Back', arg = '') =>
 export function pageHead(title, sub = '', backBtn = '', right = '') {
   return `<header class="phead">${backBtn || '<span></span>'}<div class="phead-t"><h1>${title}</h1>${sub ? `<p>${sub}</p>` : ''}</div><div class="phead-r">${right}</div></header>`;
 }
+/* 🔊 read it to me (K1): the device's own voice, an Indian English one first. The
+   button names WHAT it reads; main.js reads that element's text. */
+export const readBtn = (sel, label = 'Read it to me') => `<button class="read-btn" data-act="read" data-arg="${esc(sel)}" aria-label="${esc(label)}" title="${esc(label)}">🔊</button>`;
 export const srcList = (src) => (src && src.length ? `<details class="src"><summary>Where this is checked</summary><ul>${src.map((s) => `<li>${esc(s)}</li>`).join('')}</ul></details>` : '');
 
 /* ------------------------------------------------------------- the shell */
@@ -359,8 +362,8 @@ export function viewStop(id) {
   const lvName = ['', 'first look', 'deeper', 'stretch'][lv];
   return `<section class="stop-page narrow" style="--wt:${w.tint};--wi:${w.ink}">
     ${pageHead(`${s.glyph} ${esc(s.title)}`, `${w.glyph} ${esc(w.name)}`, back('openWorld', w.short, w.id), starRow(rec.stars))}
-    <div class="card learn">
-      <p class="ns-hook">${esc(s.hook)}</p>
+    <div class="card learn" id="lesson">
+      <div class="q-head"><p class="ns-hook">${esc(s.hook)}</p>${readBtn('#lesson .ns-hook, #lesson .idea, #lesson .why-line', 'Read the lesson to me')}</div>
       <div class="idea">${s.idea.map((p) => `<p>${p}</p>`).join('')}</div>
       <p class="why-line"><b>Why it matters:</b> ${esc(s.why)}</p>
       ${srcList(s.src)}
@@ -385,10 +388,10 @@ export function questionBody(q, fb, key = 'q') {
     else if (R.ui.mapPick) fill[R.ui.mapPick] = 'pick';
     const map = q.region ? regionSVG(q.region, { fill, key, tap: !fb, label: q.text })
       : worldSVG({ fill, key, tap: !fb, view: q.view ? viewFor(q.view) : null, label: q.text, pins: pinsFb });
-    return `${q.html || ''}<p class="long-q" aria-live="polite">${esc(q.text)}</p>${map}
+    return `${q.html || ''}<div class="q-head"><p class="long-q" id="q-text" aria-live="polite">${esc(q.text)}</p>${readBtn('#q-text', 'Read the question to me')}</div>${map}
       ${fb ? '' : `<div class="row gap center map-ctl">${btn('＋', 'mapZoom', key + '|in', 'small', 'aria-label="Zoom in"')}${btn('－', 'mapZoom', key + '|out', 'small', 'aria-label="Zoom out"')}${btn('⟲', 'mapZoom', key + '|home', 'small', 'aria-label="Whole map"')}<span class="muted small">Tap a place · or arrows + Enter</span></div>`}`;
   }
-  return `${q.html ? `<div class="q-fig">${q.html}</div>` : ''}<p class="long-q" aria-live="polite">${esc(q.text)}</p>
+  return `${q.html ? `<div class="q-fig">${q.html}</div>` : ''}<div class="q-head"><p class="long-q" id="q-text" aria-live="polite">${esc(q.text)}</p>${readBtn('#q-text, .choice-row', 'Read the question and the answers to me')}</div>
     <div class="choice-row${q.opts.length <= 2 ? ' two' : ''}">${q.opts.map((c, i) => `<button class="btn big opt${fb && c === q.ans ? ' right' : ''}${fb && !fb.right && c === fb.given ? ' wrong' : ''}" data-act="choose" data-arg="${esc(c)}" ${fb ? 'disabled' : ''}><span>${esc(c)}</span> <kbd>${i + 1}</kbd></button>`).join('')}</div>`;
 }
 
@@ -402,9 +405,9 @@ export function praise(q, run) {
 }
 export function feedback(q, fb, run) {
   const name = q.kind === 'map' ? (fb.givenName || '') : '';
-  if (fb.right) return `<p class="fb good">${praise(q, run)}</p>${q.why ? `<p class="why-chip">${esc(q.why)}</p>` : ''}`;
+  if (fb.right) return `<p class="fb good" id="fb-text">${praise(q, run)}</p>${q.why ? `<p class="why-chip">${esc(q.why)}</p>` : ''}`;
   const ans = q.kind === 'map' ? (q.targetName || q.target || 'the place in green') : q.ans;
-  return `<p class="fb bad">${name ? `That’s ${esc(name)}. ` : 'Not this time. '}The answer is <b>${esc(ans)}</b>${q.kind === 'map' ? ', shown in green' : ''}.</p>${q.why ? `<p class="why-chip">${esc(q.why)}</p>` : ''}`;
+  return `<p class="fb bad" id="fb-text">${name ? `That’s ${esc(name)}. ` : 'Not this time. '}The answer is <b>${esc(ans)}</b>${q.kind === 'map' ? ', shown in green' : ''}.</p>${q.why ? `<p class="why-chip">${esc(q.why)}</p>` : ''}`;
 }
 
 export function viewRun() {
@@ -414,7 +417,7 @@ export function viewRun() {
   return `<section class="runner narrow ${fb ? (fb.right ? 'is-right' : 'is-wrong') : ''}">
     ${pageHead(esc(run.title), esc(run.sub || ''), back('quitRun', 'Stop'))}
     <div class="dots" aria-label="Question ${run.i + 1} of ${run.items.length}">${run.items.map((_, i) => `<i class="${i < run.results.length ? (run.results[i].right ? 'r' : 'w') : i === run.i ? 'c' : ''}"></i>`).join('')}</div>
-    ${run.intro && run.i === 0 && byId[run.stop] ? `<details class="card why-card" open><summary><b>${byId[run.stop].glyph} First, the idea</b> <span class="muted small">— ${esc(byId[run.stop].title)}</span></summary>
+    ${run.intro && run.i === 0 && byId[run.stop] ? `<details class="card why-card" id="why" open><summary><b>${byId[run.stop].glyph} First, the idea</b> <span class="muted small">— ${esc(byId[run.stop].title)}</span> ${readBtn('#why p', 'Read the idea to me')}</summary>
       <p class="ns-hook">${esc(byId[run.stop].hook)}</p>${byId[run.stop].idea.slice(0, 2).map((x) => `<p>${x}</p>`).join('')}<p class="why-line"><b>Why it matters:</b> ${esc(byId[run.stop].why)}</p></details>` : ''}
     <div class="card qcard">
       ${questionBody(q, fb, 'q' + run.i)}
@@ -495,6 +498,7 @@ function walletCard(k) {
 }
 export const pinSwatch = (shape) => `<svg viewBox="-12 -12 24 24" width="34" height="34" aria-hidden="true">${PIN_PATH[shape] ? `<path d="${PIN_PATH[shape]}" class="pin-shape"/>` : '<circle r="7" class="pin-shape"/>'}</svg>`;
 
+export const autoRead = (k) => (k.prefs || {}).readAuto ?? k.band === '6-7';
 export function viewMe() {
   const k = kid(R.h), rk = rankOf(k.xp);
   return `<section class="narrow">
@@ -503,6 +507,8 @@ export function viewMe() {
     ${walletCard(k)}
     <div class="card"><h3>Change your face</h3>${avatarPicker(k.avatar, 'setAv', 'me')}</div>
     ${themePicker(k)}
+    <div class="card row gap wrap"><div style="flex:1;min-width:200px"><h3>Read aloud</h3><p class="muted small">Every question and lesson has a 🔊 button. ${k.band === '6-7' ? 'For explorers aged 6–7 each question is also read out by itself.' : 'Tap it whenever you like.'}</p></div>
+      <button class="btn" data-act="readAuto" aria-pressed="${autoRead(k)}">${autoRead(k) ? '🔊 Reading questions by itself' : '🔈 Only when I tap 🔊'}</button></div>
     <div class="card row gap wrap"><div style="flex:1;min-width:200px"><h3>Moving background</h3><p class="muted small">The world behind the page moves. Switch it to a still picture on this device if it distracts. It always holds still during a quiz.</p></div>
       <button class="btn" data-act="still" aria-pressed="${Store.loadDevice('still', false)}">${Store.loadDevice('still', false) ? '▶ Let it move' : '⏸ Hold it still'}</button></div>
     <div class="card">

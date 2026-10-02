@@ -129,7 +129,7 @@ function toolView(tool) {
   return `<section class="tool-page tool-${tool.TOOL.id}">${V.pageHead(`${tool.TOOL.glyph} ${tool.TOOL.name}`, '', V.back('nav', 'Library', 'library'))}${body}</section>`;
 }
 
-let focusId = null, woPic = {};
+let focusId = null, woPic = {}, autoReadAt = '';
 function render() {
   const a = document.activeElement;
   focusId = a && a.id ? a.id : null;
@@ -153,6 +153,16 @@ function render() {
   if (af) af.focus({ preventScroll: true });
   else if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); if (caret != null && el.setSelectionRange) try { el.setSelectionRange(caret, caret); } catch (_) {} } }
   document.title = 'Bizzing Geography';
+  /* a score counts up to itself (F3) */
+  root.querySelectorAll('[data-count]').forEach((el) => {
+    const to = +el.dataset.count; if (matchMedia('(prefers-reduced-motion: reduce)').matches || !to) return;
+    const t0 = performance.now(), fmt = (n) => Math.round(n).toLocaleString('en-US');
+    const step = (t) => { const p = Math.min(1, (t - t0) / 700); el.textContent = fmt(to * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(step); };
+    el.textContent = '0'; requestAnimationFrame(step);
+  });
+  /* 6–7: each new question reads itself (the child can still tap 🔊 again); older on tap */
+  const kr = kid(R.h), rr = R.run;
+  if (rr && !rr.over && !rr.fb && kr && V.autoRead(kr) && R.sound && autoReadAt !== rr.items.length + ':' + rr.i + rr.title) { autoReadAt = rr.items.length + ':' + rr.i + rr.title; setTimeout(() => readOut('#q-text, .choice-row'), 250); }
 }
 R.render = render;
 
@@ -263,6 +273,14 @@ function startDrill(id, extra = {}) { const s = byId[id], k = kid(R.h), lv = lvF
 on('startDrill', (id) => startDrill(id));
 /* try one question before making an explorer (A5): nothing is saved until sign-up */
 on('trial', () => startRun('trial', 'Try one question', drill(byId['find-continent'], 1, 1), { sub: '🌍 No explorer needed yet' }));
+/* the timed round of Where on Earth? (E2): a clock per card, ticking on screen only */
+setInterval(() => {
+  const g = R.ui.nav === 'lib' && R.ui.arg === 'geoguess' && ((R.ui.lib || {}).geoguess || {}).g;
+  if (!g || !g.timed || g.i >= g.cards.length || g.done[g.i]) return;
+  const left = Math.max(0, Math.ceil((g.deadline - Date.now()) / 1000)), el = root.querySelector('.wo-clock');
+  if (el) { el.textContent = `⏱ ${left}s`; el.classList.toggle('low', left <= 10); }
+  if (left <= 0) { fire('lib', 'geoguess|timeout'); buzz(30); }
+}, 500);
 /* the 5-minute trip (E1): three from what you have passed, one new, one on the map — then it ends */
 on('trip', () => {
   const k = kid(R.h), passed = shuffle(Object.keys(k.stops).filter((id) => byId[id] && k.stops[id].stars >= 2), rnd), rd = road(k), items = [];
@@ -284,6 +302,16 @@ on('buy', (id) => {
 });
 on('use', (id) => { const k = kid(R.h), it = SHOP.find((x) => x.id === id), sh = shopOf(k); if (!it || !sh.owned.includes(id)) return; sh[it.kind] = id.split(':')[1]; save(); render(); });
 on('medalOk', () => { R.ui.medalPop = (R.ui.medalPop || []).slice(1); render(); });
+/* read it to me: the text of whatever the button points at, in the device's voice */
+function readOut(sel) {
+  const els = [...root.querySelectorAll(sel)]; if (!els.length) return;
+  const plain = (e) => { const c = e.cloneNode(true); c.querySelectorAll('.read-btn, kbd, .chip').forEach((x) => x.remove()); return c.textContent.replace(/\s+/g, ' ').trim(); };
+  const text = els.map((e) => e.classList.contains('choice-row') ? 'Is it ' + [...e.querySelectorAll('.opt span')].map((x) => x.textContent).join(', or ') + '?' : plain(e)).filter(Boolean).join('. ');
+  els.forEach((e) => e.classList.add('reading'));
+  say(text, () => els.forEach((e) => e.classList.remove('reading')));
+}
+on('read', (sel) => readOut(sel));
+on('readAuto', () => { const k = kid(R.h); k.prefs.readAuto = !V.autoRead(k); save(); render(); });
 on('openWord', (w) => { libCtx('dictionary').ui.q = w; go('lib', 'dictionary'); });
 on('menu', () => { R.ui.menu = !R.ui.menu; render(); if (R.ui.menu) { const f = root.querySelector('.who-menu button'); if (f) f.focus(); } });
 on('levelCheck', () => {
@@ -312,8 +340,10 @@ function mapTap(t) {
     return;
   }
   if (R.ui.nav === 'proj') { fire('proj', 'tap|' + JSON.stringify(t)); return; }
-  if (R.ui.nav === 'lib' && toolById[R.ui.arg]) { toolById[R.ui.arg].act('tap', JSON.stringify(t), libCtx(R.ui.arg)); render(); }
+  if (R.ui.nav === 'lib' && toolById[R.ui.arg]) { toolById[R.ui.arg].act('tap', JSON.stringify(t), libCtx(R.ui.arg)); buzz(12); render(); }
 }
+/* a small, gentle buzz where the device has one (never on a wrong answer) */
+const buzz = (ms) => { try { if (R.sound && navigator.vibrate) navigator.vibrate(ms); } catch (_) {} };
 bindMaps(root, mapTap);
 
 /* Earth Through Time: a swipe across the painting steps through time */

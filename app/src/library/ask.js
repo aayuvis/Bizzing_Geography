@@ -41,7 +41,8 @@ export function panel(tool, q, st) {
   const opts = st.opts || [];
   return `<div class="card t-ask pop" role="dialog" aria-label="The capital of ${esc(q.name)}" aria-live="polite">
     <button class="t-ask-x" data-act="lib" data-arg="${tool}|close" aria-label="Close (Esc)">✕</button>
-    <div class="t-ask-h">${q.flag ? `<img src="flags/${q.flag}.svg" alt="" width="54" height="40">` : ''}<div><p class="kicker">${esc(q.kicker || '')}</p><h3>What is the capital of ${esc(q.name)}?</h3></div></div>
+    <button class="read-btn t-ask-read" data-act="read" data-arg="#ask-q" aria-label="Read the question to me" title="Read the question to me">🔊</button>
+    <div class="t-ask-h">${q.flag ? `<img src="flags/${q.flag}.svg" alt="" width="54" height="40">` : ''}<div><p class="kicker">${esc(q.kicker || '')}</p><h3 id="ask-q">What is the capital of ${esc(q.name)}?</h3></div></div>
     ${done ? `<p class="fb ${st.state === 'revealed' ? '' : 'good'}">${st.state === 'right' ? (st.close ? `Right — it’s spelled <b>${esc(q.display)}</b>.` : `Right — <b>${esc(q.display)}</b>.`) : st.state === 'picked' ? `Right — <b>${esc(q.display)}</b>.` : `The capital is <b>${esc(q.display)}</b>.`}</p>${q.note ? `<p class="muted small">${esc(q.note)}</p>` : ''}
         <p class="muted small">Tap another ${esc(q.unit || 'place')} on the map to keep going.</p>`
       : `<div class="row gap t-ask-row">
