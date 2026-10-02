@@ -34,4 +34,4 @@ Lighthouse (lat/long, hemispheres, tropics, time) · The Restless Earth · Cross
 ## 4. What it refuses
 
 No ads, no tracking, no accounts, no location, no streaks, no loot, no third-party requests.
-No generated lettering. No animated borders. No Street View by default (see CLAUDE.md).
+No generated lettering. No animated borders. Real Street View photos in Where on Earth? are on by default (the owner's decision) and a grown-up can switch them off; the privacy page says exactly what Google sees (see CLAUDE.md).

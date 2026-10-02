@@ -51,7 +51,23 @@ async function run(vp, tag) {
   const S = () => page.evaluate(() => { const r = window.__bzg.R, q = r.run && r.run.items[r.run.i]; return { nav: r.ui.nav, run: r.run && { kind: r.run.kind, i: r.run.i, n: r.run.items.length, over: r.run.over, fb: r.run.fb, q } }; });
   const phone = vp.width < 760;
   const nav = (k) => page.click(phone ? `.tb[data-arg=${k}]` : `.tab[data-arg=${k}]`);
-  const noSideways = async (where) => ok(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1), `${where}: no sideways scroll`);
+  /* measured against the viewport WE set: Chromium widens innerWidth/clientWidth to fit overflow under
+     mobile emulation, so a check against them passes on a broken page */
+  const W = vp.width;
+  const noSideways = async (where) => {
+    const bad = await page.evaluate((W) => {
+      if (document.documentElement.scrollWidth > W + 1) return `page is ${document.documentElement.scrollWidth}px wide`;
+      for (const el of document.querySelectorAll('body *')) {
+        const r = el.getBoundingClientRect(); if (!r.width || r.right <= W + 1) continue;
+        const cs = getComputedStyle(el); if (cs.visibility === 'hidden' || cs.position === 'fixed' && r.left >= W) continue;
+        let a = el.parentElement, clipped = false;
+        while (a && a !== document.body) { const o = getComputedStyle(a).overflowX; if (o !== 'visible' && a.getBoundingClientRect().right <= W + 1) { clipped = true; break; } a = a.parentElement; }
+        if (!clipped && !el.closest('.scene')) return `${el.tagName.toLowerCase()}.${[...el.classList].join('.')} ends at ${Math.round(r.right)}`;
+      }
+      return '';
+    }, W);
+    ok(!bad, `${where}: nothing past the ${W}px device width${bad ? ' — ' + bad : ''}`);
+  };
 
   await page.goto(`http://127.0.0.1:${port}/Bizzing_Geography/`);
   await page.waitForSelector('.welcome');
@@ -338,7 +354,9 @@ async function run(vp, tag) {
   // grown-ups
   await page.evaluate(() => window.__bzg.go('grownups'));
   await page.fill('#pin', '1234'); await page.click('[data-act=gate]'); await page.waitForSelector('.report');
-  await shot('14-grownups');
+  await shot('14-grownups'); await noSideways('grown-ups');
+  ok(await page.evaluate(() => [...document.querySelectorAll('[data-act=tester], [data-act=streetview]')].map((i) => i.closest('label')).every((l) => l && l.getBoundingClientRect().width > 240)), 'grown-ups settings: every switch label has room to read (was squeezed into 50px)');
+  ok(await page.evaluate((W) => [...document.querySelectorAll('.top button, .top a')].filter((b) => b.offsetParent).every((b) => { const r = b.getBoundingClientRect(); return r.left >= 0 && r.right <= W; }), W), 'the top bar fits the device: every button, the lock included, is whole on screen');
   ok((await page.locator('.report').innerText()).includes('Ahana'), 'the grown-ups page reports the child');
   await page.close();
 }

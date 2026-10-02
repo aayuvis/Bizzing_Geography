@@ -207,8 +207,9 @@
 .t-geo-deck h3{margin-bottom:4px}
 .t-geo-card.photo img{aspect-ratio:640/400;object-fit:cover;background:var(--surface2)}
 .t-geo-card.photo figcaption{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
-.tog.off{opacity:.6}
-.tog{display:block;margin:10px 0}
+.set-row.off{opacity:.6}
+.set-row{display:flex;gap:10px;align-items:flex-start;margin:10px 0;line-height:1.45}
+.set-row input{flex:none;width:20px;height:20px;margin-top:2px;accent-color:var(--action)}
 @media (max-width:760px){.t-geo-decks{grid-template-columns:1fr}}
 
 /* the capital tools: the map takes the width, the question sits under it */
