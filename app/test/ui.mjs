@@ -52,7 +52,13 @@ async function run(vp, tag) {
   page.on('response', (r) => { if (r.status() >= 400) errors.push(`${tag} ${r.status()}: ${r.url()}`); });
   page.on('request', (r) => { if (!r.url().startsWith(`http://127.0.0.1:${port}/`) && !r.url().startsWith('data:')) errors.push(`${tag} third-party request: ${r.url()}`); });
   page.on('console', (m) => { if (m.type() === 'error') errors.push(`${tag} console: ${m.text()}`); });
-  const shot = (n) => page.screenshot({ path: `${SHOTS}/${tag}-${n}.png` });
+  /* every screen shot is also a check: no markup ever reaches the child as text ("<svg class=ico…" was the
+     drill header's subtitle on every stop) */
+  const shot = async (n) => {
+    const raw = await page.evaluate(() => { const t = document.body.innerText; const m = /<\/?(svg|span|div|b|i|button|path|img)\b|&lt;|&gt;|&amp;[a-z]/i.exec(t); return m ? t.slice(Math.max(0, m.index - 30), m.index + 40) : null; });
+    ok(!raw, `${tag} ${n}: no raw markup in the visible text (${raw})`);
+    return page.screenshot({ path: `${SHOTS}/${tag}-${n}.png` });
+  };
   const S = () => page.evaluate(() => { const r = window.__bzg.R, q = r.run && r.run.items[r.run.i]; return { nav: r.ui.nav, run: r.run && { kind: r.run.kind, i: r.run.i, n: r.run.items.length, over: r.run.over, fb: r.run.fb, q } }; });
   const phone = vp.width < 760;
   const nav = async (k) => { await page.evaluate(() => { window.__bzg.R.ui.medalPop = []; }); return page.click(phone ? `[data-bz=tabbar] a[href="#/${k}"]` : `[data-bz=tabs] a[href="#/${k}"]`); };
@@ -121,6 +127,8 @@ async function run(vp, tag) {
   await page.click('[data-act=firstOk]'); await page.waitForSelector('[data-act=warmNext]', { timeout: 5000 });
   await page.click('[data-act=warmNext]'); await page.waitForSelector('.runner .qcard');
   ok(await page.locator('.why-card').count() === 1 && await page.evaluate(() => window.__bzg.R.run.kind === 'drill'), 'then straight into the first stop, its "why" above the first question');
+  ok(await page.evaluate(() => { const h = document.querySelector('.runner .phead'); return !!h && !/</.test(h.innerText) && !!h.querySelector('.phead-t p svg'); }), 'the drill header shows the stop’s glyph as a picture, never as "<svg…" text');
+  ok(await page.evaluate(() => { const b = document.querySelector('.runner .phead .back'); return !!b && b.getAttribute('aria-label') === window.__bzg.R.run.back && window.__bzg.R.run.back !== 'Stop'; }), 'the drill’s back pill names where it goes (its stop), not a bare "Stop"');
   ok(await page.evaluate(() => window.__bzg.R.h.kids[0].days && Object.values(window.__bzg.R.h.kids[0].days).some((d) => d.q >= 1)), 'the question tried first is counted on the new explorer');
   await page.click('[data-act=quitRun]'); await page.evaluate(() => window.__bzg.go('home'));
   await page.waitForSelector('[data-bz=home]');
@@ -156,6 +164,7 @@ async function run(vp, tag) {
     const board = document.querySelector('.map-board').getBoundingClientRect();
     for (let i = 0; i < rs.length; i++) { if (rs[i].r.left < board.left - 1 || rs[i].r.right > board.right + 1) return false; for (let j = i + 1; j < rs.length; j++) if (rs[i].e.closest('.map-pin') !== rs[j].e.closest('.map-pin') && hit(rs[i].r, rs[j].r)) return false; }
     return rs.length >= 10; }), 'atlas: no pin or name overlaps another, and none is cut off by the map’s edge');
+  ok(await page.evaluate(() => { const b = document.querySelector('.map-board').getBoundingClientRect(); return b.left >= -1 && b.right <= innerWidth + 1 && [...document.querySelectorAll('.map-pin .mp-g')].every((g) => { const r = g.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; }); }), 'atlas: the whole island is on screen — no pin cut off at the screen’s edge (the audit’s "ne Street", "Latitu")');
   await page.click('.map-pin[data-arg=compass]'); await page.waitForSelector('.world-page');
   await page.waitForTimeout(300); await shot('04-world');
   await page.click('[data-act=openStop]'); await page.waitForSelector('.stop-page');
@@ -559,6 +568,14 @@ async function run(vp, tag) {
   }
   await page.click('.search-res .sr >> nth=0'); await page.waitForTimeout(200);
   ok(await page.evaluate(() => window.__bzg.R.ui.nav !== 'search'), 'a search result opens what it found');
+  /* a link to nowhere lands on Home AND says so in the address (it kept #/qqq) */
+  await page.evaluate(() => { location.hash = '#/qqq'; }); await page.waitForTimeout(300);
+  ok(await page.evaluate(() => window.__bzg.R.ui.nav === 'home' && location.hash === '#/home'), 'an unknown address (#/qqq) lands on Home and the address is corrected');
+  /* a Library quiz's back pill names its tool */
+  await page.evaluate(() => window.__bzg.fire('openTool', 'flags')); await page.waitForTimeout(400);
+  await page.evaluate(() => window.__bzg.fire('lib', 'flags|quiz')); await page.waitForTimeout(400);
+  ok(await page.evaluate(() => { const b = document.querySelector('.runner .phead .back'); return !!b && /Flags/.test(b.getAttribute('aria-label')); }), 'a Library quiz’s back pill says “Flags of the World”, not "Stop"');
+  await page.evaluate(() => { window.__bzg.R.run = null; window.__bzg.go('home'); }); await page.waitForTimeout(200);
   /* deep links (the feed's cards): a link to ONE thing opens that thing, not the shelf */
   for (const [h, want, msg] of [
     ['#/lib/capitals/FR', () => window.__bzg.R.ui.arg === 'capitals' && window.__bzg.R.ui.lib.capitals.sel === 'FR' && !!document.querySelector('.t-ask.pop'), 'a capital link opens France’s capital card'],
@@ -580,6 +597,7 @@ async function run(vp, tag) {
   await page.evaluate(() => window.__bzg.go('search')); await page.waitForSelector('#search-q');
   await page.fill('#search-q', 'houston'); await page.waitForFunction(() => [...document.querySelectorAll('.search-res .kicker')].some((k) => k.textContent === 'City'), null, { timeout: 5000 }).catch(() => {});
   await page.click('.search-res .sr >> nth=0'); await page.waitForTimeout(400);
+  await page.waitForFunction(() => window.__bzg.R.ui.arg === 'explorer' && /Houston/.test((document.querySelector('.t-ex-pin') || {}).innerText || ''), null, { timeout: 5000 }).catch(() => {});
   ok(await page.evaluate(() => window.__bzg.R.ui.arg === 'explorer' && window.__bzg.R.ui.lib.explorer.sel === 'US' && (window.__bzg.R.ui.lib.explorer.pin || {}).n === 'Houston') && (await page.locator('.t-ex-pin').innerText()).includes('Houston'), 'search "houston" opens the Map Explorer with a pin on Houston');
   /* E6 + E4 + F3: a hint, a typed answer, a put-in-order answer, and the mistakes deck */
   await page.evaluate(() => { const R = window.__bzg.R; R.run = null; window.__bzg.fire('startDrill', 'eight-points'); const r = R.run; r.items = r.items.filter((q) => q.kind === 'mc' && q.opts.length >= 3).slice(0, 2); window.__bzg.go('run'); });

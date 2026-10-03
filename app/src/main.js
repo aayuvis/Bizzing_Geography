@@ -118,6 +118,7 @@ function focusTool(id, item) {
   if (!FOCUS[id]) return;
   loadTool(id).then((t) => { if (!t) return; FOCUS[id](t, libCtx(id), item); if (R.ui.nav === 'lib' && R.ui.arg === id) render(); });
 }
+const ROUTES = new Set(['home', 'atlas', 'world', 'stop', 'road', 'exp', 'expd', 'proj', 'library', 'play', 'lib', 'game', 'me', 'settings', 'shop', 'collection', 'medals', 'help', 'search', 'mistakes', 'feed', 'run', 'welcome', 'grownups', 'privacy']);
 function go(nav, arg = null, fromHash = false) {
   let focus = null;
   if ((nav === 'lib' || nav === 'expd') && arg && arg.includes('/')) { const i = arg.indexOf('/'); focus = arg.slice(i + 1); arg = arg.slice(0, i); }
@@ -127,6 +128,7 @@ function go(nav, arg = null, fromHash = false) {
   if (nav !== 'run' && R.run) R.run = null;
   /* a link to something that is not there lands on its shelf AND says so in the address (#/lib/nope was the audit's trap) */
   const asked = nav;
+  if (!ROUTES.has(nav)) { nav = 'home'; arg = null; }          // #/qqq: Home, and the address is corrected (was kept)
   if (nav === 'stop' && !byId[arg]) { nav = 'atlas'; arg = null; }
   if (nav === 'lib' && GAME_IDS.has(arg)) nav = 'game';     // a game is on the Play shelf, wherever it was linked from
   if (nav === 'lib' && !SHELF.some((t) => t.id === arg)) { nav = 'library'; arg = null; }
@@ -305,10 +307,21 @@ function starsToIcons(el) {
 
 /* ------------------------------------------------------------- the runner */
 
+/* the run's back pill names where it goes (quitRun): never a bare "Stop" */
+function backLabel(r) {
+  if (r.kind === 'lib') return (toolById[r.lib] && toolById[r.lib].TOOL.name) || 'Library';
+  if (r.kind === 'drill') return (byId[r.stop] || {}).title || 'The stop';
+  if (r.kind === 'sprint') return (expeditionById[r.exp] || {}).name || 'The expedition';
+  if (r.kind === 'mist') return 'My mistakes';
+  if (r.kind === 'check') return 'Your journey';
+  if (r.kind === 'trial') return 'Back';
+  return 'Home';
+}
 function startRun(kind, title, items, extra = {}) {
   if (!items.length) { toast('Nothing to ask here yet.'); return; }
   const kk0 = kid(R.h);
   R.run = { kind, title, items, i: 0, results: [], fb: null, over: false, t0: Date.now(), coins: 0, hints: {}, bal0: kk0 ? famBalance(kk0.name) : 0, stars0: extra.stop && kk0 ? ((kk0.stops[extra.stop] || {}).stars || 0) : null, ...extra };
+  R.run.back = backLabel(R.run);
   R.ui.mapPick = null;
   go('run');
 }

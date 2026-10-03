@@ -1495,3 +1495,30 @@ h1,h2,h3,.tab,.tb,.set-head h1,.set-sec h2,.shop-page h1,.dr-i{font-family:var(-
 
 /* a day opened from a link (#/expd/<id>/<day>): lit, so the child sees which one it meant */
 .crs-step.focus{outline:3px solid var(--action);outline-offset:3px;box-shadow:0 0 0 6px color-mix(in srgb,var(--action) 18%,transparent)}
+
+/* ---- the owner's audit, 3 Oct 2026 ---- */
+/* Collection: a pack of eight lays out as 8, 4 or 2 across — never 7 with the Legendary alone on a row */
+.collection .bz-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (min-width:1100px){.collection .bz-grid{grid-template-columns:repeat(8,minmax(0,1fr))}}
+@media (max-width:560px){.collection .bz-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* Expedition road: each part's name a readable pill, not tiny yellow letters on the painting */
+.bpin.crs-camp em{color:#1b1b1b;background:rgb(255 255 255 / .94);font:800 13px var(--ui);letter-spacing:0;text-shadow:none;padding:3px 10px;border-radius:99px;box-shadow:0 2px 8px rgb(0 0 0 / .25)}
+@media (max-width:640px){.bpin.crs-camp.sel em{display:block;font-size:12px}}
+/* Phone atlas: a pin near the edge keeps its name on screen */
+@media (max-width:760px){.map-pin.edge-l .mp-t{left:-8px;transform:none} .map-pin.edge-r .mp-t{left:auto;right:-8px;transform:none}}
+/* Short pages: the footer sits at the bottom, not floating mid-page over the scene */
+.bz-content{display:flex;flex-direction:column;min-height:calc(100dvh - 140px)}
+.bz-content > .foot{margin-top:auto;background:color-mix(in srgb,var(--paper) 90%,transparent);border-radius:14px;padding:12px 16px}
+/* (no backdrop-filter on the footer: it makes a stacking context that paints over Where on Earth?'s full-screen map) */
+
+/* Phone atlas (the owner's audit: pins clipped at the edges): the whole island fits the screen —
+   smaller pins and names, edge names kept inside (views.js edge-l/edge-r), no sideways pan.
+   test/ui.mjs still holds that no pin or name overlaps another or leaves the map. */
+@media (max-width:760px){
+  .atlas-scroll{overflow:visible;margin:0 0 22px;padding:0}
+  .atlas-scroll .map-board{width:auto}
+  .atlas-scroll .mp-g{width:32px;height:32px;box-shadow:0 0 0 3px var(--wi),0 4px 10px rgb(0 0 0 / .3)}
+  .atlas-scroll .mp-t{padding:0 5px;margin-top:2px} .atlas-scroll .mp-t b{font-size:10.5px}
+  /* every world is named in the cards right below; on the map only where you are keeps its name */
+  .atlas-scroll .map-pin:not(.here) .mp-t{display:none}
+}

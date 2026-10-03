@@ -207,7 +207,7 @@ export function viewAtlas() {
       ${WORLDS.map((w) => {
         const p = MAP_PINS[w.id], open = stopsIn(w.id).some((s) => stopOpen(h, k, s.id));
         const onroad = road(k).steps.filter((s) => !s.done && byId[s.stop].world === w.id).length;
-        return `<button class="map-pin${open ? '' : ' shut'}${p.side === 'l' ? ' lab-l' : ''}" style="left:${p.x}%;top:${p.y}%;--wi:${w.ink};--wt:${w.tint}" data-act="openWorld" data-arg="${w.id}" aria-label="${esc(w.name)}${open ? '' : ', later levels'}">
+        return `<button class="map-pin${open ? '' : ' shut'}${p.side === 'l' ? ' lab-l' : ''}${p.x < 14 ? ' edge-l' : p.x > 86 ? ' edge-r' : ''}" style="left:clamp(26px,${p.x}%,calc(100% - 26px));top:${p.y}%;--wi:${w.ink};--wt:${w.tint}" data-act="openWorld" data-arg="${w.id}" aria-label="${esc(w.name)}${open ? '' : ', later levels'}">
           <span class="mp-g">${gi(w.glyph)}${here === w.id ? `<img class="mp-me" src="avatars/${esc(avatarFile(k.avatar))}.webp" alt="" width="30" height="30">` : ''}</span><span class="mp-t"><b>${esc(w.short)}</b>${onroad ? `<i class="mp-road">${onroad} on your road</i>` : open ? '' : '<i>Later levels</i>'}</span></button>`;
       }).join('')}
     </div></div>
@@ -352,8 +352,10 @@ export function viewRun() {
   const q = run.items[run.i], fb = run.fb, hint = (run.hints || {})[run.i] || null, st = streakOf(run);
   const hintBtn = fb || hint || run.kind === 'trial' ? '' : `<button class="read-btn hint-btn" data-act="hint" aria-label="A hint (a right answer after it pays no coin)" title="A hint">${ico('hint')}</button>`;
   const stop = byId[run.stop];
+  /* run.sub is the app's own HTML (a stop's glyph and its level), never a child's words: not escaped.
+     The back pill names where it goes (main.js backLabel). */
   return `<section class="runner narrow ${fb ? (fb.right ? 'is-right' : 'is-wrong') : ''}">
-    ${pageHead(esc(run.title), esc(run.sub || ''), back('quitRun', 'Stop'))}
+    ${pageHead(esc(run.title), run.sub || '', back('quitRun', run.back || 'Back'))}
     <div class="run-bar"><div class="dots" aria-label="Question ${run.i + 1} of ${run.items.length}">${run.items.map((_, i) => `<i class="${i < run.results.length ? (run.results[i].right ? 'r' : 'w') : i === run.i ? 'c' : ''}"></i>`).join('')}</div>
       ${st >= 2 ? `<span class="combo${fb && fb.right ? ' pop' : ''}" aria-label="${st} right in a row">${ico('star')} ${st} in a row</span>` : ''}</div>
     ${run.intro && run.i === 0 && stop ? `<details class="card why-card" id="why" open><summary><b>${gi(stop.glyph)} First, the idea</b> <span class="muted small">— ${esc(stop.title)}</span> ${readBtn('#why p', 'Read the idea to me')}</summary>

@@ -28,7 +28,7 @@ export function view(ctx) {
 }
 function card(c, u) {
   const at = c.capAt[0];
-  return `<div class="t-cap-sel"><img src="flags/${c.cc.toLowerCase()}.svg" alt="" width="72" height="54"><div><p class="kicker">${esc(c.cont)} · ${esc(c.sub)}</p><h3>${esc(c.name)}</h3></div></div>
+  return `<div class="t-cap-sel"><img src="flags/${c.cc.toLowerCase()}.svg" alt="" width="72" height="54"><div><p class="kicker">${esc(c.cont)}${c.sub && c.sub !== c.cont ? ` · ${esc(c.sub)}` : ''}</p><h3>${esc(c.name)}</h3></div></div>
     ${u.pin && u.pin.cc === c.cc && !c.cap.includes(u.pin.n) ? `<p class="t-ex-pin">${ico('pin')} <b>${esc(u.pin.n)}</b> — a city in ${esc(c.name)}, at ${fmtLat(u.pin.at[0])}, ${fmtLng(u.pin.at[1])}.</p>` : ''}
     <dl class="t-ex-dl">
       <dt>Capital</dt><dd>${esc(capsText(c))}${at ? ` <span class="muted small">(${fmtLat(at[0])}, ${fmtLng(at[1])})</span>` : ''}</dd>

@@ -369,3 +369,6 @@
   .t-nav{top:calc(100vw * .36);width:44px;height:44px}
   .t-dots{padding:8px 46px}
 }
+
+/* Phone Earth Through Time: the progress dots stay one row, the credit moves under them */
+@media (max-width:760px){.t-dots{flex-wrap:nowrap;overflow:hidden;gap:3px;padding:8px 46px}.t-dots button{flex:0 1 10px;min-width:5px}}
