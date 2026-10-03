@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# deploy.sh — test, build Bizzing Geography, and publish it to the gh-pages branch.
+# deploy.sh — build Bizzing Geography and publish it to the gh-pages branch (test before you commit).
 #
 # GitHub Pages serves the site from the ROOT of gh-pages, so the build output
 # goes there unwrapped, exactly as bizzingindia.com and bizzingfinance do it. .nojekyll stops
@@ -57,7 +57,9 @@ if [ "${1:-}" != "--dry" ]; then
   done
 fi
 
-npm test                                # a question with two right answers never ships
+# The full suite (npm test, npm run check) runs before every commit, in the one chat that deploys
+# (the owner, 3 Oct 2026) — rerunning it here cost ten minutes per deploy and caught nothing new.
+# The gatekeeper above and the file count below still run: seconds, and they guard the live site.
 # Real photos in GeoGuesser: a Google Maps key, restricted by HTTP referrer to
 # aayuvis.github.io, lives OUTSIDE the repo at $GMAPS_KEY_FILE (default
 # /root/.gmapskey). With no key the build simply has no real-photo deck.

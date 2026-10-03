@@ -21,6 +21,7 @@ const UNESCO = (name) => `UNESCO World Heritage Centre — “${name}”`;
 const BRIT = (name) => `Encyclopaedia Britannica — “${name}”`;
 
 import { MORE } from './landmarks2.js';
+import { PARKS } from './landmarks-parks.js';
 
 const FIRST = [
   { id: 'taj-mahal', name: 'Taj Mahal', cc: 'IN', at: [27.175, 78.042], kind: 'built', where: 'Agra, India',
@@ -185,6 +186,8 @@ const FIRST = [
     paint: 'The Qutub Minar, a tall fluted red sandstone tower with balconies, among old stone ruins and green lawns, blue sky.' },
 ];
 
-export const LANDMARKS = [...FIRST, ...MORE];
+export const LANDMARKS = [...FIRST, ...MORE, ...PARKS];
+/* all 63 national parks of the United States: the nine filed before the park list, then PARKS */
+export const US_PARKS = ['arches', 'everglades', 'gateway-arch', 'grand-canyon', 'smoky-mountains', 'mammoth-cave', 'mesa-verde', 'yellowstone', 'yosemite', ...PARKS.map((p) => p.id)];
 export const LANDMARK_NEEDS_REVIEW = true;
 export const landmarkById = Object.fromEntries(LANDMARKS.map((l) => [l.id, l]));

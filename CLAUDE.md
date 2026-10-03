@@ -81,6 +81,12 @@ Inherited from the family, and it holds here:
   gitignored) before `tools/art/process.py` (which also trims painted paper borders).
 - Places of worship are painted from outside, still, never as a prize. Sites a community has
   asked the world not to treat as an attraction (Uluru) are not on the shelf.
+- **Every US national park is on the Landmarks shelf** (all 63 — the owner; `data/landmarks-parks.js`,
+  `US_PARKS` in `data/landmarks.js`, held to 63 by the selftest). The two in US territories (American Samoa,
+  the Virgin Islands) are filed under the territory with `also: 'US'`. A landmark quiz asks only the 195 as
+  countries and takes at most two landmarks from one country (`quizPool`), or sixty-three parks would make
+  every answer "the United States". A place below the map's resolution declares how it is checked
+  (`offshore: <km>`, or `near: '<shape>'`), with the reason written beside it.
 - **Ninety-six avatars, twelve packs of eight** (`src/avatars.js`, family standard v2 §8), through
   the family's own engine, vendored byte for byte (`src/bizzing-avatars.js` + `styles/bizzing-avatars.css`;
   `test/avatars.mjs` holds `validate()` to `[]` and the files to the Hive's). Five packs painted here first
@@ -223,8 +229,10 @@ The shared spec every Bizzing app follows. Here it lives in five files:
   quietly); the map shop (pins, frames) — a look, never content, never chance, never rank.
 - **`src/demo.js`** — `?demo`: a labelled sample with three weeks of progress, held in memory; it
   saves nothing and writes no shared key (asserted).
-- **Top bar** (56px, the family order): ⬡ back to the Hive · name · theme · 🔒 · avatar ▾ (switch
-  explorer, own page, sound, light/dark). `?from=hive` shows "← back to my day".
+- **Top bar** (56px, the family order): ⬡ back to the Hive · name · theme · 🔒 · avatar ▾. Shelly beside the
+  name is the whole turtle (`mascot/shelly-brand.webp`), never the cropped head. The avatar ▾ opens Bee's menu
+  (`whoMenu`): every child with the current one ticked, then **My page — avatar, badges, collection**,
+  **Settings**, **+ Add a child** (marked grown-ups; hidden in the sample). `?from=hive` shows "← back to my day".
 - **Read it to me**: 🔊 on every question, lesson and instruction, in the **device's own voice**
   (an Indian English one first). **No recorded clips** (the owner's decision). 6–7 auto-reads.
 - **Report card**: Time (active minutes from the feed) · Progress (level, road, expeditions) ·
@@ -322,8 +330,10 @@ says it does (drawn here as a schematic chain of dots).
 
 ## Ship
 
-Commit and push first, then `cd app && ./deploy.sh`. It runs the tests, builds, replaces `gh-pages`
-wholesale and refuses to publish if the staged file count differs from the build.
+Run `npm test` and `npm run check`, commit and push, then `cd app && ./deploy.sh` (about a minute). It
+builds, replaces `gh-pages` wholesale and refuses to publish if the staged file count differs from the
+build. It does **not** rerun the tests (the owner: all deploys from one chat, keep it fast) — so never
+deploy a commit whose suite you have not just seen pass.
 
 **The gatekeeper** (`deploy.sh`, before anything is built): every gh-pages commit is stamped "Built from
 <sha>", and a deploy **refuses** unless that live commit is already inside HEAD — so no deploy can erase

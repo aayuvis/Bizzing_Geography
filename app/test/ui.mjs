@@ -626,7 +626,9 @@ async function run(vp, tag) {
   const P = await page.evaluate(() => window.__bzg.R.ui.lib.chain.g.list[0]);
   const far = P.b;   // the goal is always in view and never touches the start (the shortest chain is 2+)
   if (far) { await tapLL(...(await page.evaluate((c) => window.__bzg.byCc[c].at, far))); ok((await page.locator('.fb.bad').count()) === 1 && await page.evaluate(() => window.__bzg.R.ui.lib.chain.g.chain.length) === 1, 'a country that does not touch the chain is held, and explained'); }
-  const nb = P.path[1]; await tapLL(...(await page.evaluate((c) => window.__bzg.byCc[c].at, nb)));
+  /* tap a point INSIDE the neighbour's drawn shape (a country's listed point can sit on its neighbour's land) */
+  const nb = P.path[1]; await page.evaluate(() => document.querySelector('main .gmap svg').scrollIntoView({ block: 'center' }));
+  const nbXY = await inside(page, `main .gmap path[data-cc="${nb}"]`); await tapXY(nbXY[0], nbXY[1]);
   ok(await page.evaluate((nb) => window.__bzg.R.ui.lib.chain.g.chain[1] === nb, nb), 'tapping a real neighbour adds it to the chain');
   await shot('32-chain');
   await page.keyboard.press('u'); ok(await page.evaluate(() => window.__bzg.R.ui.lib.chain.g.chain.length) === 1, 'U undoes a step');

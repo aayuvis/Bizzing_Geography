@@ -4,11 +4,11 @@
    which country is it in, or tap it on the map. The shelf says, on screen, that it awaits a second
    reader — the Maths journeys' rule for anything written about the world. */
 import { ico } from '../icons.js';
-import { LANDMARKS, landmarkById, LANDMARK_NEEDS_REVIEW } from '../data/landmarks.js';
+import { LANDMARKS, landmarkById, LANDMARK_NEEDS_REVIEW, US_PARKS } from '../data/landmarks.js';
 import { byCc, QUIZ, CONTINENTS } from '../geo.js';
 import { worldSVG, viewOfCountry, nearCountry, viewFor } from '../map.js';
 import { mc, mapQ } from '../chapters/kit.js';
-import { shuffle, rnd } from '../rand.js';
+import { shuffle, rnd, seeded } from '../rand.js';
 
 export const TOOL = { id: 'landmarks', name: 'Famous Landmarks', glyph: '🗿', art: 'lib-landmarks', blurb: `${LANDMARKS.length} landmarks — the Taj Mahal, the Great Wall, Machu Picchu, the Serengeti… — where they are, and why they matter.` };
 const CONTS = ['All', ...CONTINENTS.filter((c) => c.id !== 'Antarctica').map((c) => c.id)];
@@ -53,14 +53,22 @@ export function view(ctx) {
     ${note}`;
 }
 
+/* a quiz takes landmarks of the 195 only (a park in American Samoa is never "in the country American
+   Samoa"), and at most two from any one country — sixty-three US national parks must not make every
+   question "the United States" */
+export function quizPool(r) {
+  const per = {}, out = [];
+  for (const l of shuffle(LANDMARKS.filter((x) => byCc[x.cc].quiz), r)) { if ((per[l.cc] = (per[l.cc] || 0) + 1) <= 2) out.push(l); if (out.length === 10) break; }
+  return out;
+}
 export function countryQuiz(r = rnd) {
-  return shuffle(LANDMARKS, r).slice(0, 10).map((l) => {
+  return quizPool(r).map((l) => {
     const c = byCc[l.cc], near = QUIZ.filter((x) => x.cont === c.cont && x.cc !== l.cc && x.cc !== l.also);
     return { ...mc(r, 'In which country is this landmark?', c.name, near.map((x) => x.name), `This is ${l.name}, in ${l.where}.`, `<img class="t-lm-q" src="art/lm-${l.id}.webp" alt="A painted landmark" width="480" height="360">`), lm: l.id };
   });
 }
 export function findQuiz(r = rnd) {
-  return shuffle(LANDMARKS, r).slice(0, 10).map((l) => {
+  return quizPool(r).map((l) => {
     const cont = CONTINENTS.find((x) => x.id === byCc[l.cc].cont);
     return { ...mapQ(`Tap the country where ${l.name} is.`, [l.cc, l.also].filter(Boolean), cont.view, `${l.name} is in ${l.where}.`, l.cc), targetName: byCc[l.cc].name, showAt: l.at, lm: l.id };
   });
@@ -78,10 +86,16 @@ export function done(run) { const right = run.results.filter((x) => x.right).len
 export function selftest(ok) {
   for (const l of LANDMARKS) {
     ok(byCc[l.cc], `${l.id}: country ${l.cc}`);
-    ok(nearCountry(l.at, l.cc, l.offshore ? 150 : 25) || (l.also && nearCountry(l.at, l.also)), `${l.name} sits inside ${l.cc}${l.also ? ' or ' + l.also : ''} on the map`);
+    /* offshore: a point in the sea, checked within 150 km (or the km it declares); near: a place too small for
+       the map to draw at all, checked against the shape the data names (both explained beside the landmark) */
+    const km = typeof l.offshore === 'number' ? l.offshore : l.offshore ? 150 : 25;
+    ok(nearCountry(l.at, l.near || l.cc, km) || (l.also && nearCountry(l.at, l.also)), `${l.name} sits inside ${l.near || l.cc}${l.also ? ' or ' + l.also : ''} on the map`);
     ok(l.src && l.src.length, `${l.name} names a source`);
   }
   ok(new Set(LANDMARKS.map((l) => l.id)).size === LANDMARKS.length, 'ids are unique');
+  ok(US_PARKS.length === 63 && new Set(US_PARKS).size === 63 && US_PARKS.every((id) => LANDMARKS.some((l) => l.id === id && (l.cc === 'US' || l.also === 'US'))), `all 63 US national parks are on the shelf, under the United States (${US_PARKS.length})`);
+  for (let i = 0; i < 30; i++) { const r = seeded('lmq' + i), qs = countryQuiz(r); const per = {}; for (const q of qs) per[q.ans] = (per[q.ans] || 0) + 1;
+    ok(qs.length === 10 && qs.every((q) => QUIZ.some((c) => c.name === q.ans)) && Object.values(per).every((n) => n <= 2), 'a landmark quiz asks only the 195, at most two from one country'); }
   ok(LANDMARKS.length >= 120, `at least 120 landmarks (${LANDMARKS.length})`);
   for (const c of ['Africa', 'Asia', 'Europe', 'North America', 'South America', 'Oceania']) ok(LANDMARKS.filter((l) => byCc[l.cc].cont === c).length >= 8, `${c} has at least 8 landmarks`);
 }
