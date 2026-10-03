@@ -1522,3 +1522,14 @@ h1,h2,h3,.tab,.tb,.set-head h1,.set-sec h2,.shop-page h1,.dr-i{font-family:var(-
   /* every world is named in the cards right below; on the map only where you are keeps its name */
   .atlas-scroll .map-pin:not(.here) .mp-t{display:none}
 }
+
+/* Home: the place of the hour shows its painting (B1), and is asked right here (B4) */
+:root .bz-home a.bz-hour[data-bz=hour]{background-size:cover;background-position:right center;background-color:var(--surface)}
+.hourq{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:16px;align-items:center;margin:0 0 18px;text-align:left}
+.hourq-art{width:100%;height:auto;aspect-ratio:3/2;object-fit:cover;border-radius:14px;display:block}
+.hourq-b h3{margin:2px 0 10px} .hourq .choice-row{display:grid;grid-template-columns:1fr 1fr;gap:8px} .hourq .fb{margin:10px 0 6px}
+@media (max-width:640px){.hourq{grid-template-columns:1fr}}
+/* on a phone the shell orders its cards (greeting 1 … second 5, tip/quote after): today's place comes last, above the footer */
+.bz-home > .hourq{order:8}
+@media (max-width:760px){:root .bz-home a.bz-hour[data-bz=hour]{background-position:right top}}
+.h-prog{display:block;font-size:13px;color:var(--muted);margin:2px 0 6px} .h-prog .ico{width:14px;height:14px;vertical-align:-2px;color:#E8A317}

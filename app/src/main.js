@@ -630,6 +630,15 @@ on('createKid', () => {
 });
 on('switchKid', (id) => { if (!R.h.kids.some((x) => x.id === id)) return; R.h.active = id; R.ui.lib = {}; R.ui.menu = false; save(); go('home'); });
 on('setAv', (a) => { const k = kid(R.h); if (canWear(a, C.ctxOf(k))) { k.avatar = a; sfx.click(); save(); render(); } else toast('That face is not yours yet — its card says how.'); });
+on('hourAns', (cc) => {
+  const k = kid(R.h); if (!k) return;
+  const hk = V.hourKey(), q = V.hourQuestion(V.todaysCard()); k.lib.hourq = k.lib.hourq || {};
+  if (k.lib.hourq[hk]) return;
+  const right = cc === q.c.cc; k.lib.hourq[hk] = { cc, right };
+  for (const key of Object.keys(k.lib.hourq)) if (!key.startsWith(dayKey())) delete k.lib.hourq[key];   // today only
+  if (right) { sfx.good(); earn('right'); confetti(14); } else sfx.bad();
+  save(); render();
+});
 on('goal', (n) => { const k = kid(R.h); if (GOALS.includes(+n)) { k.prefs.goal = +n; save(); render(); } });
 on('still', () => { Store.saveDevice('still', !Store.loadDevice('still', false)); render(); });
 /* themes belong to the child: chosen on their page, applied at once */
@@ -809,7 +818,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
 
 /* the family's activity feed: active minutes for the Hive, per child, never sent anywhere */
 const act = trackActivity(APP, () => (kid(R.h) || {}).name);
-window.__bzg = { R, go, fire, music: M.musicState, next: nextStep, project, byCc, SHELF,
+window.__bzg = { hourRight: () => V.hourQuestion(V.todaysCard()).c.cc, R, go, fire, music: M.musicState, next: nextStep, project, byCc, SHELF,
   NB: (cc) => toolById.chain.NB[cc], get TW() { return toolById.tradewinds; } };   // for test/ui.mjs, which drives the built app
 /* the tools kept out of the first download arrive once the app is idle, so they work offline too */
 setTimeout(() => (window.requestIdleCallback || ((f) => setTimeout(f, 1)))(() => { loadTool('geoguess'); loadTool('time'); }), 4000);

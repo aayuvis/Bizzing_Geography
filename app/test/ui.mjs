@@ -301,6 +301,13 @@ async function run(vp, tag) {
   }
   ok(roseOk === true, 'compass drills: the rose beside the plan is whole inside its drawing');
   await page.evaluate(() => { window.__bzg.R.run = null; window.__bzg.go('home'); });
+  /* Home: the place of the hour shows its painting; today's place is asked right here, once an hour */
+  ok(await page.evaluate(async () => { const m = /url\("?([^")]+art\/pc-[^")]+)/.exec(getComputedStyle(document.querySelector('[data-bz=hour]')).backgroundImage); if (!m) return false; const r = await fetch(m[1]); return r.ok && (r.headers.get('content-type') || '').includes('image'); }), 'the place-of-the-hour card shows its painting (and the picture is really there)');
+  ok(await page.locator('.hourq img.hourq-art').count() === 1 && await page.locator('.hourq .opt').count() === 4, 'today’s place is a question on Home: the painting and four countries');
+  ok(/stars · \d+ capitals known/.test(await page.locator('.h-prog').innerText()), 'the ring card says stars and capitals known');
+  { const right = await page.evaluate(() => window.__bzg.hourRight());
+    await page.click(`.hourq .opt[data-arg="${right}"]`); await page.waitForSelector('.hourq .fb.good');
+    ok(await page.locator('.hourq .opt[disabled]').count() === 4, 'a right answer holds, says the place, and the question is answered for the hour'); }
   /* the place of the hour opens THAT place (it opened the game's menu) */
   await page.waitForSelector('[data-bz=hour]');
   const placeId = (await page.locator('[data-bz=hour]').getAttribute('href')).split('/').pop();

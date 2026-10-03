@@ -24,6 +24,7 @@ import { SHELF } from './library/index.js';
 import { GKEY } from './photos.js';
 import { byCc, CONTINENTS, QUIZ as COUNTRIES_Q } from './geo.js';
 import { regionsOf } from './library/states.js';
+import { known as capKnown } from './library/capitals.js';
 import { listOptions } from './listmode.js';
 import { HIVE, balance, ledger as walletLedger, APP, activityRows } from './family.js';
 import { MEDALS, earned, medallion, SHOP, shopOf, PIN_PATH, TIER } from './rewards.js';
@@ -112,6 +113,25 @@ export function viewWelcome() {
 const greet = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'; };
 /* the place of the HOUR: one postcard per hour, the same in every house */
 export const todaysCard = (t = new Date()) => pick(POSTCARDS, seeded('pc' + dayKey(t) + ':' + t.getHours()));
+/* The place of the hour, asked right on Home (B4): the painting, and "which country?" from four —
+   the right one and three famous countries from OTHER continents, so a guess has a reason. Once an
+   hour; the answer holds and says the place's own clues. hourKey() keys it in k.lib.hourq. */
+export const hourKey = (t = new Date()) => dayKey(t) + ':' + t.getHours();
+export function hourQuestion(pc) {
+  const c = byCc[pc.cc], r = seeded('hq' + pc.id + hourKey());
+  const others = shuffle(COUNTRIES_Q.filter((x) => x.cont !== c.cont && FAMOUS_H.has(x.cc)), r).slice(0, 3);
+  return { pc, c, opts: shuffle([c, ...others], r) };
+}
+const FAMOUS_H = new Set('IN CN JP US CA MX BR AR GB FR DE IT ES RU AU NZ EG ZA KE NG SA TR KR ID TH PE CL NO SE GR'.split(' '));
+function hourCard(k, pc) {
+  const q = hourQuestion(pc), a = ((k.lib.hourq || {})[hourKey()]) || null;
+  const said = a ? (a.cc === q.c.cc ? `<p class="fb good">Right — ${esc(pc.place)}. ${esc(pc.clues[0])}.</p>` : `<p class="fb bad">Not ${esc(byCc[a.cc].name)} — it is ${esc(q.c.name)}: ${esc(pc.place)}. ${esc(pc.clues[0])}.</p>`) : '';
+  return `<section class="card hourq" data-hourq>
+    <img class="hourq-art" src="art/${pc.id}.webp" alt="A painting of a place somewhere on Earth" width="480" height="320">
+    <div class="hourq-b"><p class="kicker">Today’s place · a painting, not a photo</p><h3 id="hourq-q">Which country is this?</h3>
+      <div class="choice-row">${q.opts.map((o) => `<button class="btn opt${a ? (o.cc === q.c.cc ? ' right' : o.cc === a.cc ? ' wrong' : '') : ''}" data-act="hourAns" data-arg="${o.cc}" ${a ? 'disabled' : ''}>${esc(o.name)}</button>`).join('')}</div>
+      ${said}${a ? `<a class="btn small" href="#/place/${pc.id}">Pin it on the map →</a>` : ''}</div></section>`;
+}
 
 /* What Shelly says (B5): a line BUILT from what this child last did — the stop, the score,
    the misses waiting — chosen once per sitting and never the same line twice in a row. */
@@ -164,6 +184,7 @@ export function viewHome() {
     ring: { html: `<div class="hm-ring" role="group" aria-label="Today’s ring: ${done} of ${goal}">
         <div class="h-ring-c">${ring(done, goal)}<span><b>${done}/${goal}</b><i>today</i></span></div>
         <div><p class="small"><b>Today’s ring</b><br><span class="muted">each finished quiz, day or round fills a notch</span></p>
+          <span class="h-prog">${ico('star')} <b>${starsTotal(k)}</b> stars · <b>${COUNTRIES_Q.filter((c) => capKnown(k.lib.capitals || {}, c.cc)).length}</b> capitals known</span>
           <span class="h-goal" role="group" aria-label="How many a day">${GOALS.map((g) => `<button class="${g === goal ? 'on' : ''}" data-act="goal" data-arg="${g}" aria-pressed="${g === goal}" aria-label="${g} a day">${g}</button>`).join('')}</span></div></div>`,
       foot: { kicker: 'Your level', title: `Level ${n.level} · ${rk.n}`, href: '#/me' } },
     hour: { kicker: 'Place of the hour', title: 'Where on Earth is this?', sub: doneToday ? `You scored ${doneToday.toLocaleString('en-US')} today. Pin this one too.` : 'A painted place somewhere on Earth. Pin it on the map.', href: `#/place/${pc.id}`, icon: 'globe' },
@@ -174,7 +195,11 @@ export function viewHome() {
     tip: { kicker: '5-minute trip', text: trip ? `Done today — ${trip.right} of ${trip.n}. Another one any time.` : 'Review, one new thing, one map — then it ends by itself. Nothing is lost for skipping.', href: '#/trip' },
     quote: { kicker: 'Word of the hour', text: `${td}.`, who: tw, href: `#/word/${encodeURIComponent(tw)}` },
     foot: FOOT(),
-  });
+  })
+    /* the place of the hour shows its painting (the url is written here, so it resolves against the page) */
+    .replace('<div class="bz-home" data-bz="home">', `<div class="bz-home" data-bz="home"><style>:root .bz-home a.bz-hour[data-bz=hour]{background-image:linear-gradient(90deg,var(--surface) 48%,color-mix(in srgb,var(--surface) 55%,transparent) 70%,color-mix(in srgb,var(--surface) 10%,transparent)),url(art/${pc.id}.webp)}</style>`)
+    /* today's place, asked right here, between the cards and the footer */
+    .replace('<div class="bz-foot">', hourCard(k, pc) + '<div class="bz-foot">');
 }
 export const libTile = (t) => `<button class="lib-tile" data-act="openTool" data-arg="${t.id}">
       <span class="lib-art" style="background-image:url(art/${t.art}.webp)"></span>
