@@ -244,7 +244,7 @@ The shared spec every Bizzing app follows. Here it lives in five files:
   default 40%, ducks under effects and read-aloud, paused when hidden, off in Calm mode. No narration.
 - **Learning** (family audit E4/E6/F3/C4): typed and put-in-order items beside multiple choice; one hint per
   question (`src/hints.js`; a hinted right answer pays no coin); the mistakes deck (`src/mistakes.js`) brings
-  a miss back after a gap; one search over stops, places, countries, landmarks and words (`src/search.js`).
+  a miss back after a gap; one search over stops, places, countries, every state and state capital of the eight State Capitals countries, 2,600 cities (loaded on the first search; a city opens the Map Explorer with a pin), landmarks and words (`src/search.js`) — accents, case and punctuation never decide a match ("washington dc").
   Stars come only from answers and fall due for review after four weeks; a miss then drops one star.
 
 ## My Feed (FAMILY-STANDARD §6a)

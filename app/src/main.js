@@ -9,7 +9,7 @@ import * as C from './chrome.js';
 import { bindShell } from './bizzing-shell.js';
 import { oops } from './mascot.js';
 import * as M from './music.js';
-import { viewSearch } from './search.js';
+import { viewSearch, placeOf } from './search.js';
 import { missAdd, missDue, missRight, missWrong, keyOf } from './mistakes.js';
 import { CATALOGUE, byAvatar, worldNo, canWear, stateOf as avState } from './avatars.js';
 import { buy as buyAvatar, buyWorld as buyWorldFam, worldOpen } from './bizzing-avatars.js';
@@ -480,6 +480,9 @@ on('setText', (t) => { if (['s', 'm', 'l'].includes(t)) { Store.saveDevice('text
 on('motion', () => { Store.saveDevice('motion', !Store.loadDevice('motion', false)); render(); });
 on('calm', () => { Store.saveDevice('calm', !Store.loadDevice('calm', false)); render(); });
 on('plan', () => { if (!R.ui.gate) return; R.h.parent.plan = R.h.parent.plan === 'family' ? 'free' : 'family'; save(); render(); });
+on('openState', (a) => { const [c, id] = a.split('|'); loadTool('states').then((t) => { const x = libCtx('states'); t.act('c', c, x); t.act('sel', id, x); go('lib', 'states'); }); });
+on('openCity', (id) => { const p = placeOf(id); if (!p) return; loadTool('explorer').then((t) => { t.act('place', JSON.stringify({ cc: p.cc, n: p.n, at: p.at }), libCtx('explorer')); go('lib', 'explorer'); }); });
+if (typeof window !== 'undefined') window.addEventListener('bzg-search-ready', () => { if (R.ui.nav === 'search') render(); });
 on('openCountry', (cc) => { loadTool('explorer').then((t) => { if (t) t.act('sel', cc, libCtx('explorer')); go('lib', 'explorer'); }); });
 on('practiseMisses', () => {
   const k = kid(R.h), due = missDue(k).sort((a, b) => a.at - b.at).slice(0, 10);

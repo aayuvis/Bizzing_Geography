@@ -7,7 +7,7 @@ const { STOPS, drill, byId } = await import('../src/stops.js');
 const { seeded } = await import('../src/rand.js');
 const { missAdd, missDue, missRight, missWrong, missCount, keyOf, GAP, MAX } = await import('../src/mistakes.js');
 const { hintFor } = await import('../src/hints.js');
-const { search } = await import('../src/search.js');
+const { search, placesReady } = await import('../src/search.js');
 const { newKid } = await import('../src/model.js');
 const { byCc } = await import('../src/geo.js');
 
@@ -52,6 +52,23 @@ ok(has('canberra', 'Country', 'Australia'), 'search finds a country by its capit
 ok(has('delta', 'Word', 'delta'), 'search finds a dictionary word ("delta")');
 ok(search('taj').some((x) => x.kind === 'Landmark'), 'search finds a landmark ("taj")');
 ok(search('where on').some((x) => x.kind === 'Library'), 'search finds a Library tool');
+/* the user's ask: US state capitals, US cities and US landmarks are all findable — every one, not a sample */
+{
+  const { STATES } = await import('../src/data/states.js');
+  const { LANDMARKS } = await import('../src/data/landmarks.js');
+  const US = STATES.filter((x) => x.c === 'US');
+  ok(US.every((x) => search(x.name).some((r) => r.kind === 'US state' && r.t === x.name)), 'every US state is found by its name');
+  ok(US.filter((x) => x.id !== 'US-DC').every((x) => search(x.cap).some((r) => r.kind === 'State capital' && r.t === x.cap)), 'every US state capital is found by its name (Sacramento, Austin…)');
+  ok(search('sacramento')[0].sub.includes('California'), '"sacramento" says whose capital it is');
+  const usl = LANDMARKS.filter((l) => l.cc === 'US' || l.also === 'US');
+  ok(usl.length >= 20 && usl.every((l) => search(l.name).some((r) => r.kind === 'Landmark' && r.t === l.name)), `every US landmark is found (${usl.length})`);
+  globalThis.window = globalThis.window || new EventTarget();
+  await placesReady();
+  const { PLACES } = await import('../src/data/places.js');
+  const cities = PLACES.filter((p) => p.cc === 'US' && p.big);
+  ok(cities.length >= 25 && cities.every((p) => search(p.n.replace(/,\s+/g, ', ')).some((r) => (r.kind === 'City' || r.kind === 'State capital' || r.kind === 'Country') && (r.t === p.n.replace(/,\s+/g, ', ') || r.kind === 'Country'))), `every major US city is found (${cities.length})`);
+  ok(search('houston').some((r) => r.kind === 'City' && r.sub === 'United States'), '"houston" finds the city and its country');
+}
 ok(search('x').length === 0, 'one letter searches nothing (no wall of results)');
 
 if (fails) { console.error(`✗ learning: ${fails} of ${n} failed`); process.exit(1); }

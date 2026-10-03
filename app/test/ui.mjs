@@ -556,6 +556,15 @@ async function run(vp, tag) {
   }
   await page.click('.search-res .sr >> nth=0'); await page.waitForTimeout(200);
   ok(await page.evaluate(() => window.__bzg.R.ui.nav !== 'search'), 'a search result opens what it found');
+  /* a state capital opens State Capitals on its state; a city opens the Map Explorer with a pin on it */
+  await page.evaluate(() => window.__bzg.go('search')); await page.waitForSelector('#search-q');
+  await page.fill('#search-q', 'sacramento'); await page.waitForTimeout(400);
+  await page.click('.search-res .sr >> nth=0'); await page.waitForSelector('.t-cap-wide');
+  ok(await page.evaluate(() => window.__bzg.R.ui.arg === 'states' && window.__bzg.R.ui.lib.states.sel === 'US-CA'), 'search "sacramento" opens State Capitals on California');
+  await page.evaluate(() => window.__bzg.go('search')); await page.waitForSelector('#search-q');
+  await page.fill('#search-q', 'houston'); await page.waitForFunction(() => [...document.querySelectorAll('.search-res .kicker')].some((k) => k.textContent === 'City'), null, { timeout: 5000 }).catch(() => {});
+  await page.click('.search-res .sr >> nth=0'); await page.waitForTimeout(400);
+  ok(await page.evaluate(() => window.__bzg.R.ui.arg === 'explorer' && window.__bzg.R.ui.lib.explorer.sel === 'US' && (window.__bzg.R.ui.lib.explorer.pin || {}).n === 'Houston') && (await page.locator('.t-ex-pin').innerText()).includes('Houston'), 'search "houston" opens the Map Explorer with a pin on Houston');
   /* E6 + E4 + F3: a hint, a typed answer, a put-in-order answer, and the mistakes deck */
   await page.evaluate(() => { const R = window.__bzg.R; R.run = null; window.__bzg.fire('startDrill', 'eight-points'); const r = R.run; r.items = r.items.filter((q) => q.kind === 'mc' && q.opts.length >= 3).slice(0, 2); window.__bzg.go('run'); });
   await page.click('[data-act=hint]'); await page.waitForTimeout(100);
