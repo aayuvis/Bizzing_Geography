@@ -322,8 +322,15 @@ says it does (drawn here as a schematic chain of dots).
 
 ## Ship
 
-Commit first, then `cd app && ./deploy.sh`. It runs the tests, builds, replaces `gh-pages`
+Commit and push first, then `cd app && ./deploy.sh`. It runs the tests, builds, replaces `gh-pages`
 wholesale and refuses to publish if the staged file count differs from the build.
+
+**The gatekeeper** (`deploy.sh`, before anything is built): every gh-pages commit is stamped "Built from
+<sha>", and a deploy **refuses** unless that live commit is already inside HEAD — so no deploy can erase
+another's work (two chats deploying from two branches once wiped the Play tab). It also refuses a dirty
+`app/` and a HEAD that is not on GitHub, and names any branch whose `app/` work it does not carry. The
+fix for a refusal is always the same: merge the live commit, test, commit, push, deploy. **One chat
+deploys** (the owner, 3 Oct 2026) — the others push to their branch and leave the deploy to it.
 
 ## Where to pick up
 

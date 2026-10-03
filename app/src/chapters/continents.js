@@ -23,6 +23,15 @@ function findContinent(r, lv) {
   if (c === 'Antarctica') ok.push('AQ');
   return mapQ(`Tap ${c} on the map.`, ok, null, `That’s ${c}.`, c);
 }
+/* Seven continents cannot fill a round alone, so the stop also asks for the continent a
+   well-known country sits on — the same tap, the continent drawn from the country data.
+   Countries on two continents, and names that carry their continent, are left out. */
+function findContinentOf(r, lv) {
+  const pool = QUIZ.filter((c) => !TWO_CONTINENTS.has(c.cc) && !c.name.includes(c.cont.split(' ')[0]) && (lv >= 3 || FAMOUS.has(c.cc)) && (lv >= 2 || c.area > 250000));
+  const c = pick(pool, r);
+  const ok = COUNTRIES.filter((x) => x.cont === c.cont).map((x) => x.cc);
+  return mapQ(`${c.name} is on one continent. Tap that continent on the map.`, ok, null, `${c.name} is in ${c.cont}.`, c.cont);
+}
 function oceanMarked(r, lv) {
   const o = pick(lv === 1 ? OCEANS.slice(0, 3) : OCEANS, r);
   return mc(r, 'Which ocean has the red pin in it?', o.id + ' Ocean', OCEANS.map((x) => x.id + ' Ocean'), o.blurb,
@@ -67,5 +76,5 @@ export const STOPS = [
     hook: 'Turn the map in your head: Africa is below Europe; the two Americas are on the left.',
     idea: ['On most world maps, the <b>Americas</b> are on the left, <b>Europe and Africa</b> are in the middle, <b>Asia</b> is on the right and <b>Oceania</b> is at the bottom right.', 'This map is drawn so that no continent looks much too big or too small.'],
     why: 'A picture of the world in your head helps with every other map you will ever read.',
-    gen: findContinent },
+    gen: mix(findContinent, findContinentOf) },
 ];

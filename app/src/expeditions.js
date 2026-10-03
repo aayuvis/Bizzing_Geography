@@ -17,7 +17,7 @@
    Grown-ups are shown objectives mastered, never minutes. */
 import { gi, ico } from './icons.js';
 import { EXPEDITIONS, expeditionById, daysOf, EXPEDITIONS_INTRO, EXPEDITIONS_PARENT } from './data/expeditions.js';
-import { byId, drill } from './stops.js';
+import { byId, drill, newSeen } from './stops.js';
 import { dayKey, shuffle, rnd } from './rand.js';
 import { esc } from './ui.js';
 import { ENGINES, ENGINE_NAME } from './projects.js';
@@ -90,10 +90,11 @@ export function reviewStops(e, d) {
 }
 export function quizFor(d, r = rnd, n = 10, review = []) {
   const lvs = [d.lv, ...[3, 2, 1].filter((x) => x < d.lv), ...[1, 2, 3].filter((x) => x > d.lv)];
-  const seen = new Set(), out = [];
-  const take = (qs) => { for (const q of shuffle(qs, r)) { const key = q.text + '|' + (q.ans || (q.ok || []).join()); if (seen.has(key)) continue; seen.add(key); out.push(q); if (out.length === n) break; } };
-  take(d.stops.flatMap((id) => lvs.flatMap((lv) => drill(byId[id], lv, n, r))));
-  if (out.length < n && review.length) take(review.flatMap((id) => drill(byId[id], d.lv, 4, r)).map((q) => ({ ...q, review: true })));
+  /* one memory across every drill, so no level or stop repeats another's question (stops.js) */
+  const seen = newSeen(), out = [];
+  const take = (qs) => { for (const q of shuffle(qs, r)) { out.push(q); if (out.length === n) break; } };
+  take(d.stops.flatMap((id) => lvs.flatMap((lv) => drill(byId[id], lv, n, r, seen))));
+  if (out.length < n && review.length) take(review.flatMap((id) => drill(byId[id], d.lv, 4, r, seen)).map((q) => ({ ...q, review: true })));
   return shuffle(out, r);
 }
 

@@ -13,7 +13,7 @@ import { viewSearch, placeOf } from './search.js';
 import { missAdd, missDue, missRight, missWrong, keyOf } from './mistakes.js';
 import { CATALOGUE, byAvatar, worldNo, canWear, stateOf as avState } from './avatars.js';
 import { buy as buyAvatar, buyWorld as buyWorldFam, worldOpen } from './bizzing-avatars.js';
-import { byId, drill, correct, worldOf, STOPS } from './stops.js';
+import { byId, drill, correct, worldOf, STOPS, newSeen, remember } from './stops.js';
 import { newHousehold, newKid, kid, AVATARS, tick, session, GOALS, stopRec, scoreRun, road, stopOpen, lvFor, passLevel, levelOf, CHECK_PASS } from './model.js';
 import { byCc } from './geo.js';
 import { shuffle, rnd } from './rand.js';
@@ -428,14 +428,14 @@ setInterval(() => {
 }, 500);
 /* the 5-minute trip (E1): three from what you have passed, one new, one on the map — then it ends */
 on('trip', () => {
-  const k = kid(R.h), passed = shuffle(Object.keys(k.stops).filter((id) => byId[id] && k.stops[id].stars >= 2), rnd), rd = road(k), items = [];
+  const k = kid(R.h), passed = shuffle(Object.keys(k.stops).filter((id) => byId[id] && k.stops[id].stars >= 2), rnd), rd = road(k), items = [], S = newSeen();   // one memory: the trip never repeats itself
   const tag = (qs, id) => qs.map((q) => ({ ...q, from: byId[id].title }));
-  for (const id of passed.slice(0, 3)) items.push(...tag(drill(byId[id], lvFor(k, id), 1), id));
+  for (const id of passed.slice(0, 3)) items.push(...tag(drill(byId[id], lvFor(k, id), 1, rnd, S), id));
   const nx = rd.next ? rd.next.stop : rd.steps[0].stop;
-  items.push(...tag(drill(byId[nx], lvFor(k, nx), 1), nx));
+  items.push(...tag(drill(byId[nx], lvFor(k, nx), 1, rnd, S), nx));
   const mapStop = shuffle([...passed, nx], rnd).find((id) => drill(byId[id], lvFor(k, id), 6).some((q) => q.kind === 'map'));
-  if (mapStop) { const q = drill(byId[mapStop], lvFor(k, mapStop), 12).find((x) => x.kind === 'map'); if (q) items.push({ ...q, from: byId[mapStop].title }); }
-  while (items.length < 5) items.push(...tag(drill(byId[nx], lvFor(k, nx), 1), nx));
+  if (mapStop) { const q = drill(byId[mapStop], lvFor(k, mapStop), 12, rnd, newSeen()).find((x) => x.kind === 'map' && S.fits(x)); if (q) { remember(S, q); items.push({ ...q, from: byId[mapStop].title }); } }
+  for (let t = 0; items.length < 5 && t < 20; t++) items.push(...tag(drill(byId[nx], lvFor(k, nx), 1, rnd, S), nx));
   startRun('trip', '5-minute trip', items.slice(0, 5), { sub: 'Review · one new · one map' });
 });
 /* the shop: printed prices, from the family wallet; a look, never content */
@@ -503,9 +503,9 @@ on('listMode', () => { Store.saveDevice('listMode', !Store.loadDevice('listMode'
 on('openWord', (w) => { libCtx('dictionary').ui.q = w; go('lib', 'dictionary'); });
 on('menu', () => { R.ui.menu = !R.ui.menu; render(); if (R.ui.menu) { const f = root.querySelector('.who-menu button'); if (f) f.focus(); } });
 on('levelCheck', () => {
-  const k = kid(R.h), L = levelOf(k.road.level), items = [];
-  for (const s of shuffle(L.steps, rnd)) items.push(...drill(byId[s.stop], s.lv, 1));
-  while (items.length < 12) { const s = L.steps[items.length % L.steps.length]; items.push(...drill(byId[s.stop], s.lv, 1)); }
+  const k = kid(R.h), L = levelOf(k.road.level), items = [], S = newSeen();   // one memory: the check never repeats itself
+  for (const s of shuffle(L.steps, rnd)) items.push(...drill(byId[s.stop], s.lv, 1, rnd, S));
+  for (let t = 0; items.length < 12 && t < 60; t++) { const s = L.steps[t % L.steps.length]; items.push(...drill(byId[s.stop], s.lv, 1, rnd, S)); }
   startRun('check', `Level ${L.n} check`, shuffle(items, rnd).slice(0, 12), { sub: L.name });
 });
 on('lvShow', (n) => { R.ui.lvShow = +n; render(); });

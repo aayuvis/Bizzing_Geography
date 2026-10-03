@@ -15,6 +15,48 @@ WORK="$(mktemp -d)"
 trap 'git -C "$ROOT" worktree remove --force "$WORK" 2>/dev/null || true; rm -rf "$WORK"' EXIT
 
 cd "$HERE"
+
+# ---------------------------------------------------------------- the gatekeeper
+# Two chats once deployed this site from two branches: each publish replaced gh-pages
+# wholesale, so the second one silently erased the first one's work (the Play tab vanished
+# under My Feed). So before anything is built, the deploy proves three things:
+#   1. NOTHING LIVE IS ERASED — the commit the live site was built from (stamped in every
+#      gh-pages commit as "Built from <sha>") must already be inside what we are deploying.
+#   2. ONLY COMMITTED WORK SHIPS — a dirty tree would publish a site no commit can rebuild.
+#   3. THE SOURCE IS ON GITHUB — HEAD must be pushed, so anyone can rebuild what is live.
+# It refuses rather than warns. Merge the other work in, commit, push, then deploy.
+if [ "${1:-}" != "--dry" ]; then
+  git -C "$ROOT" fetch origin --quiet
+  if [ -n "$(git -C "$ROOT" status --porcelain -- app)" ]; then
+    echo "REFUSING TO DEPLOY: app/ has uncommitted changes. Commit (and push) first — the live site must be a commit." >&2
+    git -C "$ROOT" status --short -- app | head -10 >&2; exit 1
+  fi
+  if [ -z "$(git -C "$ROOT" branch -r --contains HEAD 2>/dev/null)" ]; then
+    echo "REFUSING TO DEPLOY: HEAD ($(git -C "$ROOT" rev-parse --short HEAD)) is not on GitHub. Push it first." >&2; exit 1
+  fi
+  if git -C "$ROOT" show-ref --verify --quiet refs/remotes/origin/gh-pages; then
+    LIVE=$(git -C "$ROOT" log -1 --format=%B origin/gh-pages | sed -n 's/^Built from \([0-9a-f]\{7,40\}\).*/\1/p' | head -1)
+    if [ -z "$LIVE" ]; then
+      echo "REFUSING TO DEPLOY: the live site's last commit does not say what it was built from, so this deploy cannot prove it keeps it." >&2; exit 1
+    fi
+    if ! git -C "$ROOT" cat-file -e "$LIVE^{commit}" 2>/dev/null; then
+      echo "REFUSING TO DEPLOY: the live site was built from $LIVE, which is not in this checkout. Fetch and merge the branch it came from." >&2; exit 1
+    fi
+    if ! git -C "$ROOT" merge-base --is-ancestor "$LIVE" HEAD; then
+      echo "REFUSING TO DEPLOY: the live site was built from $LIVE, which is NOT inside HEAD — deploying would erase it." >&2
+      echo "  live came from: $(git -C "$ROOT" branch -r --contains "$LIVE" | tr -d ' ' | paste -sd' ')" >&2
+      echo "  merge it first:  git merge $LIVE   (then test, commit, push, deploy)" >&2
+      git -C "$ROOT" log --oneline "HEAD..$LIVE" | head -8 | sed 's/^/    missing: /' >&2; exit 1
+    fi
+    echo "gatekeeper: live ($LIVE) is inside HEAD — nothing live is erased"
+  fi
+  # not a refusal, but said out loud: work on other branches that this deploy does not carry
+  for b in $(git -C "$ROOT" branch -r --format='%(refname:short)' | grep -v -e '/HEAD$' -e '/gh-pages$'); do
+    n=$(git -C "$ROOT" rev-list --count "HEAD..$b" -- app 2>/dev/null || echo 0)
+    if [ "$n" -gt 0 ]; then echo "note: $b has $n commit(s) touching app/ that this deploy does not include"; fi
+  done
+fi
+
 npm test                                # a question with two right answers never ships
 # Real photos in GeoGuesser: a Google Maps key, restricted by HTTP referrer to
 # aayuvis.github.io, lives OUTSIDE the repo at $GMAPS_KEY_FILE (default

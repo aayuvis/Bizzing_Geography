@@ -2,7 +2,7 @@
    Exactly one right option, distinct options, the answer never in the text,
    a map question's targets all real shapes. Never loosen this to make a
    chapter pass: fix the generator. */
-import { STOPS, drill, correct } from '../src/stops.js';
+import { STOPS, drill, correct, qKey, newSeen, remember } from '../src/stops.js';
 import { seeded } from '../src/rand.js';
 import { hasShape } from '../src/map.js';
 
@@ -44,6 +44,21 @@ for (const s of STOPS) {
     }
   }
 }
+/* A round asks ten DIFFERENT things (the owner: "a bird's-eye view asks the same question
+   multiple times"). Every stop, every level, 40 rounds: ten questions, no two with the same
+   words and answer, none the same fact asked the other way round (drill's seen.fits). A stop
+   that cannot fill a round needs more questions written — never a shorter round, never a repeat. */
+const short = [];
+for (const s of STOPS) for (const lv of [1, 2, 3]) {
+  const r = seeded('unique' + s.id + lv);
+  for (let i = 0; i < 40; i++) {
+    const d = drill(s, lv, 10, r), keys = new Set(d.map(qKey));
+    if (d.length < 10) { short.push(`${s.id} lv${lv}: ${d.length} different questions`); break; }
+    if (keys.size !== d.length) { bad(s, lv, d[0], 'a round repeats a question'); break; }
+    const S = newSeen(); for (const q of d) { if (!S.fits(q)) { bad(s, lv, q, 'a round asks the same fact twice'); break; } remember(S, q); }
+  }
+}
+if (short.length) { fails += short.length; console.error(`✗ ${short.length} stop levels cannot fill a round of ten different questions:\n   ${short.join('\n   ')}`); }
 /* the right answer has no favourite slot */
 const slots = [0, 0, 0, 0];
 for (const s of STOPS) { const r = seeded('slots' + s.id); for (const q of drill(s, 2, 10, r)) if (q.kind === 'mc' && q.opts.length === 4) slots[q.opts.indexOf(q.ans)]++; }

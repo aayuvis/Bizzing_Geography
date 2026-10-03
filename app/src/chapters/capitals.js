@@ -9,7 +9,15 @@ export const WORLD = { id: 'capitals', name: 'Capital Bazaar', short: 'Capitals'
   blurb: 'Every country in the world, its capital, its flag and its neighbours — one continent at a time.' };
 
 const inGroup = (g) => QUIZ.filter((c) => g.conts.includes(c.cont));
-const levelPool = (list, lv) => list.filter((c) => (lv >= 3 ? true : lv === 2 ? FAMOUS.has(c.cc) || c.area > 100000 : FAMOUS.has(c.cc)));
+/* A continent with few famous countries (Oceania has four) cannot fill a first-look round,
+   so the first look tops up with the group's biggest countries by area, to at least eight. */
+const LV1_MIN = 8;
+const levelPool = (list, lv) => {
+  const got = list.filter((c) => (lv >= 3 ? true : lv === 2 ? FAMOUS.has(c.cc) || c.area > 100000 : FAMOUS.has(c.cc)));
+  if (lv !== 1 || got.length >= LV1_MIN) return got;
+  const more = list.filter((c) => !got.includes(c)).sort((a, b) => b.area - a.area);
+  return got.concat(more.slice(0, LV1_MIN - got.length));
+};
 
 /* A capital that carries its country's name (Singapore, Kuwait City, Tunis in
    Tunisia) answers its own question, so it is never asked. The Capitals shelf
@@ -80,7 +88,8 @@ export const STOPS = [
     hook: g.hook,
     idea: [`${g.name}: <b>${inGroup(g).length} countries</b>.`, 'A <b>capital</b> is the city where a country’s government works — its parliament, its leader’s office.', 'It is not always the biggest city: the capital of Australia is Canberra, not Sydney; of Brazil, Brasília, not São Paulo.', 'Start with the countries you have heard of, then add a few each day.'],
     why: 'Capitals are where the news of a country is made — you will hear these names all your life.',
-    gen: (r, lv) => { const x = r(); return lv >= 2 && x < 0.12 ? areaOrderQ(r, inGroup(g), lv) : x < 0.56 ? capitalQ(r, inGroup(g), lv) : lv >= 2 ? findCountry(r, inGroup(g), lv) : capitalQ(r, inGroup(g), lv); },
+    /* a group short of famous countries also asks "tap it on the map" at the first look */
+    gen: (r, lv) => { const x = r(), map = lv >= 2 || inGroup(g).filter((c) => FAMOUS.has(c.cc)).length < LV1_MIN; return lv >= 2 && x < 0.12 ? areaOrderQ(r, inGroup(g), lv) : x < 0.56 ? capitalQ(r, inGroup(g), lv) : map ? findCountry(r, inGroup(g), lv) : capitalQ(r, inGroup(g), lv); },
     group: g.id,
   })),
   { id: 'flags', title: 'Flags of the world', glyph: '🚩', band: '8-10',

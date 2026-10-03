@@ -42,21 +42,21 @@ export function orderQ(text, inOrder, why = '') {
 /* typing is forgiving about accents, case, spaces and punctuation — never about letters */
 export const fold = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 
-/* A hand-written bank: [{ lv, q, a, w: [...], why, html }]. A question at
-   level lv draws from items at lv or below, leaning on its own level. */
+/* A hand-written bank: [{ lv, q, a, w: [...], why, html }]. A question at level lv leans on
+   items of its own level, then easier ones, and only then harder ones — and never one the round
+   has already asked (`seen`, from stops.js drill), so a bank of ten gives ten different questions. */
 export function bank(items) {
-  return (r, lv) => {
-    const at = items.filter((x) => (x.lv || 1) === lv);
-    const below = items.filter((x) => (x.lv || 1) < lv);
-    const pool = at.length && (r() < 0.7 || !below.length) ? at : below.length ? below : items;
-    const it = pick(pool, r);
-    if (it.tf !== undefined) return tf(r, it.q, it.tf, it.why || '', it.html || '');
-    return mc(r, it.q, it.a, it.w, it.why || '', typeof it.html === 'function' ? it.html() : it.html || '');
+  const make = (r, it) => (it.tf !== undefined ? tf(r, it.q, it.tf, it.why || '', it.html || '') : mc(r, it.q, it.a, it.w, it.why || '', typeof it.html === 'function' ? it.html() : it.html || ''));
+  return (r, lv, seen) => {
+    const fresh = (xs) => xs.map((it) => make(r, it)).filter((q) => !seen || seen.fits(q));
+    const at = fresh(items.filter((x) => (x.lv || 1) === lv)), below = fresh(items.filter((x) => (x.lv || 1) < lv)), above = fresh(items.filter((x) => (x.lv || 1) > lv));
+    const pool = at.length && (r() < 0.7 || !below.length) ? at : below.length ? below : at.length ? at : above;
+    return pool.length ? pick(pool, r) : make(r, pick(items, r));
   };
 }
 
 /* Mix several generators. */
-export const mix = (...gens) => (r, lv) => pick(gens, r)(r, lv);
+export const mix = (...gens) => (r, lv, seen) => pick(gens, r)(r, lv, seen);
 
 /* Countries a six-year-old has probably heard of. Level 1 of any country
    question draws only from here; higher levels open the whole list. */
