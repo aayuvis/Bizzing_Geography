@@ -113,6 +113,11 @@ export function dayTitle(d) {
 }
 const RY = (x) => 72 + 9 * Math.sin((x / 100) * Math.PI * 2 * 1.1 + 0.4);
 const camps = (e) => [...e.modules.map((m, i) => ({ id: m.id, n: i + 1, name: m.name })), { id: 'final', n: 'end', name: 'The finish' }];
+/* a link to one day (#/expd/<id>/<day key>, the feed's cards): the part it is in, or null if no such day */
+export function partOfDay(eid, key) {
+  const e = expeditionById[eid], d = e && daysOf(e).find((x) => x.key === key);
+  return d ? camps(e).findIndex((c) => c.id === d.mod) : null;
+}
 
 export function viewHub(k, pageHead) {
   const all = EXPEDITIONS.map((e) => stats(k, e));
@@ -160,7 +165,7 @@ export function viewExpedition(k, eid, { pageHead, back, btn }, ui = {}) {
       <h2>${esc(cp.id === 'final' ? 'Final test and final project' : m.name)}</h2>
       <p class="crs-obj" id="crs-obj"><button class="read-btn" data-act="read" data-arg="#crs-obj" aria-label="Read this to me" title="Read this to me">${ico('sound')}</button>${cp.id === 'final' ? 'Everything this expedition taught, mixed and cold — then one big thing to make.' : `After this part you can <b>${esc(m.objective)}</b>.${(r.m[m.id] || {}).on ? ' <span class="chip ok">learned ✓</span>' : ''}`}</p>
       <ol class="crs-steps">${md.map((d) => { const st = dayState(k, e, d);
-        return `<li><button class="crs-step ${d.k} ${st}${nextHere && nextHere.key === d.key ? ' cur' : ''}" data-act="expDay" data-arg="${e.id}|${d.n}">
+        return `<li><button class="crs-step ${d.k} ${st}${nextHere && nextHere.key === d.key ? ' cur' : ''}${ui.focus === d.key ? ' focus' : ''}" data-key="${d.key}" data-act="expDay" data-arg="${e.id}|${d.n}">
           <span class="cs-g">${st === 'done' ? '✓' : gi(GLYPH[d.k])}</span><span class="cs-k">${KIND[d.k]}</span><b>${dayTitle(d)}</b><i>${d.k === 'm' ? ENGINE_NAME[d.engine] : `${d.m} min`}</i></button></li>`; }).join('')}</ol>
       ${nextHere ? `<div class="crs-go">${sameDay ? '<p class="muted small">You learned this part today. The test counts as learned from tomorrow — practise now, or come back then.</p>' : ''}
         ${btn(`${gi(GLYPH[nextHere.k])} ${KIND[nextHere.k]}: ${nextHere.k === 'm' || nextHere.k === 'f' || nextHere.k === 'c' ? dayTitle(nextHere) : dayTitle(nextHere)} →`, 'expDay', `${e.id}|${nextHere.n}`, 'primary big')}</div>`

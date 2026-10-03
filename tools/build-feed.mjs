@@ -49,14 +49,16 @@ const I = (p) => import(resolve(APP, 'src', p));
 const { STOPS, WORLDS, byId, drill } = await I('stops.js');
 const { LEVELS, firstLevel, START } = await I('levels.js');
 const { seeded, shuffle } = await I('rand.js');
-const { QUIZ, byCc, capOf, capsText, fmtArea, OCEANS, OCEAN_SRC } = await I('geo.js');
+const { QUIZ, byCc, capOf, capsText, fmtArea, OCEANS, OCEAN_SRC, hemiNS, hemiEW } = await I('geo.js');
 const { RANKS, RANK_SRC } = await I('model.js');
 const { regionsOf, COUNTRY: REGION_COUNTRIES } = await I('library/states.js');
-const { dayTitle } = await I('expeditions.js');
+const { dayTitle, KIND } = await I('expeditions.js');
 const { FAMOUS, TWO_CONTINENTS } = await I('chapters/kit.js');
 const { givesAway, nbrs } = await I('chapters/capitals.js');
 const { ISLANDS } = await I('chapters/landwater.js');
 const { listOptions } = await I('listmode.js');
+const { allTools } = await I('library/index.js');
+const TOOL_NAME = Object.fromEntries((await allTools()).map((t) => [t.TOOL.id, t.TOOL.name]));
 const { WORDS, TOPICS } = await I('library/dictionary.js');
 const { POSTCARDS } = await I('data/postcards.js');
 const { EXPEDITIONS, daysOf } = await I('data/expeditions.js');
@@ -70,6 +72,13 @@ export const bandOfLevel = (n) => (n <= 2 ? '6-7' : n <= 5 ? '8-10' : '11-14');
 const bandsFrom = (b) => BANDS.slice(BANDS.indexOf(b));
 export const plain = (s) => String(s ?? '').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/\s+/g, ' ').trim();
 const art = (p) => (existsSync(resolve(APP, 'public', p)) ? p : undefined);
+const flagArt = (cc) => art(`flags/${cc.toLowerCase()}.svg`);
+/* every card says what it is (the engine's badge), and a card about ONE thing links to that thing
+   (#/lib/<tool>/<item>, #/expd/<id>/<day>) — the owner: never the generic tool. test/feed.mjs holds both. */
+const B = (label) => ({ id: label.toLowerCase().replace(/[^a-z]+/g, '-'), label });
+const ord = (n) => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th');
+const AREA_RANK = Object.fromEntries(QUIZ.filter((c) => c.area).sort((a, b) => b.area - a.area).map((c, i) => [c.cc, i + 1]));
+const list = (xs) => (xs.length === 1 ? xs[0] : xs.slice(0, -1).join(', ') + ' and ' + xs.at(-1));
 
 /* the chapters' levelPool rule: which countries a step at depth lv asks about */
 export const inPool = (c, lv) => (lv >= 3 ? true : lv === 2 ? FAMOUS.has(c.cc) || c.area > 100000 : FAMOUS.has(c.cc));
@@ -101,14 +110,14 @@ export function build() {
   /* ---- the Atlas: worlds, stops, their ideas and their why (the chapters' own words) */
   for (const w of WORLDS) {
     const lv = Math.min(...STOPS.filter((s) => s.world === w.id).map((s) => firstLevel(s.id)).filter(Boolean));
-    add({ id: 'w-' + w.id, kind: 'world', level: lv, topics: ['world:' + w.id], src: 'world:' + w.id, title: w.name, body: plain(w.blurb), art: art(`art/w-${w.id}.webp`), route: '#/world/' + w.id, cta: 'Visit ' + w.short });
+    add({ id: 'w-' + w.id, kind: 'world', level: lv, topics: ['world:' + w.id], src: 'world:' + w.id, title: w.name, badge: B('Atlas place'), body: plain(w.blurb), art: art(`art/w-${w.id}.webp`), route: '#/world/' + w.id, cta: 'Visit ' + w.short });
   }
   for (const s of STOPS) {
     const lv = firstLevel(s.id); if (!lv) continue;
-    const t = ['stop:' + s.id, 'world:' + s.world], route = '#/stop/' + s.id;
-    add({ id: 's-' + s.id, kind: 'stop', level: lv, topics: t, stop: s.id, src: 'stop:' + s.id + ':hook', title: s.title, body: plain(s.hook), art: art(`art/w-${s.world}.webp`), route, cta: 'Open the stop' });
-    (s.idea || []).forEach((x, i) => add({ id: `i-${s.id}-${i}`, kind: 'idea', level: lv, topics: t, stop: s.id, src: `stop:${s.id}:idea:${i}`, title: s.title, body: plain(x), route, cta: 'Open the stop' }));
-    if (s.why) add({ id: 'y-' + s.id, kind: 'why', level: lv, topics: t, stop: s.id, src: `stop:${s.id}:why`, title: 'Why it matters: ' + s.title, body: plain(s.why), route, cta: 'Open the stop' });
+    const t = ['stop:' + s.id, 'world:' + s.world], route = '#/stop/' + s.id, wart = art(`art/w-${s.world}.webp`), cta = 'Open “' + s.title + '”';
+    add({ id: 's-' + s.id, kind: 'stop', level: lv, topics: t, stop: s.id, src: 'stop:' + s.id + ':hook', title: s.title, badge: B('Stop'), body: plain(s.hook), art: wart, route, cta });
+    (s.idea || []).forEach((x, i) => add({ id: `i-${s.id}-${i}`, kind: 'idea', level: lv, topics: t, stop: s.id, src: `stop:${s.id}:idea:${i}`, title: s.title, badge: B('Big idea'), body: plain(x), art: wart, route, cta }));
+    if (s.why) add({ id: 'y-' + s.id, kind: 'why', level: lv, topics: t, stop: s.id, src: `stop:${s.id}:why`, title: 'Why it matters: ' + s.title, badge: B('Why it matters'), body: plain(s.why), art: wart, route, cta });
   }
 
   /* ---- the stops' own questions, road by road (seeded, so each regenerates exactly). Each step gives
@@ -123,7 +132,7 @@ export function build() {
       if (seenQ.has(key)) continue;
       /* the card's title is its stop's — or its world's where the stop's name would give the answer away */
       const title = [s.title, WORLDS.find((w) => w.id === s.world).name, 'A question'].find((t) => q.kind !== 'mc' || !leaks(t, q.ans, q.opts));
-      const base = { level: L.n, topics: ['stop:' + s.id, 'world:' + s.world], stop: s.id, route: '#/stop/' + s.id, cta: 'Open the stop', src: `quiz:${s.id}:${st.lv}:${L.n}`, title };
+      const base = { level: L.n, topics: ['stop:' + s.id, 'world:' + s.world], stop: s.id, route: '#/stop/' + s.id, cta: 'Practise in “' + s.title + '”', src: `quiz:${s.id}:${st.lv}:${L.n}`, title, badge: B('Quiz'), art: art(`art/w-${s.world}.webp`) };
       if (fairMc(q)) {
         seenQ.add(key); g.n++;
         return { ...base, id: `q-${s.id}-${L.n}-${g.n}`, kind: 'quiz', play: { q: q.text, opts: [q.ans, ...q.opts.filter((o) => o !== q.ans)], after: plain(q.why) } };
@@ -149,22 +158,24 @@ export function build() {
       if (!TWO_CONTINENTS.has(c.cc)) lines.push(`${c.name} is in ${c.cont}.`);
       lines.push(c.cap.length > 1 ? `Its capitals: ${capsText(c)}.` : `Its capital is ${capOf(c)}.`);
       const nb = nbrs(c).map((b) => byCc[b].name);
-      if (!c.borders.length) lines.push('It has no land neighbours.');
-      if (c.landlocked) lines.push('It has no coast — it is landlocked.');
-      if (c.area) lines.push(`Area: ${fmtArea(c.area)}.`);
-      add({ id: 'c-' + c.cc, kind: 'country', level: lvCap, topics: ['cont:' + c.cont, 'tool:explorer', 'cc:' + c.cc], src: 'country:' + c.cc, title: c.name, body: lines.join(' '), source: 'From Natural Earth’s map data (India’s depiction)', route: '#/lib/explorer', cta: 'Open the Map Explorer' });
-      if (nb.length) add({ id: 'n-' + c.cc, kind: 'neighbours', level: levelFor('neighbours', c) || lvCap, topics: ['stop:neighbours', 'cont:' + c.cont, 'cc:' + c.cc], src: 'neighbours:' + c.cc, title: `${c.name}’s neighbours`,
-        body: `${c.name} shares a land border with ${nb.length === 1 ? nb[0] : nb.slice(0, -1).join(', ') + ' and ' + nb.at(-1)}.`, source: 'From Natural Earth’s map data (India’s depiction)', route: '#/lib/explorer', cta: 'Open the Map Explorer' });
+      if (!nb.length) lines.push('It has no land neighbours.');
+      else lines.push(nb.length <= 3 ? `It shares land borders with ${list(nb)}.` : `It shares land borders with ${nb.length} countries, among them ${list(nb.slice(0, 3))}.`);
+      lines.push(c.landlocked ? 'It has no coast — it is landlocked.' : 'It has a coast on the sea.');
+      if (c.area) lines.push(`Area: ${fmtArea(c.area)} — the ${ord(AREA_RANK[c.cc])} largest of the 195 countries.`);
+      if (c.capAt && c.capAt[0]) lines.push(`Its capital is in the ${hemiNS(c.capAt[0][0])} and ${hemiEW(c.capAt[0][1])} hemispheres.`);
+      add({ id: 'c-' + c.cc, kind: 'country', level: lvCap, topics: ['cont:' + c.cont, 'tool:explorer', 'cc:' + c.cc], src: 'country:' + c.cc, title: c.name, badge: B('Country'), art: flagArt(c.cc), body: lines.join(' '), source: 'From Natural Earth’s map data (India’s depiction)', route: '#/lib/explorer/' + c.cc, cta: `Open ${c.name} on the map` });
+      if (nb.length) add({ id: 'n-' + c.cc, kind: 'neighbours', level: levelFor('neighbours', c) || lvCap, topics: ['stop:neighbours', 'cont:' + c.cont, 'cc:' + c.cc], src: 'neighbours:' + c.cc, title: `${c.name}’s neighbours`, badge: B('Neighbours'), art: flagArt(c.cc),
+        body: `${c.name} shares a land border with ${list(nb)} — ${nb.length === 1 ? 'one country' : nb.length + ' countries'} in all.`, source: 'From Natural Earth’s map data (India’s depiction)', route: '#/lib/explorer/' + c.cc, cta: `See ${c.name} and its neighbours` });
       if (!givesAway(c)) {
         const wrong = []; for (const x of near) { if (wrong.length >= 3) break; const cap = capOf(x); if (!c.cap.includes(cap) && !wrong.includes(cap)) wrong.push(cap); }
         if (wrong.length >= 2) add({ id: 'k-' + c.cc, kind: 'capital', level: lvCap, key: 'ans:' + capOf(c), topics: ['stop:cap-' + g, 'cont:' + c.cont, 'tool:capitals', 'cc:' + c.cc], src: 'capital:' + c.cc, title: 'Capitals of ' + c.cont,
-          play: { q: `What is the capital of ${c.name}?`, opts: [capOf(c), ...wrong], after: `The capital of ${c.name} is ${capOf(c)}.${c.capNote ? ' ' + c.capNote : ''}` }, route: '#/lib/capitals', cta: 'Country Capitals' });
+          badge: B('Capital'), art: flagArt(c.cc), play: { q: `What is the capital of ${c.name}?`, opts: [capOf(c), ...wrong], after: `The capital of ${c.name} is ${capOf(c)}.${c.capNote ? ' ' + c.capNote : ''}${TWO_CONTINENTS.has(c.cc) ? '' : ` ${c.name} is in ${c.cont}.`}` }, route: '#/lib/capitals/' + c.cc, cta: `Find ${c.name}’s capital on the map` });
       }
     }
     if (lvFlag && c.hasFlag) {
       const wrong = near.slice(0, 3).map((x) => x.name);
       add({ id: 'f-' + c.cc, kind: 'flag', level: lvFlag, key: 'ans:' + c.name, topics: ['stop:flags', 'cont:' + c.cont, 'tool:flags', 'cc:' + c.cc], src: 'flag:' + c.cc, title: 'A flag of ' + c.cont, art: art(`flags/${c.cc.toLowerCase()}.svg`),
-        play: { q: 'Whose flag is this?', opts: [c.name, ...wrong], after: `This is the flag of ${c.name}.` }, route: '#/lib/flags', cta: 'Flags of the World' });
+        badge: B('Flag'), play: { q: 'Whose flag is this?', opts: [c.name, ...wrong], after: `This is the flag of ${c.name}. Its capital is ${capOf(c)}.` }, route: '#/lib/flags/' + c.cc, cta: 'Open this flag in Flags of the World' });
     }
   }
 
@@ -173,25 +184,29 @@ export function build() {
   const contPool = (lv) => QUIZ.filter((c) => !TWO_CONTINENTS.has(c.cc) && !c.name.includes(c.cont.split(' ')[0]) && (lv >= 3 || FAMOUS.has(c.cc)) && (lv >= 2 || c.area > 250000));
   for (const c of contPool(3)) {
     let lv = null; for (const L of LEVELS) for (const st of L.steps) if (!lv && st.stop === 'which-continent' && contPool(st.lv).includes(c)) lv = L.n;
-    if (lv) add({ id: 'ct-' + c.cc, kind: 'continent', level: lv, topics: ['stop:which-continent', 'cont:' + c.cont, 'cc:' + c.cc], stop: 'which-continent', src: 'continent:' + c.cc, title: 'Which continent?', body: `${c.name} is in ${c.cont}.`, route: '#/stop/which-continent', cta: 'Open the stop' });
+    if (lv) add({ id: 'ct-' + c.cc, kind: 'continent', level: lv, topics: ['stop:which-continent', 'cont:' + c.cont, 'cc:' + c.cc], stop: 'which-continent', src: 'continent:' + c.cc, title: 'Which continent?', badge: B('Continent'), art: flagArt(c.cc), body: `${c.name} is in ${c.cont}.`, route: '#/stop/which-continent', cta: 'Open “Which continent?”' });
   }
   for (const cc of ISLANDS) { const c = byCc[cc];
-    add({ id: 'is-' + cc, kind: 'island', level: firstLevel('island-nations'), topics: ['stop:island-nations', 'cc:' + cc], stop: 'island-nations', src: 'island:' + cc, title: 'Island countries', body: `${c.name} is an island country: you cannot walk to it from any other country.`, route: '#/stop/island-nations', cta: 'Open the stop' }); }
+    add({ id: 'is-' + cc, kind: 'island', level: firstLevel('island-nations'), topics: ['stop:island-nations', 'cc:' + cc], stop: 'island-nations', src: 'island:' + cc, title: 'Island countries', badge: B('Island country'), art: flagArt(cc), body: `${c.name} is an island country: you cannot walk to it from any other country.`, route: '#/stop/island-nations', cta: 'Open the stop' }); }
 
   /* ---- the expeditions: each one, each part's objective, each project, each Library day */
   for (const e of EXPEDITIONS) {
-    const lv = Math.max(1, Math.min(10, e.ages[0] - 5)), route = '#/expd/' + e.id, t = ['exp:' + e.id];
-    add({ id: 'e-' + e.id, kind: 'exp', level: lv, topics: t, src: 'exp:' + e.id, title: e.name, body: plain(e.blurb), art: art(`art/crs-${e.id}.webp`), route, cta: 'Open the expedition' });
+    const lv = Math.max(1, Math.min(10, e.ages[0] - 5)), route = '#/expd/' + e.id, t = ['exp:' + e.id], eart = art(`art/crs-${e.id}.webp`), all = daysOf(e);
+    const dayRoute = (key) => route + '/' + key, dayN = (key) => all.find((x) => x.key === key).n;
+    /* what a day is about, in the app's own names: its stop(s), or its Library tool */
+    const covers = (d) => { const ids = d.stop ? [d.stop] : d.stops || []; const t = ids.map((x) => byId[x] && `“${byId[x].title}”`).filter(Boolean); return t.length ? (t.length > 3 ? `${t.length} stops` : list(t)) : d.tool && TOOL_NAME[d.tool] ? TOOL_NAME[d.tool] : ''; };
+    add({ id: 'e-' + e.id, kind: 'exp', level: lv, topics: t, src: 'exp:' + e.id, title: e.name, badge: B('Expedition'), body: `${plain(e.blurb)} ${all.length} days in ${e.modules.length} parts, then a final test and a final project.`, art: eart, route, cta: 'Open the expedition' });
     for (const m of e.modules) {
       const tm = [...t, ...m.days.flatMap((d) => (d.stop ? ['stop:' + d.stop] : (d.stops || []).map((x) => 'stop:' + x)))];
-      add({ id: `e-${e.id}-${m.id}`, kind: 'exp', level: lv, topics: tm, src: `exp:${e.id}:${m.id}`, exp: e.id, title: `${e.name} · ${m.name}`, body: 'In this part you learn to ' + plain(m.objective) + '.', route, cta: 'Open the expedition' });
-      add({ id: `e-${e.id}-${m.id}-p`, kind: 'exp', level: lv, topics: tm, src: `exp:${e.id}:${m.id}:project`, exp: e.id, day: `${m.id}.project`, title: 'Make: ' + m.project.name, body: plain(m.project.brief), route, cta: 'Open the expedition' });
-      m.days.forEach((d, i) => { if (d.tool && d.how) add({ id: `e-${e.id}-${m.id}-${i}`, kind: 'exp', level: lv, topics: [...t, 'tool:' + d.tool], src: `exp:${e.id}:${m.id}.${i}`, exp: e.id, day: `${m.id}.${i}`, title: d.name, body: plain(d.how), route, cta: 'Open the expedition' }); });
+      add({ id: `e-${e.id}-${m.id}`, kind: 'exp', level: lv, topics: tm, src: `exp:${e.id}:${m.id}`, exp: e.id, title: `${e.name} · ${m.name}`, badge: B('Expedition part'), art: eart, body: `In this part you learn to ${plain(m.objective)}. ${m.days.length} days, then you make ${plain(m.project.name)}.`, route: dayRoute(`${m.id}.0`), cta: 'Open this part' });
+      add({ id: `e-${e.id}-${m.id}-p`, kind: 'exp', level: lv, topics: tm, src: `exp:${e.id}:${m.id}:project`, exp: e.id, day: `${m.id}.project`, title: 'Make: ' + m.project.name, badge: B('Make'), art: eart, body: `${plain(m.project.brief)} (${e.name}, part: ${m.name}.)`, route: dayRoute(`${m.id}.project`), cta: `Open day ${dayN(`${m.id}.project`)}` });
+      m.days.forEach((d, i) => { if (d.tool && d.how) add({ id: `e-${e.id}-${m.id}-${i}`, kind: 'exp', level: lv, topics: [...t, 'tool:' + d.tool], src: `exp:${e.id}:${m.id}.${i}`, exp: e.id, day: `${m.id}.${i}`, title: d.name, badge: B('Expedition day'), art: eart, body: `${plain(d.how)} (${e.name}, part: ${m.name}.)`, route: dayRoute(`${m.id}.${i}`), cta: `Open day ${dayN(`${m.id}.${i}`)}` }); });
     }
     /* each day's own aim, as the expedition writes it */
     for (const d of daysOf(e)) if (d.o) add({ id: `e-${e.id}-d${d.n}`, kind: 'day', level: lv, topics: [...t, ...(d.stop ? ['stop:' + d.stop] : (d.stops || []).map((x) => 'stop:' + x))], src: `expday:${e.id}:${d.key}`, exp: e.id, day: d.key,
-      title: `${e.name} · day ${d.n}: ${plain(dayTitle(d))}`, body: `Today’s aim: ${plain(d.o)}.`, route, cta: 'Open the expedition' });
-    add({ id: `e-${e.id}-final`, kind: 'exp', level: lv, topics: t, src: `exp:${e.id}:final`, exp: e.id, day: 'final.project', title: 'Make: ' + e.final.name, body: plain(e.final.brief), route, cta: 'Open the expedition' });
+      title: `${e.name} · day ${d.n}: ${plain(dayTitle(d))}`, badge: B('Expedition day'), art: eart,
+      body: `Day ${d.n} of ${all.length}: a ${KIND[d.k].toLowerCase()} day${d.mod === 'final' ? ' at the finish' : ` in the part “${e.modules.find((x) => x.id === d.mod).name}”`}${covers(d) ? `, on ${covers(d)}` : ''}. Today’s aim: ${plain(d.o)}.`, route: dayRoute(d.key), cta: `Open day ${d.n}` });
+    add({ id: `e-${e.id}-final`, kind: 'exp', level: lv, topics: t, src: `exp:${e.id}:final`, exp: e.id, day: 'final.project', title: 'Make: ' + e.final.name, badge: B('Make'), art: eart, body: `${plain(e.final.brief)} The last day of ${e.name}.`, route: dayRoute('final.project'), cta: `Open day ${dayN('final.project')}` });
   }
 
   /* ---- level-agnostic: the Dictionary, and the painted postcards of Where on Earth? */
@@ -199,7 +214,7 @@ export function build() {
      question — four words from its topic, none spelled out in the meaning */
   const inDef = (w, d) => d.toLowerCase().includes(w.toLowerCase());
   for (const [w, d, t, ex] of WORDS) {
-    const slug = w.toLowerCase().replace(/[^a-z0-9]+/g, '-'), base = { topics: ['tool:dictionary', 'dict:' + t], source: 'Geography Dictionary · ' + TOPICS.find((x) => x.id === t).name, route: '#/word/' + encodeURIComponent(w), cta: 'Open the Dictionary' };
+    const slug = w.toLowerCase().replace(/[^a-z0-9]+/g, '-'), base = { topics: ['tool:dictionary', 'dict:' + t], source: 'Geography Dictionary · ' + TOPICS.find((x) => x.id === t).name, route: '#/word/' + encodeURIComponent(w), cta: `Open “${w}” in the Dictionary`, badge: B('Word') };
     add({ ...base, id: 'd-' + slug, kind: 'word', src: 'word:' + w, title: w, body: d.charAt(0).toUpperCase() + d.slice(1) + '.' });
     if (ex) add({ ...base, id: 'dx-' + slug, kind: 'example', src: 'word:' + w + ':example', title: 'Where to see it: ' + w, body: ex.charAt(0).toUpperCase() + ex.slice(1) + '.' });
     const same = shuffle(WORDS.filter(([x, , tt]) => tt === t && x !== w && !inDef(x, d)).map((x) => x[0]), seeded('feedword|' + w)).slice(0, 3);
@@ -210,21 +225,21 @@ export function build() {
   for (const C of REGION_COUNTRIES) {
     const regs = regionsOf(C.c);
     for (const r of regs) {
-      const base = { topics: ['tool:states', 'cc:' + C.c], bands: ['8-10', '11-14'], route: '#/lib/states', cta: 'State Capitals', title: `${C.name}: ${r.name}` };
-      add({ ...base, id: 'st-' + r.id, kind: 'state', src: `state:${C.c}:${r.id}`, body: `${r.name} is a ${r.type === 'ut' ? 'union territory' : C.unit.split(' ')[0]} of ${C.name}. Its capital: ${r.capFull}.` });
+      const base = { topics: ['tool:states', 'cc:' + C.c], bands: ['8-10', '11-14'], route: '#/lib/states/' + r.id, cta: `Open ${r.name} in State Capitals`, title: `${C.name}: ${r.name}`, art: flagArt(C.c) };
+      add({ ...base, id: 'st-' + r.id, kind: 'state', badge: B('State'), src: `state:${C.c}:${r.id}`, body: `${r.name} is a ${r.type === 'ut' ? 'union territory' : C.unit.split(' ')[0]} of ${/^United /.test(C.name) ? 'the ' : ''}${C.name}. Its capital: ${r.capFull}.` });
       if (fairState(r)) {
         const wrong = shuffle(regs.filter((x) => x !== r && x.cap !== r.cap).map((x) => x.cap), seeded('feedst|' + r.id)).filter((v, i, a) => a.indexOf(v) === i).slice(0, 3);
-        add({ ...base, id: 'sq-' + r.id, kind: 'stateq', key: 'ans:' + r.cap, src: `state:${C.c}:${r.id}:quiz`, title: `Capitals of ${C.name}`, play: { q: `What is the capital of ${r.name}?`, opts: [r.cap, ...wrong], after: `The capital of ${r.name} is ${r.capFull}.` } });
+        add({ ...base, id: 'sq-' + r.id, kind: 'stateq', badge: B('State capital'), key: 'ans:' + r.cap, src: `state:${C.c}:${r.id}:quiz`, title: `Capitals of ${C.name}`, play: { q: `What is the capital of ${r.name}?`, opts: [r.cap, ...wrong], after: `The capital of ${r.name} is ${r.capFull}.` } });
       }
     }
   }
   /* the explorer ranks' checked facts, and the oceans' — each with the sources the app names */
-  RANKS.forEach((r, i) => add({ id: 'r-' + i, kind: 'rank', topics: ['rank'], src: 'rank:' + i, title: `Explorer rank ${i + 1}: ${r.n}`, body: r.why, source: 'Checked in: ' + RANK_SRC.join(' · '), route: '#/me', cta: 'My explorer card' }));
-  for (const o of OCEANS) add({ id: 'o-' + o.id.toLowerCase(), kind: 'ocean', topics: ['stop:five-oceans'], src: 'ocean:' + o.id, title: `The ${o.id} Ocean`, body: o.blurb, source: 'Checked in: ' + OCEAN_SRC.join(' · '), route: '#/lib/explorer', cta: 'Open the Map Explorer' });
+  RANKS.forEach((r, i) => add({ id: 'r-' + i, kind: 'rank', topics: ['rank'], src: 'rank:' + i, title: `Explorer rank ${i + 1}: ${r.n}`, badge: B('Explorer rank'), body: r.why, source: 'Checked in: ' + RANK_SRC.join(' · '), route: '#/me', cta: 'My explorer card' }));
+  for (const o of OCEANS) add({ id: 'o-' + o.id.toLowerCase(), kind: 'ocean', topics: ['stop:five-oceans'], src: 'ocean:' + o.id, title: `The ${o.id} Ocean`, badge: B('Ocean'), body: o.blurb, source: 'Checked in: ' + OCEAN_SRC.join(' · '), route: '#/stop/five-oceans', cta: 'Open “Five oceans”' });
   for (const p of POSTCARDS) {
     const c = byCc[p.cc]; if (!c) continue;
     const wrong = shuffle(QUIZ.filter((x) => x.cont !== c.cont && FAMOUS.has(x.cc)), seeded('feedpc|' + p.id)).slice(0, 3).map((x) => x.name);
-    add({ id: 'p-' + p.id, kind: 'where', bands: bandsFrom(p.band), topics: ['tool:geoguess', 'cont:' + c.cont, 'cc:' + c.cc], src: 'postcard:' + p.id, title: 'Where on Earth is this?', body: 'A painting, not a photo.', art: art(`art/${p.id}.webp`),
+    add({ id: 'p-' + p.id, kind: 'where', bands: bandsFrom(p.band), topics: ['tool:geoguess', 'cont:' + c.cont, 'cc:' + c.cc], src: 'postcard:' + p.id, title: 'Where on Earth is this?', badge: B('Where on Earth?'), body: 'A painting, not a photo.', art: art(`art/${p.id}.webp`),
       play: { q: 'Which country is this painting of?', opts: [c.name, ...wrong], after: `${p.place}. The clues: ${p.clues.join('; ')}.` }, route: '#/place/' + p.id, cta: 'Pin it on the map' });
   }
 

@@ -265,6 +265,11 @@ The shared spec every Bizzing app follows. Here it lives in five files:
 - **Held back:** Landmarks, Earth Through Time and the continent histories while their review flags are up;
   Street View places (the feed makes no third-party request — `test/feed-ui.mjs`); questions answered by a
   figure; map questions whose list names the answer.
+- **A card about one thing opens that thing** (the owner): `#/lib/<tool>/<item>` opens Map Explorer, Country
+  Capitals, Flags or State Capitals ON the country or state (`FOCUS` in main.js), and `#/expd/<id>/<day key>`
+  opens the expedition on that day's part with the day lit (`partOfDay`). Every card carries a badge saying
+  what it is, and its words are built from the data (neighbours, coast, area rank, hemispheres; a day's part,
+  kind and stop). `test/feed.mjs` holds each card to its own link — watched to fail on one generic link.
 - **Ranked on the device** by the family engine (`bizzing-feed.js`, vendored) from `src/feed.js`: the child's
   road as `level`, the last stops and expedition, the Library tools opened, the mistakes deck as `due`. A
   right answer pays one coin, once; nothing else in the feed pays or counts as learning.

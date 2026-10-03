@@ -69,8 +69,18 @@ for (const c of FEED) {
   /* the route opens a real screen */
   const r = /^#\/([a-z]+)(?:\/(.+))?$/.exec(c.route) || [];
   const arg = r[2] ? decodeURIComponent(r[2]) : null;
-  ok({ stop: () => byId[arg], world: () => WORLDS.some((w) => w.id === arg), lib: () => SHELF.some((t) => t.id === arg), expd: () => EXPEDITIONS.some((e) => e.id === arg),
+  /* a deep link (#/lib/<tool>/<item>, #/expd/<id>/<day>) must name a real item of that tool */
+  const [a0, item] = arg ? [arg.split('/')[0], arg.split('/').slice(1).join('/') || null] : [null, null];
+  const ITEM = { explorer: (x) => byCc[x], capitals: (x) => byCc[x] && byCc[x].quiz, flags: (x) => byCc[x] && byCc[x].quiz, states: (x) => REGION_COUNTRIES.some((C) => regionsOf(C.c).some((g) => g.id === x)) };
+  ok({ stop: () => byId[arg], world: () => WORLDS.some((w) => w.id === arg), lib: () => SHELF.some((t) => t.id === a0) && (!item || (ITEM[a0] && ITEM[a0](item))),
+    expd: () => { const e = EXPEDITIONS.find((x) => x.id === a0); return e && (!item || daysOf(e).some((d) => d.key === item)); },
     word: () => WORDS.some((w) => w[0] === arg), me: () => !arg, place: () => POSTCARDS.some((p) => p.id === arg) }[r[1]]?.(), `${where}: route ${c.route} opens a real screen`);
+  /* the owner: a card about ONE thing opens THAT thing, never the generic tool or collection */
+  const one = { country: `#/lib/explorer/${c.src.split(':')[1]}`, neighbours: `#/lib/explorer/${c.src.split(':')[1]}`, capital: `#/lib/capitals/${c.src.split(':')[1]}`, flag: `#/lib/flags/${c.src.split(':')[1]}`,
+    state: `#/lib/states/${c.src.split(':')[2]}`, expday: `#/expd/${c.src.split(':')[1]}/${c.src.split(':')[2]}` }[c.src.split(':')[0]];
+  if (one) ok(c.route === one, `${where}: opens its own item (${one}), not the shelf (${c.route})`);
+  if (c.day && c.exp) ok(c.route === `#/expd/${c.exp}/${c.day}`, `${where}: an expedition day opens that day`);
+  ok(c.badge && c.badge.label, `${where}: says what it is (a badge)`);
   /* the src resolves, and the card's words are found in it */
   const [kind, a, b, d] = c.src.split(':');
   const s = byId[a];

@@ -104,7 +104,25 @@ function readHash() {
 }
 addEventListener('hashchange', () => { if (selfHash) { selfHash = false; return; } readHash(); });
 
+/* A link to ONE thing, not its shelf (the owner: "navigation to that specific topic, not the generic
+   tool"): #/lib/<tool>/<item> opens the tool ON the item, #/expd/<id>/<day> opens the expedition on that
+   day's part with the day lit. FOCUS says what "on the item" means for each tool; test/feed.mjs holds
+   every card about one thing to a link like this. */
+const FOCUS = {
+  explorer: (t, x, cc) => { t.act('sel', cc, x); },
+  capitals: (t, x, cc) => { t.act('cont', 'All', x); t.act('sel', cc, x); },
+  flags: (t, x, cc) => { t.act('sel', cc, x); },
+  states: (t, x, id) => { t.act('c', id.split('-')[0], x); t.act('sel', id, x); },
+};
+function focusTool(id, item) {
+  if (!FOCUS[id]) return;
+  loadTool(id).then((t) => { if (!t) return; FOCUS[id](t, libCtx(id), item); if (R.ui.nav === 'lib' && R.ui.arg === id) render(); });
+}
 function go(nav, arg = null, fromHash = false) {
+  let focus = null;
+  if ((nav === 'lib' || nav === 'expd') && arg && arg.includes('/')) { const i = arg.indexOf('/'); focus = arg.slice(i + 1); arg = arg.slice(0, i); }
+  if (nav === 'expd' && focus) { const j = X.partOfDay(arg, focus); if (j != null && j >= 0) { R.ui.part = j; R.ui.focusDay = focus; } }
+  else if (nav === 'expd') R.ui.focusDay = null;
   if (nav === 'run' && !R.run) nav = 'home';
   if (nav !== 'run' && R.run) R.run = null;
   /* a link to something that is not there lands on its shelf AND says so in the address (#/lib/nope was the audit's trap) */
@@ -122,6 +140,8 @@ function go(nav, arg = null, fromHash = false) {
   if (!fromHash) writeHash();
   render();
   if (!fromHash) scrollTo(0, 0);
+  if (nav === 'lib' && focus) focusTool(arg, focus);
+  if (nav === 'expd' && R.ui.focusDay) requestAnimationFrame(() => { const el = root.querySelector('.crs-step.focus'); if (el) { el.scrollIntoView({ block: 'center' }); el.focus({ preventScroll: true }); } });
 }
 
 /* ------------------------------------------------------------- render */
@@ -140,7 +160,7 @@ function screen() {
     case 'stop': return stopOpen(R.h, k, R.ui.arg) || X.expAllows(k, R.ui.arg) ? V.viewStop(R.ui.arg) : V.viewWorld(byId[R.ui.arg].world);
     case 'road': return V.viewRoad();
     case 'exp': return X.viewHub(k, V.pageHead);
-    case 'expd': return X.viewExpedition(k, R.ui.arg, V, { part: R.ui.part });
+    case 'expd': return X.viewExpedition(k, R.ui.arg, V, { part: R.ui.part, focus: R.ui.focusDay });
     case 'proj': return X.viewProject(k, R.ui.arg, V);
     case 'library': return libraryView();
     case 'play': return playView();

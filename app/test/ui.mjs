@@ -559,6 +559,19 @@ async function run(vp, tag) {
   }
   await page.click('.search-res .sr >> nth=0'); await page.waitForTimeout(200);
   ok(await page.evaluate(() => window.__bzg.R.ui.nav !== 'search'), 'a search result opens what it found');
+  /* deep links (the feed's cards): a link to ONE thing opens that thing, not the shelf */
+  for (const [h, want, msg] of [
+    ['#/lib/capitals/FR', () => window.__bzg.R.ui.arg === 'capitals' && window.__bzg.R.ui.lib.capitals.sel === 'FR' && !!document.querySelector('.t-ask.pop'), 'a capital link opens France’s capital card'],
+    ['#/lib/states/US-CA', () => window.__bzg.R.ui.arg === 'states' && window.__bzg.R.ui.lib.states.sel === 'US-CA' && !!document.querySelector('.t-ask.pop'), 'a state link opens California in State Capitals'],
+    ['#/lib/explorer/AR', () => window.__bzg.R.ui.arg === 'explorer' && window.__bzg.R.ui.lib.explorer.sel === 'AR' && /Argentina/.test(document.querySelector('.t-cap-side').innerText), 'a country link opens Argentina in the Map Explorer'],
+    ['#/lib/flags/JP', () => window.__bzg.R.ui.arg === 'flags' && window.__bzg.R.ui.lib.flags.sel === 'JP', 'a flag link opens Japan’s flag'],
+    ['#/expd/compass-grid/cg2.1', () => window.__bzg.R.ui.nav === 'expd' && document.querySelector('.crs-step.focus')?.dataset.key === 'cg2.1', 'a day link opens that expedition on that day, lit'],
+  ]) {
+    await page.evaluate((h) => { location.hash = h; }, h);
+    await page.waitForFunction(want, null, { timeout: 5000 }).catch(() => {});
+    ok(await page.evaluate(want), msg);
+    if (await page.locator('.t-ask.pop').count()) await page.keyboard.press('Escape');
+  }
   /* a state capital opens State Capitals on its state; a city opens the Map Explorer with a pin on it */
   await page.evaluate(() => window.__bzg.go('search')); await page.waitForSelector('#search-q');
   await page.fill('#search-q', 'sacramento'); await page.waitForTimeout(400);
