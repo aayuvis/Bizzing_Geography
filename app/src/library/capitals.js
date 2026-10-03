@@ -66,11 +66,14 @@ export function quiz(data, cont, band, r = rnd) {
 }
 
 export function act(name, arg, ctx) {
-  const choose = (cc) => { if (ctx.ui.sel !== cc) { ctx.ui.sel = cc; ctx.ui.ask = {}; setTimeout(() => { const i = document.getElementById('t-capitals-ans'); if (i) i.focus({ preventScroll: true }); }, 30); } };
+  const choose = (cc) => { if (ctx.ui.sel !== cc) { ctx.ui.sel = cc; ctx.ui.ask = {}; ctx.ui.askAt = Date.now(); setTimeout(() => { const i = document.getElementById('t-capitals-ans'); if (i) i.focus({ preventScroll: true }); }, 30); } };
   if (name === 'cont') { ctx.ui.cont = arg; ctx.ui.sel = null; ctx.ui.ask = {}; }
   else if (name === 'sel') choose(arg);
   else if (name === 'close') { ctx.ui.sel = null; ctx.ui.ask = {}; }
   else if (name === 'tap') { const t = JSON.parse(arg); if (t.cc && byCc[t.cc] && byCc[t.cc].quiz) choose(t.cc); }
+  /* the card opens centred, often right under the finger that tapped the map: a phone's follow-up
+     click must not press "4 choices" or "Reveal" on it, so its buttons wait 0.4 s after it opens */
+  else if (['four', 'pick', 'reveal'].includes(name) && Date.now() - (ctx.ui.askAt || 0) < 400) return;
   else if (['check', 'four', 'pick', 'reveal'].includes(name) && ctx.ui.sel) {
     const c = byCc[ctx.ui.sel], st = ctx.ui.ask || (ctx.ui.ask = {});
     const how = handle(name, arg, askOf(c, QUIZ), st, name === 'check' ? ctx.ui.ans : null);

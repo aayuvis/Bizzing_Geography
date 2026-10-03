@@ -67,11 +67,14 @@ export function findQuiz(c, r = rnd) {
 
 export function act(name, arg, ctx) {
   const c = ctx.ui.c || 'US', C = COUNTRY.find((x) => x.c === c);
-  const choose = (id) => { if (ctx.ui.sel !== id) { ctx.ui.sel = id; ctx.ui.ask = {}; setTimeout(() => { const i = document.getElementById('t-states-ans'); if (i) i.focus({ preventScroll: true }); }, 30); } };
+  const choose = (id) => { if (ctx.ui.sel !== id) { ctx.ui.sel = id; ctx.ui.ask = {}; ctx.ui.askAt = Date.now(); setTimeout(() => { const i = document.getElementById('t-states-ans'); if (i) i.focus({ preventScroll: true }); }, 30); } };
   if (name === 'c') { ctx.ui.c = arg; ctx.ui.sel = null; ctx.ui.ask = {}; }
   else if (name === 'sel') choose(arg);
   else if (name === 'close') { ctx.ui.sel = null; ctx.ui.ask = {}; }
   else if (name === 'tap') { const t = JSON.parse(arg); if (t.cc && regionsOf(c).some((s) => s.id === t.cc)) choose(t.cc); }
+  /* the card opens centred, often right under the finger that tapped the map: a phone's follow-up
+     click must not press "4 choices" or "Reveal" on it, so its buttons wait 0.4 s after it opens */
+  else if (['four', 'pick', 'reveal'].includes(name) && Date.now() - (ctx.ui.askAt || 0) < 400) return;
   else if (['check', 'four', 'pick', 'reveal'].includes(name) && ctx.ui.sel) {
     const regs = regionsOf(c), s = regs.find((x) => x.id === ctx.ui.sel), st = ctx.ui.ask || (ctx.ui.ask = {});
     const how = handle(name, arg, askOf(s, regs, C), st, name === 'check' ? ctx.ui.ans : null);

@@ -402,7 +402,7 @@ async function run(vp, tag) {
   await page.waitForTimeout(200);
   ok(await page.evaluate(() => window.__bzg.R.ui.lib.states.sel) === 'IN-RJ', 'tapping Rajasthan selects it');
   await page.waitForSelector('#t-states-ans');
-  ok(await page.evaluate(() => { const b = document.querySelector('.t-ask.pop').getBoundingClientRect(); return b.top >= 0 && b.bottom <= innerHeight; }), 'the capital card pops up on screen, not below the fold');
+  ok(await page.evaluate(() => { const b = document.querySelector('.t-ask.pop').getBoundingClientRect(); return b.top >= 0 && b.bottom <= innerHeight && Math.abs((b.top + b.bottom) / 2 - innerHeight / 2) < 24 && Math.abs((b.left + b.right) / 2 - innerWidth / 2) < 24; }), 'the capital card pops up centred on the screen, not below the fold');
   ok(!(await page.locator('.t-ask').innerText()).includes('Jaipur'), 'the capital is not shown before the child answers');
   await page.fill('#t-states-ans', 'jaipur'); await page.press('#t-states-ans', 'Enter');
   await page.waitForTimeout(150);
@@ -414,11 +414,13 @@ async function run(vp, tag) {
 
   // the four newer countries: each draws every state, and a tap asks for its capital
   for (const [c, n, id, cap] of [['BR', 27, 'BR-BA', 'Salvador'], ['MX', 32, 'MX-JAL', 'Guadalajara'], ['DE', 16, 'DE-BY', 'Munich'], ['NG', 37, 'NG-KN', 'Kano']]) {
+    if (await page.locator('.t-ask.pop').count()) { await page.keyboard.press('Escape'); await page.waitForTimeout(100); }   // the centred card covers the map's middle: close it, as a child would
     await page.click(`[data-arg="states|c|${c}"]`); await page.waitForSelector(`.reg-${c}`);
     ok(await page.locator(`.reg-${c} path.ct`).count() === n, `${c} draws ${n} states`);
     const pt = await inside(page, `.reg-${c} path[data-cc="${id}"]`);
     if (phone) await page.touchscreen.tap(pt[0], pt[1]); else await page.mouse.click(pt[0], pt[1]);
     await page.waitForSelector('#t-states-ans');
+    ok(await page.evaluate(() => (window.__bzg.R.ui.lib.states.ask || {}).state == null), `${c}: the tap that opens the card does not also press a button on it (a phone's follow-up click)`);
     await page.fill('#t-states-ans', cap); await page.press('#t-states-ans', 'Enter'); await page.waitForTimeout(120);
     ok(await page.evaluate(() => window.__bzg.R.ui.lib.states.ask.state) === 'right', `${c}: ${cap} is right for ${id}`);
     await shot(`16-states-${c}`); await noSideways(`states ${c}`);
@@ -431,9 +433,10 @@ async function run(vp, tag) {
   if (phone) await page.touchscreen.tap(br[0], br[1]); else await page.mouse.click(br[0], br[1]);
   await page.waitForSelector('#t-capitals-ans');
   ok(await page.evaluate(() => window.__bzg.R.ui.lib.capitals.sel) === 'BR', 'tapping Brazil asks for its capital');
-  ok(await page.evaluate(() => { const b = document.querySelector('.t-ask.pop').getBoundingClientRect(); return b.top >= 0 && b.bottom <= innerHeight; }), 'the capital card pops up on screen, not below the fold');
+  ok(await page.evaluate(() => { const b = document.querySelector('.t-ask.pop').getBoundingClientRect(); return b.top >= 0 && b.bottom <= innerHeight && Math.abs((b.top + b.bottom) / 2 - innerHeight / 2) < 24 && Math.abs((b.left + b.right) / 2 - innerWidth / 2) < 24; }), 'the capital card pops up centred on the screen, not below the fold');
   await page.fill('#t-capitals-ans', 'Rio'); await page.press('#t-capitals-ans', 'Enter'); await page.waitForTimeout(150);
   ok(await page.evaluate(() => window.__bzg.R.ui.lib.capitals.ask.state) === 'wrong' && !(await page.locator('.t-ask').innerText()).includes('Brasília'), 'a wrong answer holds without giving it away');
+  await page.waitForTimeout(400);   // a person's pause: the card's buttons ignore the first 0.4 s (a phone's ghost click)
   await page.click('[data-arg="capitals|four"]'); await page.waitForSelector('.t-ask-opts');
   ok(await page.locator('.t-ask-opts .opt').count() === 4, 'four choices appear');
   await shot('15-capitals-ask');
@@ -446,7 +449,7 @@ async function run(vp, tag) {
   // a right pick from the four choices counts toward "known"
   const ar = await inside(page, '.gmap path[data-cc=AR]');
   if (phone) await page.touchscreen.tap(ar[0], ar[1]); else await page.mouse.click(ar[0], ar[1]);
-  await page.waitForSelector('#t-capitals-ans');
+  await page.waitForSelector('#t-capitals-ans'); await page.waitForTimeout(400);
   await page.click('[data-arg="capitals|four"]'); await page.waitForSelector('.t-ask-opts');
   await page.click('.t-ask-opts .opt:has-text("Buenos Aires")'); await page.waitForTimeout(150);
   ok(await page.evaluate(() => window.__bzg.R.ui.lib.capitals.ask.state) === 'picked', 'picking Buenos Aires is right');
