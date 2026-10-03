@@ -110,6 +110,8 @@ Inherited from the family, and it holds here:
 - **Every interaction works by keyboard AND touch.** Maps: tap, drag, pinch — or focus, arrows
   move a cross (Shift faster), +/− zoom, Enter chooses (`src/mapui.js`). `test/ui.mjs` answers
   a map question both ways.
+  **A touch chooses the shape under the finger's centre**, never the browser's touch-adjusted target (it
+  snapped taps inside Belgium to the Netherlands — ~5% of the phone chain checks failed until `mapui.js` fixed it).
 - **A wrong answer holds until dismissed; a right one auto-advances.**
 - **Child data is minimal by construction**: first name, age band, avatar. Never a birthdate,
   surname, school, photo or **location** — Where on Earth? never uses the device's position.

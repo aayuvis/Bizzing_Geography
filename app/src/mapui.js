@@ -92,13 +92,17 @@ export function bindMaps(root, onTap) {
   fire = onTap;
   const pts = new Map(); let start = null, moved = false, pinch = null;
   root.addEventListener('pointerdown', (e) => {
-    const el = e.target.closest('.gmap'); if (!el) return;
+    /* a touch's target is ADJUSTED by the browser towards a nearby shape (a tap inside Belgium came back
+       as the Netherlands), while its clientX/Y stay where the finger's centre was — so on touch the shape is
+       the one under that centre, the same point the tap's latitude and longitude come from */
+    const hit = (e.pointerType === 'touch' && document.elementFromPoint(e.clientX, e.clientY)) || e.target;
+    const el = hit.closest && hit.closest('.gmap'); if (!el) return;
     const svg = el.querySelector('svg');
     pts.set(e.pointerId, [e.clientX, e.clientY]);
     if (pts.size === 1) {
       const home = el.dataset.home.split(' ').map(Number), whole = vbOf(svg)[2] >= home[2] * 0.99;
-      const pin = el.classList.contains('drag') && (e.target.closest('.pin.guess') || whole);
-      start = { x: e.clientX, y: e.clientY, vb: vbOf(svg), el, target: e.target, pin }; moved = false;
+      const pin = el.classList.contains('drag') && (hit.closest('.pin.guess') || whole);
+      start = { x: e.clientX, y: e.clientY, vb: vbOf(svg), el, target: hit, pin }; moved = false;
     }
     if (pts.size === 2) { if (start) start.pin = false; const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), vb: vbOf(svg) }; }
     try { el.setPointerCapture(e.pointerId); } catch (_) {}
