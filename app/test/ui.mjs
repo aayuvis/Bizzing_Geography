@@ -98,13 +98,20 @@ async function run(vp, tag) {
   await page.goto(`http://127.0.0.1:${port}/Bizzing_Geography/`);
   await page.waitForSelector('.welcome');
   await shot('01-welcome'); await noSideways('landing');
-  /* A5: try one question before any explorer exists; nothing is saved until sign-up */
-  await page.click('[data-act=trial]'); await page.waitForSelector('.qcard');
-  await page.evaluate(() => { const q = window.__bzg.R.run.items[0]; window.__bzg.fire('choose', q.kind === 'map' ? q.ok[0] : q.ans); });
-  await page.waitForTimeout(1700); await page.evaluate(() => { const r = window.__bzg.R.run; if (r && !r.over) window.__bzg.fire('nextQ'); });
-  ok(await page.evaluate(() => window.__bzg.R.run && window.__bzg.R.run.over && window.__bzg.R.h.kids.length === 0), 'a question can be tried before making an explorer, and makes none');
-  ok(await page.evaluate(() => !(JSON.parse(localStorage.getItem('bzg_household') || '{}').kids || []).length), 'trying first saves no child');
-  await page.click('[data-act=endRun]'); await page.waitForSelector('#kname');
+  /* the landing WORKS (the owner: "no marketing site, no screenshots — look at Bizzing Bee"): a five-question
+     round from five worlds' first stops, by key or tap, and three live frames — none of it saves a child */
+  ok(await page.evaluate(() => !document.querySelector('.land img[src*="shot"], .land img[src*="screen"]')), 'the landing shows no screenshots');
+  for (let i = 0; i < 5; i++) {
+    const right = await page.evaluate(() => { const q = window.__bzg.landRound()[window.__bzg.R.ui.land.i]; return q.opts.indexOf(q.ans) + 1; });
+    await page.keyboard.press(String(i % 2 ? right : right)); await page.keyboard.press('Enter');
+  }
+  ok(await page.evaluate(() => /5 of 5/.test(document.querySelector('.lt-score').innerText)), 'the landing round is played by keys and scored (5 of 5)');
+  await page.click('[data-act=landMap] >> nth=0'); await page.click('[data-act=landBig] >> nth=0'); await page.click('[data-act=landPin] >> nth=3');
+  ok(await page.evaluate(() => document.querySelectorAll('.lf .fb').length === 2 && document.querySelectorAll('.lf-pair svg.shape').length === 2 && !!document.querySelector('.lf-board .bpin.sel')), 'all three frames answer a tap: the map question, the world road, the game (shapes at one scale)');
+  ok(await page.evaluate(() => window.__bzg.R.h.kids.length === 0 && !(JSON.parse(localStorage.getItem('bzg_household') || '{}').kids || []).length), 'trying the landing makes and saves no child');
+  ok(await page.evaluate(() => document.querySelector('.lh-cta a[href="?demo#/grownups"]') != null), 'the landing links the sample report');
+  await noSideways('landing, played');
+  await page.click('.lt-done [data-act=obStart]'); await page.waitForSelector('#kname');
   ok(await page.locator('[data-act=obNext]').isDisabled(), 'Next waits for a name');
   await page.fill('#kname', 'Ahana'); await page.press('#kname', 'Enter');
   await page.waitForSelector('[data-act=draftBand]'); await shot('01b-age');
@@ -519,6 +526,29 @@ async function run(vp, tag) {
   ok(await page.evaluate(() => document.documentElement.classList.contains('bz-hidden') && getComputedStyle(document.querySelector('#scene .scn.a-drift, #scene [class*="a-"]')).animationPlayState === 'paused' && !window.__bzg.music().playing), 'hidden: the scene pauses and the music stops');
   await page.evaluate(() => { Object.defineProperty(document, 'hidden', { value: false, configurable: true }); document.dispatchEvent(new Event('visibilitychange')); });
   ok(await page.evaluate(() => window.__bzg.music().playing), 'visible again: the music comes back');
+  /* M4 + I1: a world greets you with its own sting, once; Shelly's story is behind a door on its page */
+  await page.evaluate(() => window.__bzg.go('world', 'home'));
+  const st0 = await page.evaluate(() => window.__bzg.music());
+  ok(st0.sting === 'home' && st0.stings >= 1, `entering Home Street plays its own sting (${st0.sting})`);
+  await page.evaluate(() => { window.__bzg.go('stop', 'birds-eye'); window.__bzg.go('world', 'home'); });
+  ok(await page.evaluate((n) => window.__bzg.music().stings === n, st0.stings), 'coming back from one of its stops does not play it again');
+  ok(await page.evaluate(() => !!document.querySelector('.story-door img.shelly') && /Shelly’s story/.test(document.querySelector('.story-door').innerText)), 'Shelly stands at the world’s entrance with her story');
+  await page.click('.story-door');
+  ok(await page.evaluate(() => location.hash === '#/story/home' && !!document.querySelector('#story .st-text') && /made up/.test(document.querySelector('.st-note').innerText)), 'the door opens the story, labelled as a story');
+  const sp1 = await page.evaluate(() => document.querySelector('.st-text').innerText);
+  await page.keyboard.press('ArrowRight');
+  const sp2 = await page.evaluate(() => document.querySelector('.st-text').innerText);
+  await page.click('.st-nav button:not(.primary)');
+  ok(sp2 !== sp1 && await page.evaluate((t) => document.querySelector('.st-text').innerText === t, sp1), 'the page turns by key (→) and back by tap');
+  for (let i = 0; i < 9; i++) await page.keyboard.press('ArrowRight');
+  await page.click('.st-nav .primary');
+  ok(await page.evaluate(() => location.hash === '#/stop/birds-eye'), 'the last page opens the world’s first stop');
+  /* E9: a stop whose stars are older than four weeks shows on the Atlas, on its world's pin and in the list */
+  await page.evaluate(() => { const H = window.__bzg.R.h, k = H.kids.find((x) => x.id === H.active) || H.kids[0]; k.stops['birds-eye'] = { ...(k.stops['birds-eye'] || {}), stars: 2, at: Date.now() - 40 * 864e5, runs: 1, best: 80 }; window.__bzg.go('atlas'); });
+  ok(await page.evaluate(() => document.querySelector('.map-pin[data-arg=home] .mp-due')?.innerText === '1' && /1 to review/.test(document.querySelector('.map-pin[data-arg=home]').getAttribute('aria-label')) && /1 stop to review/.test(document.querySelector('.wl[data-arg=home]').innerText)), 'a fading stop shows on the Atlas: its world’s pin and list say “1 to review”');
+  await page.evaluate(() => { window.__bzg.fire('calm'); window.__bzg.go('home'); window.__bzg.go('world', 'weather'); });
+  ok(await page.evaluate(() => window.__bzg.music().sting !== 'weather'), 'Calm mode: no sting');
+  await page.evaluate(() => { window.__bzg.fire('calm'); window.__bzg.go('home'); });
   await page.evaluate(() => { window.__bzg.fire('motion'); });
   ok(await page.evaluate(() => getComputedStyle(document.querySelector('#scene [class*="a-"]')).animationPlayState === 'paused'), 'Reduce motion freezes the living world');
   await page.evaluate(() => { window.__bzg.fire('motion'); window.__bzg.fire('calm'); });
@@ -607,6 +637,18 @@ async function run(vp, tag) {
   await page.click('.search-res .sr >> nth=0'); await page.waitForTimeout(400);
   await page.waitForFunction(() => window.__bzg.R.ui.arg === 'explorer' && /Houston/.test((document.querySelector('.t-ex-pin') || {}).innerText || ''), null, { timeout: 5000 }).catch(() => {});
   ok(await page.evaluate(() => window.__bzg.R.ui.arg === 'explorer' && window.__bzg.R.ui.lib.explorer.sel === 'US' && (window.__bzg.R.ui.lib.explorer.pin || {}).n === 'Houston') && (await page.locator('.t-ex-pin').innerText()).includes('Houston'), 'search "houston" opens the Map Explorer with a pin on Houston');
+  /* E6, step two: after the first hint, "another hint" lights the answer's continent — never the answer */
+  await page.evaluate(() => { const R = window.__bzg.R; R.run = null; window.__bzg.fire('startDrill', 'eight-points'); R.run.items = [{ kind: 'mc', text: 'Which country covers more land?', ans: 'Chad', opts: ['Chad', 'France', 'Peru', 'Japan'], stop: 'eight-points' }]; window.__bzg.go('run'); });
+  await page.click('[data-act=hint]'); await page.waitForTimeout(100);
+  ok(await page.evaluate(() => /Another hint/.test(document.querySelector('[data-act=hint]')?.getAttribute('aria-label') || '')), 'after one hint, a second is offered');
+  await page.click('[data-act=hint]'); await page.waitForTimeout(100);
+  ok(await page.evaluate(() => document.querySelectorAll('.hint-map .gmap path.hl, .hint-map .gmap .hl').length > 5 && !document.querySelector('[data-act=hint]') && document.querySelectorAll('.opt.struck').length === 1), 'the second hint lights a whole continent, keeps the struck option, and there is no third');
+  await page.evaluate(() => { window.__bzg.R.run = null; window.__bzg.go('home'); });
+  /* C4: an age of Earth Through Time opens the tool AT that age */
+  await page.evaluate(() => window.__bzg.go('search')); await page.waitForSelector('#search-q');
+  await page.fill('#search-q', 'pangaea'); await page.waitForFunction(() => [...document.querySelectorAll('.search-res .kicker')].some((k) => k.textContent === 'Earth Through Time'), null, { timeout: 5000 }).catch(() => {});
+  await page.click('.search-res .sr:has(.kicker:text-is("Earth Through Time")) >> nth=0'); await page.waitForTimeout(600);
+  ok(await page.evaluate(() => window.__bzg.R.ui.arg === 'time' && (window.__bzg.R.ui.lib.time.i || 0) > 0 && /pangaea/i.test(document.querySelector('#app').innerText)), 'search "pangaea" opens Earth Through Time at its age');
   /* E6 + E4 + F3: a hint, a typed answer, a put-in-order answer, and the mistakes deck */
   await page.evaluate(() => { const R = window.__bzg.R; R.run = null; window.__bzg.fire('startDrill', 'eight-points'); const r = R.run; r.items = r.items.filter((q) => q.kind === 'mc' && q.opts.length >= 3).slice(0, 2); window.__bzg.go('run'); });
   await page.click('[data-act=hint]'); await page.waitForTimeout(100);
@@ -668,7 +710,8 @@ async function run(vp, tag) {
   /* tap a point INSIDE the neighbour's drawn shape (a country's listed point can sit on its neighbour's land) */
   const nb = P.path[1]; await page.evaluate(() => document.querySelector('main .gmap svg').scrollIntoView({ block: 'center' }));
   const nbXY = await inside(page, `main .gmap path[data-cc="${nb}"]`); await tapXY(nbXY[0], nbXY[1]);
-  ok(await page.evaluate((nb) => window.__bzg.R.ui.lib.chain.g.chain[1] === nb, nb), 'tapping a real neighbour adds it to the chain');
+  { const st = await page.evaluate((nb) => { const g = window.__bzg.R.ui.lib.chain.g; return { ok: g.chain[1] === nb, chain: g.chain.join(','), fb: (document.querySelector('.gm-chain .fb') || {}).innerText || '' }; }, nb);
+    ok(st.ok, `tapping a real neighbour adds it to the chain${st.ok ? '' : ` — tapped ${nb} at ${nbXY.map(Math.round)}, chain ${st.chain}, said "${st.fb}"`}`); }
   await shot('32-chain');
   await page.keyboard.press('u'); ok(await page.evaluate(() => window.__bzg.R.ui.lib.chain.g.chain.length) === 1, 'U undoes a step');
   await page.keyboard.press('h'); await page.waitForSelector('.gm-nb');
@@ -795,6 +838,9 @@ async function run(vp, tag) {
   await page.goto(`http://127.0.0.1:${port}/Bizzing_Geography/?demo`); await page.waitForSelector('[data-bz=home]');
   ok(await page.locator('.demo-bar').count() === 1 && (await page.locator('[data-bz=greet]').innerText()).includes('Sample'), '?demo opens a labelled sample explorer');
   ok(await page.evaluate(() => Object.keys(window.__bzg.R.h.kids[0].days).length >= 10 && window.__bzg.R.h.kids[0].xp > 50), 'the sample has weeks of progress');
+  { const p2 = await browser.newPage({ viewport: vp }); await p2.goto(`http://127.0.0.1:${port}/Bizzing_Geography/?demo#/grownups`); await p2.waitForSelector('.report, .rc, section.narrow h2', { timeout: 8000 }).catch(() => {});
+    ok(await p2.evaluate(() => !document.querySelector('#pin') && /Sample|explorer/i.test(document.querySelector('#app').innerText)), 'A5: the sample’s grown-ups report opens without a PIN');
+    ok(await p2.evaluate(() => document.querySelectorAll('.rc-help li').length >= 1 && [...document.querySelectorAll('.rc-help li')].every((l) => l.innerText.length > 30)), 'Q2: the report says how to help next, from the child’s own record'); await p2.close(); }
   /* N2 — the first-screen budget (family standard §11): what the home pulls before anything is
      tapped, with JS and CSS counted gzipped as GitHub Pages serves them */
   if (phone) {

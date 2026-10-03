@@ -1533,3 +1533,57 @@ h1,h2,h3,.tab,.tb,.set-head h1,.set-sec h2,.shop-page h1,.dr-i{font-family:var(-
 .bz-home > .hourq{order:8}
 @media (max-width:760px){:root .bz-home a.bz-hour[data-bz=hour]{background-position:right top}}
 .h-prog{display:block;font-size:13px;color:var(--muted);margin:2px 0 6px} .h-prog .ico{width:14px;height:14px;vertical-align:-2px;color:#E8A317}
+
+/* painted medals: earned in full colour; not yet, the same painting faded */
+img.medal{display:block;object-fit:contain;filter:drop-shadow(0 3px 6px rgb(0 0 0 / .25))}
+img.medal.dim{filter:grayscale(.75) opacity(.62) contrast(1.05)}
+#medals h2 + .muted,#medals .row.between > .muted{margin-left:12px}
+.medal-shelf li img.medal{width:84px;height:84px}
+
+/* Shelly's story: a door on each world page, and the picture-book page itself */
+.story-door{display:flex;align-items:center;gap:14px;width:100%;text-align:left;cursor:pointer;margin:10px 0;padding:10px 16px;border:2px solid color-mix(in srgb,var(--wt,var(--accent)) 45%,transparent);font:inherit;color:inherit;background:var(--card)}
+.story-door img{flex:none} .story-door span:not(.sd-go){display:flex;flex-direction:column;flex:1;min-width:0}
+.story-door em{font-style:normal;font-family:var(--display,inherit);font-size:1.15em}
+.story-door .sd-go{font-weight:700;color:var(--wi,var(--accent))}
+.story-door:hover,.story-door:focus-visible{transform:translateY(-1px)}
+.story-card{display:grid;grid-template-columns:200px 1fr;gap:20px;align-items:center;min-height:300px}
+.story-card .st-art{display:flex;justify-content:center;touch-action:pan-y;user-select:none}
+.story-card .st-art img{width:180px;height:180px;animation:stIn .35s ease-out}
+.st-text{font-size:clamp(1.15rem,2.2vw,1.45rem);line-height:1.55;margin:0}
+.st-dots{display:flex;gap:6px;margin:14px 0}.st-dots i{width:9px;height:9px;border-radius:50%;background:color-mix(in srgb,var(--ink) 25%,transparent)}.st-dots i.on{background:var(--wi,var(--accent));width:22px;border-radius:5px}
+.st-note{text-align:center;margin-top:10px}
+@keyframes stIn{from{opacity:0;transform:translateY(8px) scale(.96)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.story-card .st-art img{animation:none}}
+@media (max-width:560px){.story-card{grid-template-columns:1fr;gap:6px}.story-card .st-art img{width:130px;height:130px}.story-door img{width:48px;height:48px}}
+
+/* the landing: a page that works (views.js viewLanding) */
+.welcome.ob:has(.land){max-width:1120px}
+.land{text-align:left;gap:26px}
+.land-hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:clamp(18px,4vw,44px);align-items:center;padding-top:8px}
+.land-hero h1{font-size:clamp(30px,5vw,50px)}
+.lh-cta{flex-wrap:wrap;margin:16px 0 8px}
+.lh-try{padding:18px 20px;min-height:300px;display:flex;flex-direction:column;gap:10px;justify-content:center}
+.lh-try .choice-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.lh-try .opt kbd{opacity:.55;margin-right:4px;font-size:.8em}
+.lt-dots{display:flex;gap:6px;margin:4px 0 0}.lt-dots i{width:10px;height:10px;border-radius:50%;background:color-mix(in srgb,var(--ink) 18%,transparent)}.lt-dots i.on{background:var(--accent)}.lt-dots i.ok{background:var(--good,#2e8b57)}.lt-dots i.no{background:var(--bad,#c0392b)}
+.lt-done{text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}.lt-score{font-size:34px;margin:0}
+.land-strip h2{margin:0}.land-strip>p{margin:2px 0 12px}
+.lf-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.lf{margin:0;padding:12px;display:flex;flex-direction:column;gap:8px}
+.lf figcaption{display:flex;flex-direction:column}.lf figcaption span{font-size:13px;color:var(--muted)}
+.lf .gmap{border-radius:10px;overflow:hidden}
+.lf-opts{display:flex;flex-wrap:wrap;gap:6px}
+.board.lf-board{min-width:0;border-radius:10px;overflow:hidden}.lf-board .bpin{width:30px;height:30px;border-width:2px;font-size:13px}.lf-board .bpin.sel{outline:3px solid var(--accent)}
+.lf-say{font-size:13.5px;margin:0}
+.lf-pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}.lf-pair .bg-pick{padding:8px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.lf-pair svg.shape{width:100%;height:auto;max-height:120px}
+.lf .fb{margin:0}
+@media (max-width:900px){.land-hero{grid-template-columns:1fr}.lf-row{grid-template-columns:1fr}}
+@media (max-width:560px){.lh-try .choice-row{grid-template-columns:1fr}.lh-cta .btn{width:100%}}
+.lf .choice-row.lf-opts{display:flex;flex-wrap:wrap;gap:6px}.lf-opts .opt{flex:1 1 auto;width:auto}
+.lf .fb,.lf .fb.small{font-size:14px;line-height:1.4}
+.story-door{margin-top:12px}
+.hint-map{max-width:520px;margin:6px auto 0;border-radius:12px;overflow:hidden}
+/* E9: a world whose stars are fading carries a small count on its pin */
+.mp-g{position:relative}.mp-due{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#E8A33D;color:#2a1a00;font:800 12px/20px var(--ui,inherit);font-style:normal;border:2px solid #fff;box-shadow:0 2px 5px rgb(0 0 0 / .3)}
+.rc-help{margin:14px 0;padding:12px 14px;border-radius:12px;background:color-mix(in srgb,var(--accent) 9%,var(--card))}.rc-help h4{margin:0 0 6px}.rc-help ul{margin:0;padding-left:18px;display:grid;gap:6px}

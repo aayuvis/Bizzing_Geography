@@ -15,6 +15,32 @@ import { byCc, QUIZ, CONTINENTS } from './geo.js';
 import { seeded } from './rand.js';
 import { FAMOUS } from './chapters/kit.js';
 
+/* E6, the second step: a picture of WHERE, never of which. A map question moves in on the answer's
+   part of the world (a box some fifty degrees wide, never the country); a choose-one whose answer is
+   a country lights its whole continent — only when the options are on more than one, or the light
+   would say nothing; a question that names a country (its capital, its river) lights that country.
+   null when there is no honest second step. test/learning.mjs holds every one to never naming,
+   lighting or zooming to the answer alone. */
+const NAMED = new Map(QUIZ.map((c) => [c.name.toLowerCase(), c]));
+export function hint2(q) {
+  if (q.kind === 'map' && !q.region) {
+    const ok = (q.ok || []).filter((c) => byCc[c]); if (ok.length !== 1) return null;
+    const [lat, lng] = byCc[ok[0]].at, x0 = Math.max(-180, Math.min(124, lng - 28)), y0 = Math.max(-60, Math.min(40, lat - 20)), box = [x0, y0, x0 + 56, y0 + 40];   // shifted, never shrunk, at the map's edges
+    return { kind: 'text', level: 2, say: `Closer: the map has moved in on that part of ${byCc[ok[0]].cont}. It is somewhere on this view.`, view: box };
+  }
+  if (q.kind !== 'mc') return null;
+  const ans = NAMED.get(String(q.ans).toLowerCase());
+  if (ans) {
+    const conts = new Set(q.opts.map((o) => (NAMED.get(String(o).toLowerCase()) || {}).cont).filter(Boolean));
+    if (conts.size < 2) return null;
+    const fill = Object.fromEntries(QUIZ.filter((c) => c.cont === ans.cont).map((c) => [c.cc, 'hl']));
+    return { kind: 'map', level: 2, say: 'It is somewhere in the lit part of the world.', map: { fill, cont: ans.cont } };
+  }
+  const named = QUIZ.filter((c) => c.name.length > 3 && new RegExp(`\\b${c.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(q.text));
+  if (named.length !== 1 || q.opts.some((o) => String(o).toLowerCase() === named[0].name.toLowerCase())) return null;
+  return { kind: 'map', level: 2, say: `${named[0].name} is lit on the map — picture what is inside it.`, map: { fill: { [named[0].cc]: 'hl' }, cont: named[0].cont } };
+}
+
 export function hintFor(q, stop) {
   const r = seeded('hint|' + q.text);
   if (q.kind === 'mc') {

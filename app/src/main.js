@@ -17,6 +17,7 @@ import { byId, drill, correct, worldOf, STOPS, newSeen, remember, vary } from '.
 import { newHousehold, newKid, kid, AVATARS, tick, session, GOALS, stopRec, scoreRun, road, stopOpen, lvFor, passLevel, levelOf, CHECK_PASS } from './model.js';
 import { byCc } from './geo.js';
 import { shuffle, rnd } from './rand.js';
+import { STORIES } from './data/stories.js';
 import * as V from './views.js';
 import { toolById, SHELF, loadTool, GAMES, GAME_IDS, metaOf } from './library/index.js';
 import { bindMaps, restoreMaps, zoomMap, resetMap } from './mapui.js';
@@ -31,7 +32,7 @@ import { xpFor, bonus, newMedals, SHOP, shopOf } from './rewards.js';
 import { nextStep } from './next.js';
 import { demoHousehold } from './demo.js';
 import { expeditionById } from './data/expeditions.js';
-import { hintFor } from './hints.js';
+import { hintFor, hint2 } from './hints.js';
 import { certificatesOf, shareCertificate } from './certificate.js';
 import { dayKey } from './rand.js';
 import { feedCard, feedEnd, feedHead, bindFeedKeys } from './bizzing-feed.js';
@@ -113,12 +114,13 @@ const FOCUS = {
   capitals: (t, x, cc) => { t.act('cont', 'All', x); t.act('sel', cc, x); },
   flags: (t, x, cc) => { t.act('sel', cc, x); },
   states: (t, x, id) => { t.act('c', id.split('-')[0], x); t.act('sel', id, x); },
+  time: (t, x, id) => { t.act('id', id, x); },
 };
 function focusTool(id, item) {
   if (!FOCUS[id]) return;
   loadTool(id).then((t) => { if (!t) return; FOCUS[id](t, libCtx(id), item); if (R.ui.nav === 'lib' && R.ui.arg === id) render(); });
 }
-const ROUTES = new Set(['home', 'atlas', 'world', 'stop', 'road', 'exp', 'expd', 'proj', 'library', 'play', 'lib', 'game', 'me', 'settings', 'shop', 'collection', 'medals', 'help', 'search', 'mistakes', 'feed', 'run', 'welcome', 'grownups', 'privacy']);
+const ROUTES = new Set(['home', 'atlas', 'world', 'stop', 'road', 'exp', 'expd', 'proj', 'library', 'play', 'lib', 'game', 'me', 'settings', 'shop', 'collection', 'medals', 'help', 'search', 'mistakes', 'feed', 'run', 'welcome', 'grownups', 'privacy', 'story']);
 function go(nav, arg = null, fromHash = false) {
   let focus = null;
   if ((nav === 'lib' || nav === 'expd') && arg && arg.includes('/')) { const i = arg.indexOf('/'); focus = arg.slice(i + 1); arg = arg.slice(0, i); }
@@ -134,6 +136,8 @@ function go(nav, arg = null, fromHash = false) {
   if (nav === 'lib' && !SHELF.some((t) => t.id === arg)) { nav = 'library'; arg = null; }
   if (nav === 'game' && !GAME_IDS.has(arg)) { nav = 'play'; arg = null; }
   if (nav === 'world' && !worldOf(arg)) { nav = 'atlas'; arg = null; }
+  if (nav === 'story' && !STORIES[arg]) { nav = 'atlas'; arg = null; }
+  if (nav === 'story' && (R.ui.nav !== 'story' || R.ui.arg !== arg)) R.ui.storyPage = 0;
   if (nav !== asked) fromHash = false;
   if (nav === 'grownups' && R.ui.nav !== 'grownups') { R.ui.gate = false; R.ui.gateIn = ''; }
   if (nav !== R.ui.nav) R.ui.prev = R.ui.nav;
@@ -159,6 +163,7 @@ function screen() {
   switch (n) {
     case 'atlas': return V.viewAtlas();
     case 'world': return worldOf(R.ui.arg) ? V.viewWorld(R.ui.arg) : V.viewAtlas();
+    case 'story': return V.viewStory(R.ui.arg);
     case 'stop': return stopOpen(R.h, k, R.ui.arg) || X.expAllows(k, R.ui.arg) ? V.viewStop(R.ui.arg) : V.viewWorld(byId[R.ui.arg].world);
     case 'road': return V.viewRoad();
     case 'exp': return X.viewHub(k, V.pageHead);
@@ -244,7 +249,7 @@ function toolView(tool) {
   return `<section class="tool-page tool-${tool.TOOL.id}${game ? ' game-page' : ''}">${V.pageHead(`${gi(tool.TOOL.glyph)} ${tool.TOOL.name}`, '', game ? V.back('nav', 'Play', 'play') : V.back('nav', 'Library', 'library'))}${body}</section>`;
 }
 
-let focusId = null, woPic = {}, autoReadAt = '', lastLoopTheme = null;
+let focusId = null, woPic = {}, autoReadAt = '', lastLoopTheme = null, lastStingWorld = null;
 M.attach(ac); onSound((secs) => M.duck(secs || 0.9));
 function render() {
   const a = document.activeElement;
@@ -265,6 +270,8 @@ function render() {
   const nav = R.ui.nav, loop = nav === 'run' || (isTool() && C.inGame()) ? 'game' : nav === 'home' || nav === 'welcome' ? 'home' : th;
   M.want(loop, { on: !!Store.loadDevice('music', true), calm: !!Store.loadDevice('calm', false), vol: Store.loadDevice('vol', 40), sting: loop === th && lastLoopTheme !== th && lastLoopTheme != null });
   if (loop === th) lastLoopTheme = th;
+  if (nav === 'world' && lastStingWorld !== R.ui.arg) M.worldSting(R.ui.arg);   // entering a world: its own sting, once
+  lastStingWorld = nav === 'world' || nav === 'stop' || nav === 'story' ? (nav === 'world' ? R.ui.arg : lastStingWorld) : null;
   if (R.ui.coinToast) { const c = R.ui.coinToast; R.ui.coinToast = 0; setTimeout(() => toast(`+${c} Bizzing ${c === 1 ? 'coin' : 'coins'} for learning`), 0); }
   syncScene(th, R.ui.nav === 'run' || Store.loadDevice('still', false) || Store.loadDevice('motion', false));   // a quiz run gets a still, faded scene
   root.innerHTML = C.shell(screen(), { home: R.ui.nav === 'home' && !!kid(R.h) });
@@ -420,11 +427,16 @@ function finish(run) {
 
 on('nav', (a) => go(a || 'home'));
 on('openWorld', (w) => { R.ui.pick = null; go('world', w); });
+on('openStory', (w) => go('story', w));
+on('storyPage', (i) => { R.ui.storyPage = +i; hush(); render(); storyRead(); const b = root.querySelector('.st-nav .primary') || root.querySelector('.st-nav button'); if (b) b.focus({ preventScroll: true }); });
+/* the youngest band hears each page read in the device's own voice, as they hear every question */
+function storyRead() { const k = kid(R.h); if (k && V.autoRead(k) && R.sound) setTimeout(() => readOut('#story .st-text'), 250); }
 on('pickStop', (id) => { R.ui.pick = id; render(); });
 on('openStop', (id) => { if (!stopOpen(R.h, kid(R.h), id) && !X.expAllows(kid(R.h), id)) { toast('That stop opens on a later level.'); return; } go('stop', id); });
 on('openTool', (id) => go('lib', id));
 /* the place of the hour: Where on Earth? opens on THAT postcard, not on its menu */
 on('openPlace', (id) => { loadTool('geoguess').then((t) => { t.act('place', id, libCtx('geoguess')); go('lib', 'geoguess'); }); });
+on('openEra', (id) => { loadTool('time').then((t) => { t.act('id', id, libCtx('time')); go('lib', 'time'); }); });
 on('openLandmark', (id) => { loadTool('landmarks').then((t) => { t.act('sel', id, libCtx('landmarks')); go('lib', 'landmarks'); }); });
 /* expeditions: the engine decides what a day is; the host only goes, runs or toasts */
 on('expOpen', (id) => { R.ui.part = null; go('expd', id); });
@@ -452,6 +464,13 @@ on('learned', (id) => { const r = stopRec(kid(R.h), id); if (!r.learned) { r.lea
 function startDrill(id, extra = {}) { const s = byId[id], k = kid(R.h), lv = lvFor(k, id); startRun('drill', s.title, drill(s, lv, 10), { stop: id, lv, sub: `${gi(s.glyph)} ${['', 'First look', 'Deeper', 'Stretch'][lv]}`, ...extra }); }
 on('startDrill', (id) => startDrill(id));
 /* try one question before making an explorer (A5): nothing is saved until sign-up */
+/* the landing's own round and its three live frames (views.js viewLanding) */
+on('landAns', (a) => { const L = R.ui.land, q = V.landRound()[L.i]; if (!q || L.picks[L.i]) return; L.picks[L.i] = a; if (a === q.ans) { L.score++; sfx.good(); } else sfx.bad(); render(); const b = root.querySelector('.lh-try .btn.primary'); if (b) b.focus({ preventScroll: true }); });
+on('landNext', () => { R.ui.land.i++; render(); const b = root.querySelector('.lh-try .opt, .lh-try .btn.primary'); if (b) b.focus({ preventScroll: true }); });
+on('landAgain', () => { R.ui.land = { i: 0, score: 0, picks: [], frames: R.ui.land.frames, map: R.ui.land.map }; render(); });
+on('landMap', (cc) => { if (R.ui.land.map) return; R.ui.land.map = cc; cc === V.landMap().c.cc ? sfx.good() : sfx.bad(); render(); });
+on('landPin', (id) => { R.ui.land.frames.pin = id; render(); });
+on('landBig', (cc) => { const F = R.ui.land.frames; if (F.big) return; F.big = cc; const [a, b] = V.landPair(); (a.area > b.area ? a : b).cc === cc ? sfx.good() : sfx.bad(); render(); });
 on('trial', () => startRun('trial', 'Try one question', drill(byId['find-continent'], 1, 1), { sub: 'No explorer needed yet' }));
 /* the timed round of Where on Earth? (E2): a clock per card, ticking on screen only */
 setInterval(() => {
@@ -546,7 +565,9 @@ on('levelCheck', () => {
 on('lvShow', (n) => { R.ui.lvShow = +n; render(); });
 on('choose', (a) => answer(a));
 /* E6: one hint per question, recorded on the run so the reward rule can see it */
-on('hint', () => { const run = R.run; if (!run || run.fb || run.over) return; const q = run.items[run.i]; run.hints = run.hints || {}; run.hints[run.i] = hintFor(q, byId[q.stop || run.stop]); if (run.hints[run.i].kind === 'first' && !(run.order || []).length) run.order = [run.hints[run.i].first]; sfx.click(); render(); });
+on('hint', () => { const run = R.run; if (!run || run.fb || run.over) return; const q = run.items[run.i]; run.hints = run.hints || {}; const had = run.hints[run.i];
+  if (had) { const h2 = hint2(q); if (h2) run.hints[run.i] = { ...had, ...h2, opt: had.opt, kind: had.kind === 'strike' ? 'strike' : h2.kind }; sfx.click(); render(); return; }   // the second step: where on the map
+  run.hints[run.i] = hintFor(q, byId[q.stop || run.stop]); if (run.hints[run.i].kind === 'first' && !(run.order || []).length) run.order = [run.hints[run.i].first]; sfx.click(); render(); });
 /* E4: a typed answer, and a put-in-order answer */
 on('typeGo', () => { const run = R.run; if (!run || run.fb) return; const v = (root.querySelector('#type-in') || {}).value || run.typed || ''; if (!v.trim()) return; run.typed = ''; answer(v.trim()); });
 on('orderPick', (x) => { const run = R.run; if (!run || run.fb) return; const q = run.items[run.i]; run.order = [...(run.order || []), x].filter((v, i, a) => a.indexOf(v) === i); sfx.click(); if (run.order.length === q.items.length) { const g = run.order.join('|'); run.order = []; answer(g); } else render(); });
@@ -776,9 +797,26 @@ addEventListener('keydown', (e) => {
     return;
   }
   if (R.run && R.run.over && e.key === 'Enter' && !typing) { e.preventDefault(); fire('endRun'); return; }
+  if (R.ui.land && (R.ui.draft || {}).step === 'land' && !kid(R.h) && !typing && !R.run) {     // the landing's round: 1–4 answer, Enter next
+    const L = R.ui.land, q = V.landRound()[L.i];
+    if (q && !L.picks[L.i] && +e.key >= 1 && +e.key <= q.opts.length) { e.preventDefault(); fire('landAns', q.opts[+e.key - 1]); return; }
+    if (q && L.picks[L.i] && e.key === 'Enter' && !(e.target.closest && e.target.closest('button'))) { e.preventDefault(); fire('landNext'); return; }
+  }
+  if (R.ui.nav === 'story' && !typing && /^Arrow(Left|Right)$/.test(e.key)) {
+    const n = STORIES[R.ui.arg].pages.length, i = (R.ui.storyPage || 0) + (e.key === 'ArrowRight' ? 1 : -1);
+    if (i >= 0 && i < n) { e.preventDefault(); fire('storyPage', String(i)); }
+    return;
+  }
   if (isTool() && toolById[R.ui.arg] && toolById[R.ui.arg].key) {
     if ((!typing || e.key === 'Enter' || e.key === 'Escape') && toolById[R.ui.arg].key(e, libCtx(R.ui.arg))) { e.preventDefault(); render(); }
   }
+});
+/* a story turns its page with a swipe, as a picture book would */
+let stX = null;
+root.addEventListener('pointerdown', (e) => { stX = R.ui.nav === 'story' && e.target.closest('.st-art') ? e.clientX : null; });
+root.addEventListener('pointerup', (e) => {
+  if (stX == null) return; const d = e.clientX - stX; stX = null; if (Math.abs(d) < 50) return;
+  const i = (R.ui.storyPage || 0) + (d < 0 ? 1 : -1); if (i >= 0 && i < STORIES[R.ui.arg].pages.length) fire('storyPage', String(i));
 });
 /* avatar grid: arrow keys move through the faces */
 /* the theme picker is a radio group: arrows move the choice and apply it */
@@ -820,7 +858,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
 
 /* the family's activity feed: active minutes for the Hive, per child, never sent anywhere */
 const act = trackActivity(APP, () => (kid(R.h) || {}).name);
-window.__bzg = { hourRight: () => V.hourQuestion(V.todaysCard()).c.cc, R, go, fire, music: M.musicState, next: nextStep, project, byCc, SHELF,
+window.__bzg = { landRound: () => V.landRound(), hourRight: () => V.hourQuestion(V.todaysCard()).c.cc, R, go, fire, music: M.musicState, next: nextStep, project, byCc, SHELF,
   NB: (cc) => toolById.chain.NB[cc], get TW() { return toolById.tradewinds; } };   // for test/ui.mjs, which drives the built app
 /* the tools kept out of the first download arrive once the app is idle, so they work offline too */
 setTimeout(() => (window.requestIdleCallback || ((f) => setTimeout(f, 1)))(() => { loadTool('geoguess'); loadTool('time'); }), 4000);

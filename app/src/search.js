@@ -8,6 +8,7 @@ import { gi, ico } from './icons.js';
 import { STOPS, WORLDS, worldOf } from './stops.js';
 import { QUIZ, STATES, INDIA, byCc } from './geo.js';
 import { LANDMARKS } from './data/landmarks.js';
+import { POSTCARDS } from './data/postcards.js';
 import { WORDS } from './library/dictionary.js';
 import { EXPEDITIONS } from './data/expeditions.js';
 import { SHELF } from './library/index.js';
@@ -24,9 +25,13 @@ const STATE_ROWS = () => [
 ];
 /* cities (Natural Earth's populated places, 2,600 of them) load with the first search, so the
    first screen never carries them; a city that is already found as a capital is not listed twice */
-let PLACES = null, LOADING = null;
+let PLACES = null, LOADING = null, AGES = null;
 /* resolves when the cities are in the index (the search page re-renders on the event) */
-export const placesReady = () => LOADING || (LOADING = import('./data/places.js').then((m) => { PLACES = m.PLACES; INDEX = null; if (typeof window !== 'undefined' && window.dispatchEvent) window.dispatchEvent(new Event('bzg-search-ready')); }));
+/* Earth Through Time's ages load with them too (70 KB of history): the Earth's own story, our maps,
+   and each continent's ages — never a hard moment's own age, which the tool shows only to 11–14 */
+export const placesReady = () => LOADING || (LOADING = Promise.all([import('./data/places.js'), import('./data/eras.js'), import('./data/history.js')]).then(([m, er, hi]) => {
+  AGES = [...er.EARTH.map((e) => [e, 'Earth through time']), ...er.MAPS.map((e) => [e, 'Our maps through time']), ...Object.entries(hi.CONTINENT_HISTORY).flatMap(([c, L]) => L.filter((e) => !e.hard).map((e) => [e, c + ' through time']))];
+  PLACES = m.PLACES; INDEX = null; if (typeof window !== 'undefined' && window.dispatchEvent) window.dispatchEvent(new Event('bzg-search-ready')); }));
 function places() { if (!PLACES) placesReady(); return PLACES; }
 let INDEX = null;
 export function index() {
@@ -43,6 +48,8 @@ export function index() {
     ...states.map((x) => ({ kind: x.c === 'US' ? 'US state' : 'State', t: x.name, sub: `Capital: ${x.cap} · ${STATE_C[x.c]}`, glyph: '🗺️', act: 'openState', arg: x.c + '|' + x.id, w: x.name + ' ' + x.cap })),
     ...stateCaps.map((x) => ({ kind: 'State capital', t: x.cap.replace(/\s*\(.*?\)/g, ''), sub: `Capital of ${x.name}, ${STATE_C[x.c]}`, glyph: '🏛️', act: 'openState', arg: x.c + '|' + x.id, w: x.cap })),
     ...(places() || []).filter((p) => byCc[p.cc] && !capsOf.has(p.cc + '|' + key(p.n))).map((p) => ({ kind: 'City', t: p.n.replace(/,\s+/g, ', '), sub: byCc[p.cc].name, glyph: '🏙️', act: 'openCity', arg: p.id, w: p.n + ' ' + byCc[p.cc].name, big: p.big })),
+    ...POSTCARDS.map((p) => ({ kind: 'Painted place', t: p.place, sub: `Where on Earth? · ${p.clues[0]}`, glyph: '🌍', act: 'openPlace', arg: p.id, w: p.place + ' ' + p.clues.join(' ') })),
+    ...(AGES || []).map(([e, track]) => ({ kind: 'Earth Through Time', t: e.title, sub: `${track} · ${e.when}`, glyph: '⏳', act: 'openEra', arg: e.id, w: e.title + ' ' + (e.hook || e.body || '') })),
     ...LANDMARKS.map((l) => ({ kind: 'Landmark', t: l.name, sub: l.where, glyph: '🏛️', act: 'openLandmark', arg: l.id, w: l.name + ' ' + l.where })),
     ...WORDS.map(([w, d]) => ({ kind: 'Word', t: w, sub: d, glyph: '📖', act: 'openWord', arg: w, w })),
     ...EXPEDITIONS.map((e) => ({ kind: 'Expedition', t: e.name, sub: e.blurb || '', glyph: e.glyph, act: 'expOpen', arg: e.id, w: e.name + ' ' + (e.blurb || '') })),

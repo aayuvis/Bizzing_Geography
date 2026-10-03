@@ -308,12 +308,13 @@ MD_STYLE = ("A single round medal for a children's geography app, seen straight 
     "the frame with a margin all round, a short ribbon of two folded tabs at the top. Polished {metal} rim with a few "
     "small embossed dots around it; inside the rim a glossy enamel picture: {subject}. Soft cel shading, gentle "
     "highlights, a clean dark outline, cheerful and collectible, like a premium mobile-game badge. Absolutely no "
-    "letters, numbers, words or symbols of writing anywhere. The background is a perfectly flat, even, pure magenta "
-    "(#FF00FF) with no shadow, no gradient and no texture.")
+    "letters, numbers, words or symbols of writing anywhere, and no pink or magenta anywhere on the medal itself. "
+    "The background is a perfectly flat, even, pure magenta (#FF00FF) filling every corner, with no shadow, no "
+    "vignette, no gradient and no texture.")
 METAL = {1: 'bronze', 2: 'silver', 3: 'gold'}
 MEDAL_ART = {
     'first-station': (1, 'a small red pennant flag planted on a green grassy hill under a blue sky'),
-    'ten-aced': (2, 'three golden stars in an arc above a winding path'),
+    'ten-aced': (2, 'three golden stars in an arc above a winding path through green fields — no globe, no planet, no map'),
     'world-home': (2, 'a cosy little house with a red roof on a quiet street with a tree'),
     'world-landwater': (2, 'a mountain beside a blue lake with a small island'),
     'world-continents': (2, 'a sailing boat in a harbour with a lighthouse'),
@@ -339,18 +340,18 @@ MEDAL_ART = {
     'caps-oceania': (3, 'a kangaroo hopping past a eucalyptus tree'),
     'flags-50': (2, 'a fan of five plain coloured pennant flags on poles, red, blue, green, yellow and white, no symbols'),
     'states-india': (2, 'a peacock with its tail spread beside a lotus flower'),
-    'close-pin': (2, 'a red map pin pushed into a paper target with a bullseye'),
-    'big-round': (3, 'a telescope pointed at a starry sky over a small round globe with only latitude lines'),
-    'first-made': (1, 'a paintbrush, a pencil and a small hammer crossed together'),
+    'close-pin': (2, 'a bold solid bright-red map pin standing in the centre of a solid blue and white bullseye target, strong saturated colours, nothing see-through'),
+    'big-round': (3, 'a brass telescope on a tripod pointed at a starry night sky with a shooting star — no globe, no planet, no map'),
+    'first-made': (1, 'a paintbrush, a pencil and a small hammer crossed together on a plain cream background — no globe, no map'),
     'part-learned': (2, 'an open book with a glowing lightbulb above it'),
     'tw-five': (1, 'a glowing lantern on a wooden harbour post at dusk'),
     'tw-steam': (1, 'a small steamship with a red funnel puffing smoke on the sea'),
     'tw-ocean': (2, 'a great curling ocean wave with a little sailing ship on top'),
     'tw-world': (3, 'a round globe with only latitude and longitude lines, ringed by tiny sailing ships and glowing lanterns'),
     'chain-ten': (2, 'a chain of four colourful links forming a bridge'),
-    'compass-two': (2, 'a magnifying glass over a compass needle'),
+    'compass-two': (2, 'a magnifying glass over a brass compass with a red needle, on opaque cream enamel that fills the whole inside of the rim, no glass reflections — no globe, no planet, no map'),
     'bigger-fools': (2, 'a balance scale with a big stone on one side and a small stone on the other, perfectly level'),
-    'shape-ten': (2, 'a magnifying glass over a puzzle piece'),
+    'shape-ten': (2, 'a magnifying glass over a single plain orange jigsaw puzzle piece — no map, no land shapes'),
     'sun-full': (2, 'a smiling sun over a sundial'),
     'exp-first-maps': (3, 'a treasure map scroll with a dotted path and an X, made-up land shapes only'),
     'exp-continents-oceans': (3, 'a ship sailing between two made-up islands under a big sky'),

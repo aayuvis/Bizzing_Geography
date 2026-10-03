@@ -67,6 +67,8 @@ ok(got.length === 1 && got[0].id === 'first-station', 'passing a first station e
 ok(newMedals(m).length === 0, 'and it is celebrated once');
 ok(MEDALS.every((x) => x.how && x.test && !/day(s)? in a row|streak|login/i.test(x.how)), 'every medal says how it is earned, and none is for days in a row');
 ok(new Set(MEDALS.map((x) => x.id)).size === MEDALS.length, 'medal ids are unique');
+{ const { existsSync } = await import('node:fs'); const miss = MEDALS.filter((x) => !existsSync(new URL(`../public/medals/${x.id}.webp`, import.meta.url)));
+  ok(!miss.length, `every medal has its own painting (${miss.map((x) => x.id).join(', ') || 'all ' + MEDALS.length})`); }
 
 if (fails) { console.error(`✗ family: ${fails} of ${n} failed`); process.exit(1); }
 console.log(`✓ family: wallet, feed, rank, medals — ${n} checks`);

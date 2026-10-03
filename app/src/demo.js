@@ -8,6 +8,7 @@ import { LEVELS } from './levels.js';
 import { COUNTRIES } from './geo.js';
 import { EXPEDITIONS, daysOf } from './data/expeditions.js';
 import { seeded, shuffle } from './rand.js';
+import { newMedals } from './rewards.js';
 
 const pad = (n) => String(n).padStart(2, '0');
 const dayAgo = (n) => { const d = new Date(Date.now() - n * 864e5); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
@@ -33,6 +34,8 @@ export function demoHousehold() {
   const days = daysOf(e).slice(0, 6);
   k.exp[e.id] = { at: dayAgo(9), seen: Object.fromEntries(days.map((d, i) => [d.key, dayAgo(9 - i)])), m: {}, art: {}, work: {} };
   k.last = { k: 'stop', title: byId[road(k).steps[2].stop].title, at: Date.now() - 864e5 };
+  /* its medals counted now (quietly — they are not news), so the sample's shelf is not empty */
+  newMedals(k); delete k.medalsQuiet;
   h.kids.push(k); h.active = k.id;
   return h;
 }

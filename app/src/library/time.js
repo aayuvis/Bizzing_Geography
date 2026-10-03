@@ -150,7 +150,10 @@ export function whereQuiz(r = rnd) {
 export function act(name, arg, ctx) {
   const T = trackOf(ctx.ui), u = ctx.ui;
   const go = (i) => { u.i = Math.max(0, Math.min(T.list.length - 1, i)); u.site = null; };
-  if (name === 't') { u.t = arg; u.i = 0; u.site = null; }
+  if (name === 'id') {          // a link to ONE age (search, #/lib/time/<id>): its track, at it
+    for (const [k, x] of Object.entries(TRACKS)) { const j = x.list.findIndex((e) => e.id === arg); if (j >= 0) { u.t = k; u.i = j; u.site = null; return; } }
+  }
+  else if (name === 't') { u.t = arg; u.i = 0; u.site = null; }
   else if (name === 'i' || name === 'range') go(+arg);
   else if (name === 'step') go((u.i || 0) + +arg);
   else if (name === 'site') u.site = u.site === +arg ? null : +arg;

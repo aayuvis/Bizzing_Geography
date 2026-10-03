@@ -79,9 +79,10 @@ export function newMedals(k) {
   for (const m of MEDALS) if (!k.medals[m.id]) { let ok = false; try { ok = m.test(k); } catch (_) {} if (ok) { k.medals[m.id] = dayKey(); out.push(m); } }
   return out;
 }
-export const medallion = (m, size = 72, got = true) => `<svg class="medal ${TIER[m.tier]}${got ? '' : ' dim'}" width="${size}" height="${size}" viewBox="0 0 80 80" aria-hidden="true">
-  <path class="md-rib" d="M26 4h12l-6 22zM42 4h12l-6 22z"/><circle cx="40" cy="46" r="30" class="md-o"/><circle cx="40" cy="46" r="24" class="md-i"/>
-  <svg x="24" y="30" width="32" height="32" viewBox="0 0 24 24" class="ico md-g">${got ? ICONS[GLYPH[m.glyph] || GLYPH[String(m.glyph).replace(/\uFE0F/g, '')] || 'medal'] : ICONS.help}</svg></svg>`;
+/* Each medal is its own painting (public/medals/<id>.webp, tools/art/gen.py MEDAL_ART): one not yet
+   earned shows the same painting, faded and greyed — what you are working towards, never a blank "?" */
+export const medallion = (m, size = 72, got = true) =>
+  `<img class="medal ${TIER[m.tier]}${got ? '' : ' dim'}" src="medals/${m.id}.webp" alt="" width="${size}" height="${size}" loading="lazy" decoding="async">`;
 
 /* ------------------------------------------------------------------ the shop */
 

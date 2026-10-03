@@ -168,6 +168,11 @@ Inherited from the family, and it holds here:
 - **A capital card pops up over the map** (Country and State Capitals, `ask.js` `panel`), never
   below the fold; ✕ or Esc closes it. No explanatory text blocks on those pages — a count
   ("12 / 50 known") and the map.
+- **The landing WORKS, like Bizzing Bee's** (`views.js viewLanding`; the owner: no marketing site, no
+  screenshots): a five-question round from five worlds' first stops, scored, by key or tap; then three
+  live frames — a map question on the real map, Home Street's road, a Bigger or Smaller? pair drawn at one
+  true scale — all chosen by the day, none of it saving a child; and a link to the sample's report
+  (`?demo#/grownups` opens without a PIN — the sample is no one's).
 - **The welcome is Bizzing Finance's**: a landing page, then one question a screen with Shelly as
   guide — name, age, **five** Common faces, **two** open worlds — and then an easy first question on the
   whole map whose right answer is celebrated (A8), then the first stop.
@@ -227,6 +232,9 @@ The shared spec every Bizzing app follows. Here it lives in five files:
   learned, 0 on an aced station, ≤15 a day per source; mastery bonuses on top); 30+ medals computed
   from evidence, each celebrated once (`k.medals`; medals deserved before store v5 are recorded
   quietly); the map shop (pins, frames) — a look, never content, never chance, never rank.
+  **Every medal is painted** (`public/medals/<id>.webp`, `gen.py` `MEDAL_ART`, `process.py --medals`): in
+  colour when earned, faded when not. A medallion carries no globe with continents — five were repainted
+  for it. `test/family.mjs` fails on a medal without its painting.
 - **`src/demo.js`** — `?demo`: a labelled sample with three weeks of progress, held in memory; it
   saves nothing and writes no shared key (asserted).
 - **Top bar** (56px, the family order): ⬡ back to the Hive · name · theme · 🔒 · avatar ▾. Shelly beside the
@@ -250,10 +258,21 @@ The shared spec every Bizzing app follows. Here it lives in five files:
   flag until the family server) · Extras (map pins and frames), then the wallet history.
 - **Music** is composed in code (`src/music.js`, `music/CREDITS.md`): a loop per world, home and games,
   default 40%, ducks under effects and read-aloud, paused when hidden, off in Calm mode. No narration.
+  Each Atlas world has its own five-note **entry sting** (`WORLD_STINGS`), once on entering, not again
+  from its own stops or story.
+- **Shelly's stories** (`data/stories.js`, `#/story/<world>`): one picture-book tale per world, five to eight
+  pages in her six poses, labelled "the adventure is made up — every fact in it is true", turned by ← →,
+  a tap or a swipe, read aloud for the youngest; a door with Shelly on each world page; the last page
+  names and opens the world's first stop (`test/learning.mjs`).
 - **Learning** (family audit E4/E6/F3/C4): typed and put-in-order items beside multiple choice; one hint per
   question (`src/hints.js`; a hinted right answer pays no coin); the mistakes deck (`src/mistakes.js`) brings
   a miss back after a gap; one search over stops, places, countries, every state and state capital of the eight State Capitals countries, 2,600 cities (loaded on the first search; a city opens the Map Explorer with a pin), landmarks and words (`src/search.js`) — accents, case and punctuation never decide a match ("washington dc").
   Stars come only from answers and fall due for review after four weeks; a miss then drops one star.
+  A **second hint** (`hint2`) shows WHERE, never which: a 56°-wide box for a map question, the answer's
+  whole continent lit when the options span several, or the country the question names. Fading stars show
+  on the Atlas (a count on the world's pin). Five due misses make the deck Continue's next step
+  (`next.js MISS_FIRST`). Search also finds the painted places and every age of Earth Through Time
+  (`#/lib/time/<id>`; loaded with the cities). The report card says **how to help next** (`helpNext`).
 
 ## My Feed (FAMILY-STANDARD §6a)
 

@@ -155,6 +155,31 @@ export function entrySting(id) {
   const L = LOOPS[id], t = AC.currentTime + 0.05;
   [0, 1, 2, 4].forEach((i, j) => voice({ t: 0, d: 0.5, m: L.root + 12 + L.scale[i % L.scale.length] + (i >= L.scale.length ? 12 : 0), v: 0.08, part: 'bell' }, t + j * 0.11, { ...L, echo: 0.3 }));
 }
+/* each Atlas world has its own entry sting (audit M4): a five-note motif with a shape that says
+   the place — the valley falls then rises, the tower climbs, the restless Earth rumbles low,
+   the rivers run down. Semitones from a root, the part that plays it, and its tempo. Played
+   once, on entering the world, over the loop; never in Calm mode or with music off. */
+export const WORLD_STINGS = {
+  home:       { root: 72, m: [0, 4, 7, 12, 7], part: 'bell', bpm: 150 },
+  landwater:  { root: 67, m: [12, 7, 4, 7, 12], part: 'lead', lead: 'marimba', bpm: 160 },
+  continents: { root: 65, m: [0, 5, 7, 12, 17], part: 'lead', lead: 'triangle', bpm: 140 },
+  compass:    { root: 69, m: [0, 7, 0, 12, 7], part: 'lead', lead: 'square', bpm: 170 },
+  capitals:   { root: 70, m: [0, 4, 7, 9, 12], part: 'lead', lead: 'pluck', bpm: 180 },
+  weather:    { root: 74, m: [12, 10, 7, 5, 0], part: 'bell', bpm: 170 },
+  rivers:     { root: 64, m: [12, 9, 7, 4, 0], part: 'lead', lead: 'marimba', bpm: 190 },
+  globe:      { root: 71, m: [0, 7, 14, 7, 0], part: 'bell', bpm: 130 },
+  restless:   { root: 43, m: [0, 1, 0, 6, 0], part: 'lead', lead: 'sawtooth', bpm: 150 },
+  people:     { root: 67, m: [0, 2, 4, 2, 7], part: 'lead', lead: 'triangle', bpm: 200 },
+};
+export const stingNotes = (wid) => { const S = WORLD_STINGS[wid]; return S ? S.m.map((x, i) => ({ t: i * 0.5, d: i === S.m.length - 1 ? 1.5 : 0.5, m: S.root + x, v: 0.09, part: S.part })) : []; };
+export function worldSting(wid) {
+  const S = WORLD_STINGS[wid];
+  if (!S || !state.on || state.calm || !state.unlocked || state.hidden || !bus()) return false;
+  const L = { bpm: S.bpm, lead: S.lead || 'triangle', pad: 'sine', echo: 0.3 }, beat = 60 / S.bpm, t0 = AC.currentTime + 0.08;
+  for (const n of stingNotes(wid)) voice(n, t0 + n.t * beat, L);
+  state.sting = wid; state.stings = (state.stings || 0) + 1;
+  return true;
+}
 /* what should be playing now: decided by the app on every render */
 export function want(id, opts = {}) {
   Object.assign(state, { on: opts.on ?? state.on, calm: !!opts.calm, want: id });

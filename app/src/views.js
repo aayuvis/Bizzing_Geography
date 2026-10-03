@@ -6,7 +6,7 @@ import { esc, cls, plural } from './ui.js';
 import { ico, gi } from './icons.js';
 import { shelly, says, empty } from './mascot.js';
 export { esc };
-import { WORLDS, STOPS, byId, worldOf, stopsIn } from './stops.js';
+import { WORLDS, STOPS, byId, worldOf, stopsIn, drill, newSeen } from './stops.js';
 import { LEVELS, ageOf, firstLevel, START } from './levels.js';
 import { THEMES, themeOf, themePicker } from './themes.js';
 import { Store } from './store.js';
@@ -17,12 +17,13 @@ import { todaysWord } from './library/dictionary.js';
 import { LANDMARKS } from './data/landmarks.js';
 import { reviewDue } from './model.js';
 import { BANDS, AVATARS, AVATAR_PACKS, AVATAR_NAME, avatarFile, RANKS, RANK_SRC, rankOf, kid, stopRec, road, stopOpen, lvFor, starsTotal, maxStars, levelOf } from './model.js';
-import { worldSVG, regionSVG, viewFor } from './map.js';
+import { worldSVG, regionSVG, viewFor, hasShape, shapesAtOneScale } from './map.js';
+import { hint2 } from './hints.js';
 import { POSTCARDS } from './data/postcards.js';
 import { dayKey, seeded, pick, shuffle } from './rand.js';
 import { SHELF } from './library/index.js';
 import { GKEY } from './photos.js';
-import { byCc, CONTINENTS, QUIZ as COUNTRIES_Q } from './geo.js';
+import { byCc, CONTINENTS, QUIZ as COUNTRIES_Q, fmtArea } from './geo.js';
 import { regionsOf } from './library/states.js';
 import { known as capKnown } from './library/capitals.js';
 import { listOptions } from './listmode.js';
@@ -33,6 +34,7 @@ import { missDue, missCount } from './mistakes.js';
 import { home as famHome } from './bizzing-shell.js';
 import { FOOT } from './chrome.js';
 import { certificatesOf } from './certificate.js';
+import { STORIES, STORY_NOTE } from './data/stories.js';
 
 /* ------------------------------------------------------------- helpers */
 
@@ -79,16 +81,7 @@ export function viewWelcome() {
   const first = !R.h.kids.length;
   const d = R.ui.draft || (R.ui.draft = { step: first ? 'land' : 0, name: '', band: '', avatar: STARTER_AVATARS[0], theme: 'atlas' });
   const shell = (body, n) => `<section class="welcome ob">${n != null ? `<div class="ob-top">${n ? `<button class="back" data-act="obBack" aria-label="Back"><span aria-hidden="true">←</span></button>` : first ? '' : back('nav', 'Cancel', 'home')}<ol class="ob-dots" aria-label="Step ${n + 1} of 4">${[0, 1, 2, 3].map((i) => `<li class="${i <= n ? 'on' : ''}"></li>`).join('')}</ol></div>` : ''}${body}</section>`;
-  if (d.step === 'land') return shell(`<div class="ob-land">
-      <div class="ob-hero" style="background-image:url(art/home-hero.webp)">${shelly('wave', 150, 'ob-shelly')}</div>
-      <p class="kicker">Bizzing Geography</p>
-      <h1 class="display">Know the world — <em>and know how you know.</em></h1>
-      <p class="lead">Maps and compasses, continents and capitals, rivers, weather and the restless Earth — for explorers aged 6 to 14.</p>
-      ${btn(`Start exploring ${ico('next')}`, 'obStart', '', 'primary big wide')}
-      ${btn('Try one question first', 'trial', '', 'big wide ghost')}
-      <div class="ob-counts">${[[STOPS.length, 'stops on the Atlas'], [EXPEDITIONS.length, 'expeditions'], [195, 'countries'], [SHELF.length, 'Library tools']].map(([n, l]) => `<div><b>${n}</b><span>${l}</span></div>`).join('')}</div>
-      <div class="card ob-promises">${[['map', 'One map, drawn with care', 'Every map is drawn by the app from open data — never by an AI.'], ['lock', 'Nothing about your child leaves this device', 'A first name and an age band. No email, no photo, no tracking, no ads.'], ['book', 'Every fact says where it is checked', 'And a grown-up’s page that reports what was learned, not how long.']].map(([g, t, x]) => `<div><span>${ico(g)}</span><p><b>${t}</b><br><span class="muted small">${x}</span></p></div>`).join('')}</div>
-      <p class="muted small center-t">Part of the Bizzing family, with Bizzing Bee, India, Finance and Maths.</p></div>`);
+  if (d.step === 'land') return shell(viewLanding());
   if (d.step === 0) return shell(`${guide(first ? 'Hello, explorer! I am Shelly. My shell is a globe, and I know the way round it. What shall I call you?' : 'Another explorer! What shall I call this one?')}
     <div class="card ob-card"><label class="lab" for="kname">First name or nickname</label>
       <input id="kname" class="inp big" data-draft="name" value="${esc(d.name)}" maxlength="20" autocomplete="off" autocapitalize="words" placeholder="e.g. Ahana">
@@ -106,6 +99,80 @@ export function viewWelcome() {
         <span class="tc-t"><b>${t.name}</b><span>${t.blurb}</span></span></button>`).join('')}</div>
       <p class="hint center-t">Four more worlds — rainforest, desert, aurora and space — open later with Bizzing coins or the family plan.</p>
       ${btn(`Start exploring ${ico('next')}`, 'createKid', '', 'primary big wide')}</div>`, 3);
+}
+
+/* ------------------------------------------------------------- the landing (a page that WORKS)
+
+   The owner: "landing must work as a page, no marketing site, no screenshots — look at Bizzing Bee".
+   Bee's landing is a scored round of real entries you can play before you sign up; this is the
+   same idea for maps. Everything on it is the app itself, live: a five-question round from five
+   worlds' own first stops, then a strip of three frames you can DO — a map question on the real
+   map, a world of the Atlas with its road, and a pair from Bigger or Smaller? drawn at one true
+   scale. No screenshot, no claim the page cannot back with a tap. All of it is chosen by the day,
+   so two parents comparing notes saw the same page. */
+const LAND_WORLDS = ['home', 'continents', 'landwater', 'capitals', 'weather'];
+export function landRound(t = new Date()) {
+  const r = seeded('land' + dayKey(t)), S = newSeen();
+  return LAND_WORLDS.map((w) => {
+    const st = stopsIn(w)[0], q = drill(st, 1, 10, r, S).find((x) => x.kind === 'mc' && !x.html && x.opts.length >= 3);
+    return q && { ...q, from: st.title, wid: w };
+  }).filter(Boolean);
+}
+const BIG_LAND = (min = 400000) => COUNTRIES_Q.filter((c) => c.area >= min && hasShape(c.cc) && FAMOUS_H.has(c.cc));
+export function landMap(t = new Date()) {
+  const r = seeded('lmap' + dayKey(t)), c = pick(BIG_LAND(1500000), r);   // big enough to see on a small world map
+  const others = shuffle(BIG_LAND(1500000).filter((x) => x.cont !== c.cont), r).slice(0, 2);
+  return { c, opts: shuffle([c, ...others], r) };
+}
+export function landPair(t = new Date()) {
+  const r = seeded('lpair' + dayKey(t)), P = shuffle(BIG_LAND(), r);
+  for (let i = 0; i < P.length; i++) for (let j = i + 1; j < P.length; j++) { const x = Math.max(P[i].area, P[j].area) / Math.min(P[i].area, P[j].area); if (x >= 1.15 && x <= 4) return [P[i], P[j]]; }
+  return P.slice(0, 2);
+}
+function viewLanding() {
+  const L = R.ui.land || (R.ui.land = { i: 0, score: 0, picks: [] }), Q = landRound(), q = Q[L.i], picked = L.picks[L.i];
+  const tryCard = L.i >= Q.length
+    ? `<div class="lt-done">${shelly('cheer', 110)}<p class="display lt-score">${L.score} of ${Q.length}</p><p>${L.score >= 4 ? 'A natural explorer.' : L.score >= 2 ? 'A good start — and every one of those is a stop on the Atlas.' : 'That is what the Atlas is for — each one is a stop you can learn.'}</p>
+        <div class="row gap center">${btn(`Make your explorer ${ico('next')}`, 'obStart', '', 'primary big')}${btn('Play again', 'landAgain', '', 'ghost')}</div></div>`
+    : `<p class="kicker">Question ${L.i + 1} of ${Q.length} · from <b>${esc(q.from)}</b></p>
+      <div class="q-head"><p class="long-q" id="land-q">${esc(q.text)}</p>${readBtn('#land-q', 'Read the question to me')}</div>
+      <div class="choice-row">${q.opts.map((o, j) => `<button class="btn opt${picked ? (o === q.ans ? ' right' : o === picked ? ' wrong' : '') : ''}" data-act="landAns" data-arg="${esc(o)}" ${picked ? 'disabled' : ''}><kbd>${j + 1}</kbd> ${esc(o)}</button>`).join('')}</div>
+      ${picked ? `<p class="fb ${picked === q.ans ? 'good' : 'bad'}">${picked === q.ans ? 'Right!' : `It is <b>${esc(q.ans)}</b>.`} ${esc(q.why || '')}</p>${btn(L.i + 1 < Q.length ? 'Next question' : 'See your score', 'landNext', '', 'primary')}` : ''}
+      <p class="lt-dots" aria-hidden="true">${Q.map((_, j) => `<i class="${j < L.i ? (L.picks[j] === Q[j].ans ? 'ok' : 'no') : j === L.i ? 'on' : ''}"></i>`).join('')}</p>`;
+  /* frame 1: a map question on the real map */
+  const M = landMap(), mp = L.map, F = (L.frames ||= {});
+  const f1 = `<figure class="card lf"><figcaption><b>1 · A map question</b><span>Which country is lit up?</span></figcaption>
+      ${worldSVG({ key: 'lmap', fill: { [M.c.cc]: mp ? (mp === M.c.cc ? 'ok' : 'bad') : 'goal' }, label: 'A country lit up on the world map' })}
+      <div class="choice-row lf-opts">${M.opts.map((o) => `<button class="btn small opt${mp ? (o.cc === M.c.cc ? ' right' : o.cc === mp ? ' wrong' : '') : ''}" data-act="landMap" data-arg="${o.cc}" ${mp ? 'disabled' : ''}>${esc(o.name)}</button>`).join('')}</div>
+      ${mp ? `<p class="fb ${mp === M.c.cc ? 'good' : 'bad'} small">${mp === M.c.cc ? 'Right — ' : ''}${esc(M.c.name)}, in ${esc(M.c.cont)}. Its capital is ${esc(M.c.cap)}.</p>` : ''}</figure>`;
+  /* frame 2: a world of the Atlas, its road and its stops */
+  const W = worldOf('home'), ss = stopsIn('home'), xs = ss.map((_, j) => 9 + (82 * j) / Math.max(1, ss.length - 1)), sel = F.pin && byId[F.pin] ? byId[F.pin] : ss[0];
+  let path = ''; for (let x = 0; x <= 100; x += 2) path += `${x ? 'L' : 'M'}${x},${ROADY(x).toFixed(2)} `;
+  const f2 = `<figure class="card lf"><figcaption><b>2 · A world of the Atlas</b><span>${esc(W.name)} — tap a stop on the road.</span></figcaption>
+      <div class="board lf-board"><img src="art/w-home.webp" alt="" width="1920" height="815" loading="lazy">
+        <svg class="road" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="${path}" class="rd-edge"/><path d="${path}" class="rd"/></svg>
+        ${ss.map((st, j) => `<button class="bpin${sel === st ? ' sel' : ''}" style="left:${xs[j]}%;top:${ROADY(xs[j])}%" data-act="landPin" data-arg="${st.id}" aria-label="${esc(st.title)}"><span>${gi(st.glyph)}</span></button>`).join('')}</div>
+      <p class="lf-say"><b>${esc(sel.title)}</b> — ${esc(sel.hook)}</p></figure>`;
+  /* frame 3: a game — Bigger or Smaller?, then both at one true scale */
+  const [a, b] = landPair(), bp = F.big, big = a.area > b.area ? a : b, sh = bp ? shapesAtOneScale([a.cc, b.cc], 160) : null;
+  const f3 = `<figure class="card lf"><figcaption><b>3 · A game</b><span>Bigger or Smaller? Which has more land?</span></figcaption>
+      <div class="lf-pair">${[a, b].map((c, n) => `<button class="card bg-pick${bp ? (c === big ? ' right' : bp === c.cc ? ' wrong' : '') : ''}" data-act="landBig" data-arg="${c.cc}" ${bp ? 'disabled' : ''}>${bp ? sh[n] : `<img src="flags/${c.cc.toLowerCase()}.svg" alt="" width="64" height="48">`}<b>${esc(c.name)}</b>${bp ? `<span>${fmtArea(c.area)}</span>` : ''}</button>`).join('')}</div>
+      ${bp ? `<p class="fb ${bp === big.cc ? 'good' : 'bad'} small">${bp === big.cc ? 'Right — ' : ''}${esc(big.name)} is bigger. Both shapes are drawn at one scale: the size you see is the size on Earth.</p>` : ''}</figure>`;
+  return `<div class="ob-land land">
+    <section class="land-hero">
+      <div class="lh-words">
+        <p class="kicker">Maps · Countries · The restless Earth · Ages 6–14</p>
+        <h1 class="display">Know the world — <em>and know how you know.</em></h1>
+        <p class="lead">${STOPS.length} stops on a painted Atlas, ${EXPEDITIONS.length} expeditions, ${195} countries and seven games — every map drawn by the app from open data, every fact with its source.</p>
+        <div class="row gap lh-cta">${btn(`Start exploring ${ico('next')}`, 'obStart', '', 'primary big')}<a class="btn big ghost" href="?demo#/grownups">See a sample explorer’s report</a></div>
+        <p class="muted small">No account, no email, no ads. A first name and an age band, kept on this device.</p>
+      </div>
+      <div class="card lh-try" aria-live="polite">${tryCard}</div>
+    </section>
+    <section class="land-strip"><h2>One sitting, three ways in</h2><p class="muted">Not pictures of the app — the app. Try each one.</p>
+      <div class="lf-row">${f1}${f2}${f3}</div></section>
+    <div class="card ob-promises">${[['map', 'One map, drawn with care', 'Every map is drawn by the app from open data — never by an AI. India’s own depiction, everywhere.'], ['lock', 'Nothing about your child leaves this device', 'A first name and an age band. No email, no photo, no tracking, no ads. (Street View photos in one game come from Google; a grown-up can switch them off.)'], ['book', 'A report on learning, not minutes', 'Stars come only from right answers, and a test counts only on a later day than the lesson.']].map(([g, t, x]) => `<div><span>${ico(g)}</span><p><b>${t}</b><br><span class="muted small">${x}</span></p></div>`).join('')}</div>
+  </div>`;
 }
 
 /* ------------------------------------------------------------- home */
@@ -232,16 +299,17 @@ export function viewAtlas() {
       ${WORLDS.map((w) => {
         const p = MAP_PINS[w.id], open = stopsIn(w.id).some((s) => stopOpen(h, k, s.id));
         const onroad = road(k).steps.filter((s) => !s.done && byId[s.stop].world === w.id).length;
-        return `<button class="map-pin${open ? '' : ' shut'}${p.side === 'l' ? ' lab-l' : ''}${p.x < 14 ? ' edge-l' : p.x > 86 ? ' edge-r' : ''}" style="left:clamp(26px,${p.x}%,calc(100% - 26px));top:${p.y}%;--wi:${w.ink};--wt:${w.tint}" data-act="openWorld" data-arg="${w.id}" aria-label="${esc(w.name)}${open ? '' : ', later levels'}">
-          <span class="mp-g">${gi(w.glyph)}${here === w.id ? `<img class="mp-me" src="avatars/${esc(avatarFile(k.avatar))}.webp" alt="" width="30" height="30">` : ''}</span><span class="mp-t"><b>${esc(w.short)}</b>${onroad ? `<i class="mp-road">${onroad} on your road</i>` : open ? '' : '<i>Later levels</i>'}</span></button>`;
+        const due = stopsIn(w.id).filter((s) => reviewDue(k.stops[s.id])).length;   // E9: stars fading, shown where the child plans
+        return `<button class="map-pin${open ? '' : ' shut'}${p.side === 'l' ? ' lab-l' : ''}${p.x < 14 ? ' edge-l' : p.x > 86 ? ' edge-r' : ''}" style="left:clamp(26px,${p.x}%,calc(100% - 26px));top:${p.y}%;--wi:${w.ink};--wt:${w.tint}" data-act="openWorld" data-arg="${w.id}" aria-label="${esc(w.name)}${open ? '' : ', later levels'}${due ? `, ${due} to review` : ''}">
+          <span class="mp-g">${gi(w.glyph)}${due ? `<i class="mp-due" aria-hidden="true">${due}</i>` : ''}${here === w.id ? `<img class="mp-me" src="avatars/${esc(avatarFile(k.avatar))}.webp" alt="" width="30" height="30">` : ''}</span><span class="mp-t"><b>${esc(w.short)}</b>${onroad ? `<i class="mp-road">${onroad} on your road</i>` : open ? '' : '<i>Later levels</i>'}</span></button>`;
       }).join('')}
     </div></div>
     <div class="world-list">
       ${WORLDS.map((w) => {
-        const ss = stopsIn(w.id), open = ss.some((s) => stopOpen(h, k, s.id));
+        const ss = stopsIn(w.id), open = ss.some((s) => stopOpen(h, k, s.id)), due = ss.filter((s) => reviewDue(k.stops[s.id])).length;
         return `<button class="wl${open ? '' : ' shut'}" data-act="openWorld" data-arg="${w.id}" style="--wt:${w.tint};--wi:${w.ink}">
           <img src="art/w-${w.id}.webp" alt="" loading="lazy" width="1920" height="815">
-          <span class="wl-t"><span class="kicker">${gi(w.glyph)} ${ss.length} stops · from age ${esc(w.band.split('-')[0])}</span><b>${esc(w.name)}</b><span>${esc(w.blurb)}</span><span class="wl-s">★ ${worldStars(k, w)} of ${ss.length * 3}</span></span></button>`;
+          <span class="wl-t"><span class="kicker">${gi(w.glyph)} ${ss.length} stops · from age ${esc(w.band.split('-')[0])}</span><b>${esc(w.name)}</b><span>${esc(w.blurb)}</span><span class="wl-s">★ ${worldStars(k, w)} of ${ss.length * 3}${due ? ` · <b class="rv-due">${due} ${due === 1 ? 'stop' : 'stops'} to review</b>` : ''}</span></span></button>`;
       }).join('')}
     </div>
   </section>`;
@@ -283,6 +351,30 @@ export function viewWorld(wid) {
       <p class="lead">${esc(s.hook)}</p>
       <div class="row gap">${open ? btn('Open this stop', 'openStop', s.id, 'primary big') : `<span class="muted">This stop is on the Level ${firstLevel(sel)} road. Keep going on your own road — it will open.</span>`}</div>
     </div>
+    ${STORIES[wid] ? `<button class="card story-door" data-act="openStory" data-arg="${wid}">${shelly('wave', 64)}<span><b>Shelly’s story</b><em>${esc(STORIES[wid].title)}</em></span><span class="sd-go">Read ›</span></button>` : ''}
+  </section>`;
+}
+
+/* ------------------------------------------------------------- Shelly's story (one per world) */
+
+export function viewStory(wid) {
+  const w = worldOf(wid), st = STORIES[wid], n = st.pages.length;
+  const i = Math.max(0, Math.min(n - 1, R.ui.storyPage || 0)), [pose, text] = st.pages[i], last = i === n - 1;
+  const first = stopsIn(wid)[0];
+  return `<section class="story-page narrow" id="story" style="--wt:${w.tint};--wi:${w.ink}">
+    ${pageHead(`${gi(w.glyph)} ${esc(st.title)}`, esc(w.name), back('openWorld', w.short, w.id))}
+    <div class="card story-card" data-story-keys>
+      <div class="st-art">${shelly(pose, 180)}</div>
+      <div class="st-words">
+        <div class="q-head"><p class="st-text" aria-live="polite">${esc(text)}</p>${readBtn('#story .st-text', 'Read this page to me')}</div>
+        <p class="st-dots" aria-label="Page ${i + 1} of ${n}">${st.pages.map((_, j) => `<i class="${j === i ? 'on' : ''}"></i>`).join('')}</p>
+        <div class="row gap st-nav">
+          ${i ? btn('‹ Back', 'storyPage', String(i - 1)) : ''}
+          ${last ? (first ? btn(`Open ${esc(first.title)}`, 'openStop', first.id, 'primary big') : '') : btn('Next ›', 'storyPage', String(i + 1), 'primary big')}
+        </div>
+      </div>
+    </div>
+    <p class="muted small st-note">${esc(STORY_NOTE)} Use ← → to turn the page.</p>
   </section>`;
 }
 
@@ -317,7 +409,7 @@ function mapList(q) {
   const { ids, names } = listOptions(q);
   return `<p class="muted small list-say">Choose one place from the list.</p><div class="choice-row map-list" role="group" aria-label="Choose a place">${ids.map((id, i) => `<button class="btn big opt" data-act="choose" data-arg="${esc(id)}"><span>${esc(names[id])}</span> <kbd>${i + 1}</kbd></button>`).join('')}</div>`;
 }
-const qHead = (q, read, hint, hintBtn) => `<div class="q-head"><p class="long-q" id="q-text" aria-live="polite">${esc(q.text)}</p>${hintBtn || ''}${readBtn(read, 'Read the question to me')}</div>${hint && hint.say ? `<p class="hint-say" role="status">${ico('hint')} ${esc(hint.say)} <span class="muted small">A right answer after a hint pays no coin.</span></p>` : ''}`;
+const qHead = (q, read, hint, hintBtn) => `<div class="q-head"><p class="long-q" id="q-text" aria-live="polite">${esc(q.text)}</p>${hintBtn || ''}${readBtn(read, 'Read the question to me')}</div>${hint && hint.say ? `<p class="hint-say" role="status">${ico('hint')} ${esc(hint.say)} <span class="muted small">A right answer after a hint pays no coin.</span></p>` : ''}${hint && hint.map ? `<div class="hint-map">${worldSVG({ key: 'hint', fill: hint.map.fill, view: viewFor((CONTINENTS.find((c) => c.id === hint.map.cont) || {}).view || [-180, -60, 180, 80], 0.08), label: 'A hint: part of the world map lit up' })}</div>` : ''}`;
 export function questionBody(q, fb, key = 'q', hint = null, hintBtn = '') {
   if (q.kind === 'type') {
     const val = (R.run && R.run.typed) || '';
@@ -375,7 +467,7 @@ export function viewRun() {
   const run = R.run;
   if (run.over) return viewRunEnd(run);
   const q = run.items[run.i], fb = run.fb, hint = (run.hints || {})[run.i] || null, st = streakOf(run);
-  const hintBtn = fb || hint || run.kind === 'trial' ? '' : `<button class="read-btn hint-btn" data-act="hint" aria-label="A hint (a right answer after it pays no coin)" title="A hint">${ico('hint')}</button>`;
+  const more = hint && hint.level !== 2 && !hint.map && hint2(q), hintBtn = fb || (hint && !more) || run.kind === 'trial' ? '' : `<button class="read-btn hint-btn" data-act="hint" aria-label="${more ? 'Another hint: where on the map' : 'A hint (a right answer after it pays no coin)'}" title="${more ? 'Another hint' : 'A hint'}">${ico('hint')}</button>`;
   const stop = byId[run.stop];
   /* run.sub is the app's own HTML (a stop's glyph and its level), never a child's words: not escaped.
      The back pill names where it goes (main.js backLabel). */
@@ -475,6 +567,20 @@ export const autoRead = (k) => (k.prefs || {}).readAuto ?? k.band === '6-7';
    ACTIVE minutes from the family feed; Progress is position on the path; Mastery is
    only what the evidence says the child can now do. Never usage dressed as learning. */
 const weekDays = (n = 7) => Array.from({ length: n }, (_, i) => { const d = new Date(Date.now() - i * 864e5); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; });
+/* Q2: what a grown-up can do next — three at most, each read from the child's own record (the misses
+   kept, the stars fading, the next stop on the road), each something to SAY, never a chore to set */
+export function helpNext(k) {
+  const out = [], by = {};
+  for (const m of Object.values(k.miss || {})) if (m.from) by[m.from] = (by[m.from] || 0) + (m.n || 1);
+  const worst = Object.entries(by).sort((a, b) => b[1] - a[1])[0];
+  if (worst && worst[1] >= 2) out.push({ k: 'miss', say: `<b>${esc(worst[0])}</b> has the most misses (${worst[1]}). Ask ${esc(k.name)} to show you one on the map — explaining it is the fastest way to fix it.` });
+  const fading = STOPS.filter((s) => reviewDue(k.stops[s.id]));
+  if (fading.length) out.push({ k: 'fade', say: `${fading.length === 1 ? `<b>${esc(fading[0].title)}</b> was` : `${fading.length} stops, like <b>${esc(fading[0].title)}</b>, were`} passed over four weeks ago. A five-minute review keeps the stars.` });
+  const nx = road(k).next;
+  if (nx) { const s = byId[nx.stop]; out.push({ k: 'next', say: `Next on the road: <b>${esc(s.title)}</b>. A question to ask first: “${esc(s.hook)}”` }); }
+  if (out.length < 3) { const capK = Object.values((k.lib.capitals || {}).box || {}).filter((b) => b >= 2).length; if (capK < 10) out.push({ k: 'cap', say: `Name a country you have a link to — family, a trip, a team — and find its capital together in Country Capitals.` }); }
+  return out.slice(0, 3);
+}
 function reportCard(k) {
   const wk = new Set(weekDays(7));
   const mins = activityRows().filter((x) => x.a === APP && !x.ev && wk.has(x.d) && (x.who || '').toLowerCase() === k.name.toLowerCase()).reduce((a, x) => a + x.m, 0);
@@ -501,6 +607,7 @@ function reportCard(k) {
         <ul class="rc-worlds">${worlds.map(({ w, p, n }) => `<li><span>${gi(w.glyph)} ${esc(w.short)}</span><span class="hm-bar thin"><i style="width:${Math.round((100 * p) / n)}%"></i></span><b>${p}/${n}</b></li>`).join('')}</ul>
         ${slipping ? `<p class="muted small">${slipping} capital${slipping > 1 ? 's' : ''} slipped after a miss — they come back in the capitals quiz.</p>` : ''}</section>
     </div>
+    ${(() => { const H = helpNext(k); return H.length ? `<section class="rc-help"><h4>${ico('hint')} How to help next</h4><ul>${H.map((x) => `<li data-k="${x.k}">${x.say}</li>`).join('')}</ul></section>` : ''; })()}
     ${L.length ? `<h4>What ${esc(k.name)} can do now</h4><ul class="learned">${L.map((x) => `<li>✓ ${esc(k.name)} can ${esc(x.m.objective)} <span class="muted small">(${esc(x.e.name)}, ${x.on})</span></li>`).join('')}</ul>` : ''}
     <p class="hint">${esc(EXPEDITIONS_PARENT)}</p>
     ${(() => { const cs = certificatesOf(k); return `<details class="rc-set rc-certs"${cs.length ? '' : ''}><summary>Certificates for ${esc(k.name)} (${cs.length})</summary>
@@ -516,6 +623,7 @@ function reportCard(k) {
 
 export function viewGrownups() {
   const h = R.h;
+  if (R.demo) R.ui.gate = true;     // the sample (A5): its report opens straight away — it is no one's, so there is nothing to guard
   if (!R.ui.gate) {
     return `<section class="narrow">${pageHead('For grown-ups', '', back('nav', 'Back', 'home'))}
       <div class="card center-card"><p>${h.parent.pinHash ? 'Enter your four-digit PIN.' : 'Set a four-digit PIN for this page.'}</p>
@@ -545,7 +653,7 @@ export function viewGrownups() {
 export function viewPrivacy() {
   return `<section class="narrow prose">${pageHead('Privacy', '', back('nav', 'Back', 'home'))}
     <div class="card">
-      <p><b>Nothing leaves this device.</b> Bizzing Geography has no accounts, no analytics, no ads and no third-party scripts. Maps, pictures and fonts are served from the app’s own address.</p>
+      <p><b>Nothing about your child leaves this device.</b> Bizzing Geography has no accounts, no analytics, no ads and no third-party scripts. Maps, pictures and fonts are served from the app’s own address.</p>
       <p><b>One exception: real photos in Where on Earth?</b> Each photo is loaded from Google Street View, so Google sees this device’s internet address and which photo was requested (Google’s privacy policy applies to that). Nothing about the child is sent — no name, age, answers or location. Real photos are on by default; a grown-up can switch them off in the grown-ups’ page, and then the app contacts no one.</p>
       <p>For each child it keeps a first name or nickname, an age band (never a birthday), a chosen face, and their answers — in this browser’s own storage, on this device only.</p>
       <p>It never asks where anyone lives, and Where on Earth? never uses the device’s location.</p>
