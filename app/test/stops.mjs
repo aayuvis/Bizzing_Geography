@@ -2,7 +2,7 @@
    Exactly one right option, distinct options, the answer never in the text,
    a map question's targets all real shapes. Never loosen this to make a
    chapter pass: fix the generator. */
-import { STOPS, drill, correct, qKey, newSeen, remember } from '../src/stops.js';
+import { STOPS, drill, correct, qKey, newSeen, remember, vary, varyKind } from '../src/stops.js';
 import { seeded } from '../src/rand.js';
 import { hasShape } from '../src/map.js';
 
@@ -59,6 +59,22 @@ for (const s of STOPS) for (const lv of [1, 2, 3]) {
   }
 }
 if (short.length) { fails += short.length; console.error(`✗ ${short.length} stop levels cannot fill a round of ten different questions:\n   ${short.join('\n   ')}`); }
+/* E4/G2: a mixed set (Library quizzes, the trip, level checks) asks about a third of its choosing
+   questions another way — typed, or a tap on the map — and each converted question is right for its
+   answer and ONLY its answer, with the answer nowhere in its words. */
+{
+  let sets = 0, mixed = 0, conv = 0;
+  for (const s of STOPS) for (const lv of [1, 2, 3]) {
+    const r = seeded('vary' + s.id + lv), base = drill(s, lv, 10, r), out = vary(base, r);
+    const can = base.filter((q) => varyKind(q)).length; sets++;
+    if (can >= 2) { mixed++; if (out.filter((q) => q.varied).length < 2) bad(s, lv, base[0], `a mixed set converted fewer than 2 of ${can} it could`); }
+    out.forEach((q, i) => { if (!q.varied) return; conv++; const was = base[i], other = was.opts.find((o) => o !== was.ans);
+      if (q.kind === 'type' && !(correct(q, was.ans) && correct(q, was.ans.toLowerCase()) && !correct(q, other))) bad(s, lv, q, 'a typed question must take its answer (any case) and refuse the others');
+      if (q.kind === 'map' && !(q.ok.length === 1 && correct(q, q.ok[0]) && q.targetName === was.ans)) bad(s, lv, q, 'a map question must be its answer’s country');
+      if (q.text.toLowerCase().includes(was.ans.toLowerCase()) && was.ans.length > 2) bad(s, lv, q, 'a converted question names its answer'); });
+  }
+  if (conv < 100) { fails++; console.error(`✗ too few questions asked another way (${conv})`); }
+}
 /* the right answer has no favourite slot */
 const slots = [0, 0, 0, 0];
 for (const s of STOPS) { const r = seeded('slots' + s.id); for (const q of drill(s, 2, 10, r)) if (q.kind === 'mc' && q.opts.length === 4) slots[q.opts.indexOf(q.ans)]++; }

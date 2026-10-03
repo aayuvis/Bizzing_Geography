@@ -582,6 +582,7 @@ async function run(vp, tag) {
   await page.evaluate(() => window.__bzg.fire('openTool', 'flags')); await page.waitForTimeout(400);
   await page.evaluate(() => window.__bzg.fire('lib', 'flags|quiz')); await page.waitForTimeout(400);
   ok(await page.evaluate(() => { const b = document.querySelector('.runner .phead .back'); return !!b && /Flags/.test(b.getAttribute('aria-label')); }), 'a Library quiz’s back pill says “Flags of the World”, not "Stop"');
+  ok(await page.evaluate(() => { const ks = window.__bzg.R.run.items.map((q) => q.kind); return ks.length === 10 && ks.filter((k) => k !== 'mc').length >= 2; }), 'a Library quiz is a mixed set: some questions are answered on the map or typed, not all choosing (E4)');
   await page.evaluate(() => { window.__bzg.R.run = null; window.__bzg.go('home'); }); await page.waitForTimeout(200);
   /* deep links (the feed's cards): a link to ONE thing opens that thing, not the shelf */
   for (const [h, want, msg] of [

@@ -301,7 +301,71 @@ GAMES.update({
                           "sailing ship at anchor in dark blue water, a lantern glowing warm. No people, no lettering, no signs.", '16:9'),
 })
 for k, v in GAMES.items(): JOBS[k] = (v[0] + ' ' + STYLE + (' Wide landscape composition.' if v[1] == '16:9' else ' Landscape tile composition.'), v[1], *v[2:])
-GROUPS = {'games': 'game-', 'mascot': 'mascot-', 'day': 'wd-', 'night': 'wn-', 'postcards': 'pc-', 'landmarks': 'lm-', 'eras': 'era-', 'history': 'hist-', 'avatars': 'av-', 'courses': 'crs-', 'worlds': 'w-', 'library': 'lib-'}
+# The medals (the owner's audit: "a single bronze disc and 40 grey placeholders"): one painted
+# medallion each, in its tier's metal, on pure magenta (keyed to alpha by process.py --medals).
+# No lettering or digits; no real map (a globe shows only latitude and longitude lines); no person.
+MD_STYLE = ("A single round medal for a children's geography app, seen straight on, centred, the whole medal inside "
+    "the frame with a margin all round, a short ribbon of two folded tabs at the top. Polished {metal} rim with a few "
+    "small embossed dots around it; inside the rim a glossy enamel picture: {subject}. Soft cel shading, gentle "
+    "highlights, a clean dark outline, cheerful and collectible, like a premium mobile-game badge. Absolutely no "
+    "letters, numbers, words or symbols of writing anywhere. The background is a perfectly flat, even, pure magenta "
+    "(#FF00FF) with no shadow, no gradient and no texture.")
+METAL = {1: 'bronze', 2: 'silver', 3: 'gold'}
+MEDAL_ART = {
+    'first-station': (1, 'a small red pennant flag planted on a green grassy hill under a blue sky'),
+    'ten-aced': (2, 'three golden stars in an arc above a winding path'),
+    'world-home': (2, 'a cosy little house with a red roof on a quiet street with a tree'),
+    'world-landwater': (2, 'a mountain beside a blue lake with a small island'),
+    'world-continents': (2, 'a sailing boat in a harbour with a lighthouse'),
+    'world-compass': (2, 'a brass compass rose with a red north needle'),
+    'world-capitals': (2, 'a grand domed building with columns and a little flag on top'),
+    'world-weather': (2, 'a sun peeking out from behind a rain cloud with a rainbow'),
+    'world-rivers': (2, 'a river winding through green hills to the sea'),
+    'world-globe': (2, 'a lighthouse beam crossing a night sky with curved latitude lines'),
+    'world-restless': (2, 'a small volcano puffing smoke above layered rock'),
+    'world-people': (2, 'a crossroads with tiny colourful houses and a market awning'),
+    'level-2': (2, 'a road with two milestones winding up a gentle green hill'),
+    'level-4': (2, 'a road with four milestones climbing through a forest'),
+    'level-6': (2, 'a road climbing a rocky mountain pass with six milestones'),
+    'level-8': (3, 'a road over a high snowy pass with a little cairn of stones at the top'),
+    'level-10': (3, 'a road reaching a sunlit summit with a pennant flag, clouds below'),
+    'caps-25': (1, 'a small pillared capitol building with a little red flag'),
+    'caps-100': (2, 'a row of four pillared capitol buildings, each with a little red flag'),
+    'caps-africa': (3, 'a proud lion standing on a savanna rock at sunset'),
+    'caps-asia': (3, 'a panda sitting among green bamboo'),
+    'caps-europe': (3, 'a little fairytale castle on a green hill'),
+    'caps-north-america': (3, 'a bald eagle soaring over pine trees and a mountain'),
+    'caps-south-america': (3, 'a llama standing in high mountains'),
+    'caps-oceania': (3, 'a kangaroo hopping past a eucalyptus tree'),
+    'flags-50': (2, 'a fan of five plain coloured pennant flags on poles, red, blue, green, yellow and white, no symbols'),
+    'states-india': (2, 'a peacock with its tail spread beside a lotus flower'),
+    'close-pin': (2, 'a red map pin pushed into a paper target with a bullseye'),
+    'big-round': (3, 'a telescope pointed at a starry sky over a small round globe with only latitude lines'),
+    'first-made': (1, 'a paintbrush, a pencil and a small hammer crossed together'),
+    'part-learned': (2, 'an open book with a glowing lightbulb above it'),
+    'tw-five': (1, 'a glowing lantern on a wooden harbour post at dusk'),
+    'tw-steam': (1, 'a small steamship with a red funnel puffing smoke on the sea'),
+    'tw-ocean': (2, 'a great curling ocean wave with a little sailing ship on top'),
+    'tw-world': (3, 'a round globe with only latitude and longitude lines, ringed by tiny sailing ships and glowing lanterns'),
+    'chain-ten': (2, 'a chain of four colourful links forming a bridge'),
+    'compass-two': (2, 'a magnifying glass over a compass needle'),
+    'bigger-fools': (2, 'a balance scale with a big stone on one side and a small stone on the other, perfectly level'),
+    'shape-ten': (2, 'a magnifying glass over a puzzle piece'),
+    'sun-full': (2, 'a smiling sun over a sundial'),
+    'exp-first-maps': (3, 'a treasure map scroll with a dotted path and an X, made-up land shapes only'),
+    'exp-continents-oceans': (3, 'a ship sailing between two made-up islands under a big sky'),
+    'exp-compass-grid': (3, 'a compass resting on a square grid of paper'),
+    'exp-capitals': (3, 'a golden key in front of a domed capitol building'),
+    'exp-flags-neighbours': (3, 'two plain pennant flags, red and blue, crossed over a fence between two gardens'),
+    'exp-weather-climate': (3, 'a weathervane on a roof with sun, cloud and snowflake around it'),
+    'exp-rivers-mountains': (3, 'a snowy mountain with a river running down to a sand dune'),
+    'exp-latitude-time': (3, 'an hourglass in front of a globe with only latitude and longitude lines'),
+    'exp-restless-earth': (3, 'an erupting volcano beside cracked rock plates'),
+    'exp-world-detective': (3, 'a detective hat and a magnifying glass on a pile of postcards'),
+}
+for k, (tier, subject) in MEDAL_ART.items(): JOBS['md-' + k] = (MD_STYLE.format(metal=METAL[tier], subject=subject), '1:1')
+
+GROUPS = {'medals': 'md-', 'games': 'game-', 'mascot': 'mascot-', 'day': 'wd-', 'night': 'wn-', 'postcards': 'pc-', 'landmarks': 'lm-', 'eras': 'era-', 'history': 'hist-', 'avatars': 'av-', 'courses': 'crs-', 'worlds': 'w-', 'library': 'lib-'}
 
 
 def call(model, prompt, ratio, ref=None):

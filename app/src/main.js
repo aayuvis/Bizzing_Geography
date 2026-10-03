@@ -13,7 +13,7 @@ import { viewSearch, placeOf } from './search.js';
 import { missAdd, missDue, missRight, missWrong, keyOf } from './mistakes.js';
 import { CATALOGUE, byAvatar, worldNo, canWear, stateOf as avState } from './avatars.js';
 import { buy as buyAvatar, buyWorld as buyWorldFam, worldOpen } from './bizzing-avatars.js';
-import { byId, drill, correct, worldOf, STOPS, newSeen, remember } from './stops.js';
+import { byId, drill, correct, worldOf, STOPS, newSeen, remember, vary } from './stops.js';
 import { newHousehold, newKid, kid, AVATARS, tick, session, GOALS, stopRec, scoreRun, road, stopOpen, lvFor, passLevel, levelOf, CHECK_PASS } from './model.js';
 import { byCc } from './geo.js';
 import { shuffle, rnd } from './rand.js';
@@ -319,6 +319,8 @@ function backLabel(r) {
 }
 function startRun(kind, title, items, extra = {}) {
   if (!items.length) { toast('Nothing to ask here yet.'); return; }
+  /* a mixed set, never all choosing: Library quizzes, the trip and level checks (stops.js vary) */
+  if (kind === 'lib' || kind === 'trip' || kind === 'check') items = vary(items, rnd);
   const kk0 = kid(R.h);
   R.run = { kind, title, items, i: 0, results: [], fb: null, over: false, t0: Date.now(), coins: 0, hints: {}, bal0: kk0 ? famBalance(kk0.name) : 0, stars0: extra.stop && kk0 ? ((kk0.stops[extra.stop] || {}).stars || 0) : null, ...extra };
   R.run.back = backLabel(R.run);

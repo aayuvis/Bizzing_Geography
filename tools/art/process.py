@@ -76,6 +76,15 @@ if '--worlds' in sys.argv:
             out = os.path.join(OUT, n + suf + '.webp'); im.resize((W, round(im.height * W / im.width)), Image.LANCZOS).save(out, 'WEBP', quality=72, method=6)
             print(n + suf, os.path.getsize(out) // 1024, 'KB')
     sys.exit(0)
+if '--medals' in sys.argv:          # raw/md-<id>.png -> app/public/medals/<id>.webp, keyed like the avatars
+    MDOUT = os.path.join(HERE, '..', '..', 'app', 'public', 'medals'); os.makedirs(MDOUT, exist_ok=True)
+    total = 0
+    for f in sorted(os.listdir(RAW)):
+        if not (f.startswith('md-') and f.endswith('.png')): continue
+        n = f[3:-4]; b = avatar(os.path.join(RAW, f), os.path.join(MDOUT, n + '.webp')); total += b
+    print(f'medals: total {total // 1024} KB')
+    if GHOSTS: print('GHOSTS — repaint these (their ground was not pure magenta):', ', '.join(GHOSTS)); sys.exit(1)
+    sys.exit(0)
 if '--avatars' in sys.argv:
     total = 0
     for f in sorted(os.listdir(RAW)):
