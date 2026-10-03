@@ -125,7 +125,7 @@ Inherited from the family, and it holds here:
 
 ## The shape of the app (the family's, harmonised)
 
-- **Tabs: Home · Atlas · Expeditions · Library.** "My road" is the Atlas's second tab,
+- **Tabs: Home · Atlas · Expeditions · Library · My Feed** (My Feed last, FAMILY-STANDARD §6a; a grown-up can switch it off behind the PIN). "My road" is the Atlas's second tab,
   **Your journey** (the ten levels as a strip, then the level's stations) — the road only ever
   explained the map.
 - **Home is Bizzing Bee's and India's shape**: greeting card (avatar + speech bubble), **Today's
@@ -201,9 +201,9 @@ The shared spec every Bizzing app follows. Here it lives in five files:
 - **Weight**: Where on Earth? and Earth Through Time load on demand (`library/index.js loadTool`,
   prefetched when idle so they work offline). The browser check holds initial JS ≤ 400 KB gzipped
   and the phone's first screen ≤ 1.5 MB.
-- **Tabs stay Home · Atlas · Expeditions · Library** (the owner kept "Expeditions"): a tab row under the top bar
+- **Tabs: Home · Atlas · Expeditions · Library · My Feed** (the owner kept "Expeditions"; My Feed is last, owner 2 Oct 2026): a tab row under the top bar
   at ≥900px, a bottom bar below. Everything else is in the **☰ drawer** (`src/chrome.js`): My page · Shop ·
-  Collection · Medals · Your journey · My mistakes · Search · Where on Earth? · Settings · Grown-ups · Help ·
+  Collection · Medals · Your journey · My mistakes · Where on Earth? · My Feed (Search when the feed is off — the shell takes four app rows) · Settings · Grown-ups · Help ·
   Privacy · Back to the Hive, with a one-tap mute.
 - **Top bar** (standard §3): ⬡ Hive · ☰ · Shelly + Bizzing Geography · search · coin chip (opens the wallet
   history) · light/dark · 🔒 · avatar ▾. **Settings** is Bee's sheet in five sections (Me · Sound & music ·
@@ -215,6 +215,20 @@ The shared spec every Bizzing app follows. Here it lives in five files:
   question (`src/hints.js`; a hinted right answer pays no coin); the mistakes deck (`src/mistakes.js`) brings
   a miss back after a gap; one search over stops, places, countries, landmarks and words (`src/search.js`).
   Stars come only from answers and fall due for review after four weeks; a miss then drops one star.
+
+## My Feed (FAMILY-STANDARD §6a)
+
+- **Cut, never typed.** `tools/build-feed.mjs` cuts the cards from the corpus into `app/src/data/feed/`
+  (`index.js` for the ranking, `g-L1…g-L10.js` and `g-any.js` for the words). Every card names its `src`;
+  `test/feed.mjs` resolves each one, finds its words there, refuses near-duplicates (≥ 80% the same words)
+  and holds every road to ≥ 100 cards and the level-agnostic ones to ≥ 300. Change a stop, a word, a
+  country or an expedition → `node tools/build-feed.mjs`, or the test fails.
+- **Held back:** Landmarks, Earth Through Time and the continent histories while their review flags are up;
+  Street View places (the feed makes no third-party request — `test/feed-ui.mjs`); questions answered by a
+  figure; map questions whose list names the answer.
+- **Ranked on the device** by the family engine (`bizzing-feed.js`, vendored) from `src/feed.js`: the child's
+  road as `level`, the last stops and expedition, the Library tools opened, the mistakes deck as `due`. A
+  right answer pays one coin, once; nothing else in the feed pays or counts as learning.
 
 ## Real photos — Google Street View, on by default (the owner's decision)
 

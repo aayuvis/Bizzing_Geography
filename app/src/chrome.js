@@ -18,6 +18,7 @@ import { worldSVG } from './map.js';
 import { GKEY } from './photos.js';
 import { missDue, missCount } from './mistakes.js';
 import { shell as famShell } from './bizzing-shell.js';
+import { feedOn } from './feed.js';
 
 export const VERSION = '2.0';
 const av = (id, size = 48, alt = '') => `<img class="av" src="avatars/${esc(id)}.webp" width="${size}" height="${size}" alt="${esc(alt)}" loading="lazy" decoding="async">`;
@@ -30,6 +31,7 @@ export const TABS = [
   { k: 'atlas', n: 'Atlas', icon: 'map' },
   { k: 'exp', n: 'Expeditions', icon: 'flag' },
   { k: 'library', n: 'Library', icon: 'book' },
+  { k: 'feed', n: 'My Feed', icon: 'feed' },        // the LAST tab (FAMILY-STANDARD §6a); a grown-up can switch it off
 ];
 const NAV_OF = { lib: 'library', stop: 'atlas', world: 'atlas', road: 'atlas', expd: 'exp', proj: 'exp', run: null, me: null, grownups: null, privacy: null, settings: null, shop: null, collection: null, medals: null, help: null, search: null, mistakes: null };
 
@@ -277,14 +279,16 @@ export function shell(body, { home = false } = {}) {
   const out = famShell({
     app: 'geography', name: 'Geography', mascot: 'mascot/shelly-head.webp', search: 'Search places, stops, words',
     tabs: [{ id: 'home', label: 'Home', icon: 'home', href: '#/home' }, { id: 'atlas', label: 'Atlas', icon: 'map', href: '#/atlas' },
-      { id: 'exp', label: 'Expeditions', icon: 'compass', href: '#/exp' }, { id: 'library', label: 'Library', icon: 'book', href: '#/library' }],
+      { id: 'exp', label: 'Expeditions', icon: 'compass', href: '#/exp' }, { id: 'library', label: 'Library', icon: 'book', href: '#/library' },
+      ...(k && feedOn(h) ? [{ id: 'feed', label: 'My Feed', icon: 'feed', href: '#/feed' }] : [])],
     active: NAV_ACTIVE(R.ui.nav), coins: k ? balance(k.name) : 0, dark: dark(), query: R.ui.nav === 'search' ? (R.ui.q || '') : '',
     kid: k ? { name: k.name, avatar: `avatars/${k.avatar}.webp` } : { name: 'Explorer' }, inRun: run,
     drawer: { sub: k ? `Level ${k.road.level} · ${rankOf(k.xp).n}` : 'Welcome',
       app: [{ icon: 'path', label: 'Your journey', sub: 'the ten levels, stop by stop', href: '#/road' },
         { icon: 'star', label: 'My mistakes', sub: due ? `${due} ready to try again` : 'misses come back after a gap', href: '#/mistakes' },
         { icon: 'globe', label: 'Where on Earth?', sub: 'pin a real place on the map', href: '#/lib/geoguess' },
-        { icon: 'search', label: 'Search', sub: 'places, stops, words and tools', href: '#/search' }] },
+        /* the shell takes four rows here: My Feed has one when it is on; Search keeps the top bar's box */
+        ...(feedOn(h) ? [{ icon: 'feed', label: 'My Feed', sub: 'about twenty cards from across the app, and then it ends', href: '#/feed' }] : [{ icon: 'search', label: 'Search', sub: 'places, stops, words and tools', href: '#/search' }])] },
     content: `${pre}${body}${home ? '' : `<footer class="foot">${FOOT()}</footer>`}`,
   });
   return `<a class="skip" href="#main">Skip to the content</a>

@@ -34,6 +34,9 @@ import { expeditionById } from './data/expeditions.js';
 import { hintFor } from './hints.js';
 import { certificatesOf, shareCertificate } from './certificate.js';
 import { dayKey } from './rand.js';
+import { feedCard, feedEnd, feedHead, bindFeedKeys } from './bizzing-feed.js';
+import { feedOn, feedSession, feedRec } from './feed.js';
+import { empty } from './mascot.js';
 
 const root = document.getElementById('app');
 
@@ -152,9 +155,49 @@ function screen() {
     case 'help': return C.viewHelp();
     case 'search': return viewSearch(R.ui.q || R.ui.arg || '');
     case 'mistakes': return V.viewMistakes();
+    case 'feed': return viewFeed(k);
     default: return V.viewHome();
   }
 }
+/* My Feed (§6a): the index loads with the route, never on the first screen; a card's words load in
+   its road's group (data/feed/g-L<n>.js, g-any.js), and only the groups today's session uses */
+let FEED = null, feedLoading = false, FEED_BY = {};
+const FEED_G = {}, feedGroup = (g) => FEED_G[g] || (FEED_G[g] = import(`./data/feed/g-${g}.js`).then((m) => Object.assign(FEED_BY, m.CARDS)));
+function feedItems() {
+  if (FEED || feedLoading) return FEED;
+  feedLoading = true;
+  import('./data/feed/index.js').then((m) => { FEED = m.INDEX; if (R.ui.nav === 'feed') render(); });
+  return null;
+}
+function viewFeed(k) {
+  const head = feedHead({ name: 'My Feed' });
+  if (!feedOn(R.h)) return `<section class="feed-page">${head}${empty('My Feed is switched off on this device. A grown-up can switch it back on behind the PIN.', btn0('Home', 'home'))}</section>`;
+  const items = feedItems(), wait = `<section class="feed-page">${head}<div class="card center-card" role="status"><p class="muted">Opening your feed…</p></div></section>`;
+  if (!items) return wait;
+  const list = feedSession(R.h, k, items); save();
+  const need = [...new Set(list.map((x) => items.find((i) => i.id === x.id).g))];
+  if (list.some((x) => !FEED_BY[x.id])) { Promise.all(need.map(feedGroup)).then(() => { if (R.ui.nav === 'feed') render(); }); return wait; }
+  const play = R.ui.feedPlay || (R.ui.feedPlay = {});
+  return `<section class="feed-page">${head}<div class="bzf-list" data-feed="1">${list.map((x) => feedCard(FEED_BY[x.id], x, play[x.id] || {})).join('')}${feedEnd({ href: '#/continue', label: 'Continue your journey' })}</div></section>`;
+}
+const btn0 = (label, nav) => `<button class="btn" data-act="nav" data-arg="${nav}">${label}</button>`;
+/* a card's question: options in the engine's order; a right answer pays one coin, once; a wrong one
+   holds with the right answer named, until Continue */
+root.addEventListener('click', (e) => {
+  const b = e.target.closest && e.target.closest('[data-bzf]'); if (!b || R.ui.nav !== 'feed') return;
+  const id = b.dataset.id, it = FEED_BY[id], k = kid(R.h); if (!it || !it.play || !k) return;
+  const play = R.ui.feedPlay || (R.ui.feedPlay = {});
+  if (b.dataset.bzf === 'ans') {
+    if (play[id] && play[id].st) return;
+    const o = +b.dataset.o, f = feedRec(k);
+    if (o === 0) { play[id] = { st: 'right', o }; sfx.good(); if (!f.paid[id]) { f.paid[id] = Date.now(); earn('right'); save(); } }
+    else { play[id] = { st: 'wrong', o }; sfx.bad(); }
+  } else if (b.dataset.bzf === 'cont') play[id] = { st: 'shown', o: (play[id] || {}).o };
+  render();
+  const card = root.querySelector(`.bzf-card[data-id="${CSS.escape(id)}"]`);
+  if (card) (card.querySelector('[data-bzf=cont], .bzf-row a') || card).focus({ preventScroll: true });
+});
+bindFeedKeys();
 const libraryView = () => `<section>${V.pageHead('The Explorer’s Library')}
   <div class="lib-grid">${SHELF.map(V.libTile).join('')}</div></section>`;
 function toolView(tool) {
@@ -568,6 +611,7 @@ on('gate', () => {
   render();
 });
 on('cert', (a) => { if (!R.ui.gate) return; const [kid1, cid] = String(a).split('|'), k = R.h.kids.find((x) => x.id === kid1); const c = k && certificatesOf(k).find((x) => x.id === cid); if (c) shareCertificate(k, c).then((how) => toast(how === 'shared' ? 'Shared.' : 'Saved as a picture.')); });
+on('feedToggle', () => { if (!R.ui.gate) return; R.h.parent.feedOff = !R.h.parent.feedOff; save(); render(); });
 on('tester', () => { R.h.parent.tester = !R.h.parent.tester; save(); render(); });
 on('streetview', () => { if (!GKEY) return; R.h.parent.streetview = !R.h.parent.streetview; R.ui.lib = {}; save(); render(); });
 on('testerOff', () => { R.h.parent.tester = false; save(); render(); });
