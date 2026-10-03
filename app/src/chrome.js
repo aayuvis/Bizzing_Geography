@@ -61,10 +61,11 @@ export function tabs(cl) {
 /* The avatar menu (§3): every child, and "Add a child" for grown-ups. Switching never mixes data. */
 export function whoMenu(k) {
   return `<div class="who-menu" role="menu" aria-label="Explorers">
-    <p class="wm-h">Who is exploring?</p>
-    ${R.h.kids.map((x) => `<button role="menuitemradio" aria-checked="${x.id === k.id}" class="wm-kid${x.id === k.id ? ' on' : ''}" data-act="switchKid" data-arg="${x.id}">${av(x.avatar, 32)}<b>${esc(x.name)}</b>${x.id === k.id ? ico('check') : ''}</button>`).join('')}
-    ${R.demo ? '' : `<button role="menuitem" class="wm-i" data-act="nav" data-arg="welcome">${ico('plus')} Add an explorer</button>`}
-    <hr><button role="menuitem" class="wm-i" data-act="nav" data-arg="me">${ico('user')} ${esc(k.name)}’s page</button>
+    ${R.h.kids.map((x) => `<button role="menuitemradio" aria-checked="${x.id === k.id}" class="wm-kid${x.id === k.id ? ' on' : ''}" data-act="switchKid" data-arg="${x.id}">${av(x.avatar, 44)}<b>${esc(x.name)}</b>${x.id === k.id ? ico('check') : ''}</button>`).join('')}
+    <hr>
+    <button role="menuitem" class="wm-i" data-act="nav" data-arg="me">My page — avatar, badges, collection</button>
+    <button role="menuitem" class="wm-i" data-act="nav" data-arg="settings">Settings</button>
+    ${R.demo ? '' : `<button role="menuitem" class="wm-i" data-act="nav" data-arg="welcome">+ Add a child <small class="wm-tag">grown-ups</small></button>`}
   </div>`;
 }
 
@@ -285,7 +286,7 @@ export function shell(body, { home = false } = {}) {
   ${h.parent.tester ? '<div class="tester" role="note">TESTER MODE — every stop is open. Nothing about the child changes. <button data-act="testerOff">Turn off</button></div>' : ''}`;
   const due = k ? missDue(k).length : 0;
   const out = famShell({
-    app: 'geography', name: 'Geography', mascot: 'mascot/shelly-head.webp', search: 'Search places, stops, words',
+    app: 'geography', name: 'Geography', mascot: 'mascot/shelly-brand.webp', search: 'Search places, stops, words',
     tabs: [{ id: 'home', label: 'Home', icon: 'home', href: '#/home' }, { id: 'atlas', label: 'Atlas', icon: 'map', href: '#/atlas' },
       { id: 'exp', label: 'Expeditions', icon: 'compass', href: '#/exp' }, { id: 'library', label: 'Library', icon: 'book', href: '#/library' },
       { id: 'play', label: 'Play', icon: 'play', href: '#/play' },

@@ -726,6 +726,7 @@ async function run(vp, tag) {
   await page.click('[data-act=quitRun]'); await page.evaluate(() => window.__bzg.go('home')); await page.waitForSelector('[data-bz=home]');
   await page.click('[data-bz=kid]'); await page.waitForSelector('.who-menu');
   ok(await page.locator('.who-menu .wm-kid').count() === 2, 'the top bar menu lists both explorers');
+  ok(await page.evaluate(() => { const t = document.querySelector('.who-menu').innerText; return /My page — avatar, badges, collection/.test(t) && /Settings/.test(t) && /\+ Add a child/.test(t) && /grown-ups/.test(t) && document.querySelectorAll('.who-menu .wm-kid.on .ico, .who-menu .wm-kid.on svg').length >= 1; }), 'the avatar menu: every child (the current one ticked), My page, Settings, + Add a child for grown-ups');
   await shot('26-who-menu'); await noSideways('who menu');
   const xpA = await page.evaluate(() => window.__bzg.R.h.kids.find((k) => k.name === 'Ahana').xp);
   await page.click('.who-menu .wm-kid:has-text("Ahana")'); await page.waitForSelector('[data-bz=home]');
