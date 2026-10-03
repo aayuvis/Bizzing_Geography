@@ -1483,3 +1483,7 @@ h1,h2,h3,.tab,.tb,.set-head h1,.set-sec h2,.shop-page h1,.dr-i{font-family:var(-
 .bz-content > .foot{padding:26px 0 0;max-width:none}
 .bz-content .demo-bar,.bz-content .tester{margin:-6px 0 12px;border-radius:12px}
 .bz-content .hive-chip{margin:0 0 12px}
+
+/* My Feed (the family's bizzing-feed.css): a flag is shown whole — cropping one can hide a stripe or an emblem */
+.bzf-card[data-kind="flag"] .bzf-art { object-fit: contain; padding: 18px; box-sizing: border-box; }
+.feed-page { padding-bottom: 8px; }

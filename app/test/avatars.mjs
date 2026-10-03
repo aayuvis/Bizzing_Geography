@@ -63,11 +63,11 @@ ok(avatarFile('zeus') === AVATARS[0] && avatarFile(undefined) === AVATARS[0], 'a
 
 /* the family's drop-ins, byte for byte (compared with the Hive's checkout when it is here) */
 const HIVE = '/home/user/Bizzing_Schedule/integration/';
-for (const f of ['bizzing-activity.js', 'bizzing-wallet.js', 'bizzing-avatars.js', 'bizzing-shell.js']) {
+for (const f of ['bizzing-activity.js', 'bizzing-wallet.js', 'bizzing-avatars.js', 'bizzing-shell.js', 'bizzing-feed.js']) {
   const mine = readFileSync(new URL(`../src/${f}`, import.meta.url));
   if (existsSync(HIVE + f)) ok(createHash('sha256').update(mine).digest('hex') === createHash('sha256').update(readFileSync(HIVE + f)).digest('hex'), `${f} is the family's file, unchanged`);
 }
-for (const [mine, theirs] of [['../styles/bizzing-shell.css', 'bizzing-shell.css'], ['./shell-check.mjs', 'shell-check.mjs']]) if (existsSync(HIVE + theirs)) ok(readFileSync(new URL(mine, import.meta.url), 'utf8') === readFileSync(HIVE + theirs, 'utf8'), theirs + ' is the family’s, unchanged');
+for (const [mine, theirs] of [['../styles/bizzing-shell.css', 'bizzing-shell.css'], ['../styles/bizzing-feed.css', 'bizzing-feed.css'], ['./shell-check.mjs', 'shell-check.mjs']]) if (existsSync(HIVE + theirs)) ok(readFileSync(new URL(mine, import.meta.url), 'utf8') === readFileSync(HIVE + theirs, 'utf8'), theirs + ' is the family’s, unchanged');
 if (existsSync(HIVE + 'bizzing-avatars.css')) ok(readFileSync(new URL('../styles/bizzing-avatars.css', import.meta.url), 'utf8') === readFileSync(HIVE + 'bizzing-avatars.css', 'utf8'), 'bizzing-avatars.css is the family’s, unchanged');
 
 if (fails) { console.error(`✗ avatars: ${fails} failure(s)`); process.exit(1); }

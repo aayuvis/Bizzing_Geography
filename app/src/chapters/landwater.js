@@ -39,7 +39,7 @@ const defQ = (list, kind) => (r, lv) => {
 };
 
 /* Real examples, each checked in the data where the data can say it. */
-const ISLANDS = ['IS', 'JP', 'MG', 'LK', 'NZ', 'CU', 'JM', 'IE', 'MT', 'CY', 'SG', 'MV', 'FJ', 'BH'];
+export const ISLANDS = ['IS', 'JP', 'MG', 'LK', 'NZ', 'CU', 'JM', 'IE', 'MT', 'CY', 'SG', 'MV', 'FJ', 'BH'];
 const NOT_ISLANDS = ['FR', 'DE', 'BR', 'KE', 'IN', 'CN', 'EG', 'MX', 'PE', 'PL', 'NG', 'AR', 'TH', 'CA'];
 function islandQ(r, lv) {
   const isl = byCc[pick(ISLANDS, r)];

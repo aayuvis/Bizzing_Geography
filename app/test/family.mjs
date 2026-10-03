@@ -35,8 +35,11 @@ Date.now = () => t; globalThis.window = globalThis; globalThis.addEventListener 
 globalThis.document = { visibilityState: 'visible' }; globalThis.setInterval = (fn) => { tickFn = fn; return 1; }; globalThis.clearInterval = () => {};
 const A = F.trackActivity('geography', () => 'Ahana');
 for (let i = 0; i < 9; i++) { t += 15000; tickFn(); }            // two active minutes (input "now" kept fresh below)
+/* the drop-in stamps the day from the wall clock (new Date()), not the pinned Date.now — expect what it writes,
+   so this check does not break when the real date rolls over (it did on 3 Oct 2026) */
+const dayNow = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const rows0 = JSON.parse(store['bizzing.activity'] || '{"s":[]}').s.filter((x) => x.a === 'geography' && !x.ev);
-ok(rows0.length === 1 && rows0[0].m >= 1 && rows0[0].who === 'Ahana' && rows0[0].d === '2026-10-02', 'an active minute, one sitting: { a, d, t, m, who }');
+ok(rows0.length === 1 && rows0[0].m >= 1 && rows0[0].who === 'Ahana' && rows0[0].d === dayNow(), 'an active minute, one sitting: { a, d, t, m, who }');
 const m0 = rows0[0].m; t += 10 * 60000; for (let i = 0; i < 8; i++) { t += 15000; tickFn(); }
 ok(JSON.parse(store['bizzing.activity']).s.filter((x) => !x.ev).reduce((a, x) => a + x.m, 0) === m0, 'idle minutes are not counted');
 A.stop(); Date.now = realNow; globalThis.setInterval = realSI;
