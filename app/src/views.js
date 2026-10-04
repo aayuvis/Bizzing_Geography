@@ -35,6 +35,7 @@ import { home as famHome } from './bizzing-shell.js';
 import { FOOT } from './chrome.js';
 import { certificatesOf } from './certificate.js';
 import { STORIES, STORY_NOTE } from './data/stories.js';
+import { unseen as unseenStk, byStk } from './stickers.js';
 
 /* ------------------------------------------------------------- helpers */
 
@@ -80,7 +81,7 @@ const guide = (text, pose = 'wave') => `<div class="ob-say">${shelly(pose, 96)}<
 export function viewWelcome() {
   const first = !R.h.kids.length;
   const d = R.ui.draft || (R.ui.draft = { step: first ? 'land' : 0, name: '', band: '', avatar: STARTER_AVATARS[0], theme: 'atlas' });
-  const shell = (body, n) => `<section class="welcome ob">${n != null ? `<div class="ob-top">${n ? `<button class="back" data-act="obBack" aria-label="Back"><span aria-hidden="true">←</span></button>` : first ? '' : back('nav', 'Cancel', 'home')}<ol class="ob-dots" aria-label="Step ${n + 1} of 4">${[0, 1, 2, 3].map((i) => `<li class="${i <= n ? 'on' : ''}"></li>`).join('')}</ol></div>` : ''}${body}</section>`;
+  const shell = (body, n) => `<section class="welcome ob">${n != null ? `<div class="ob-top">${n ? `<button class="back" data-act="obBack" aria-label="Back"><span aria-hidden="true">←</span></button>` : first ? '' : back('nav', 'Cancel', 'home')}<ol class="ob-dots" aria-label="Step ${n + 1} of 3">${[0, 1, 2].map((i) => `<li class="${i <= n ? 'on' : ''}"></li>`).join('')}</ol></div>` : ''}${body}</section>`;
   if (d.step === 'land') return shell(viewLanding());
   if (d.step === 0) return shell(`${guide(first ? 'Hello, explorer! I am Shelly. My shell is a globe, and I know the way round it. What shall I call you?' : 'Another explorer! What shall I call this one?')}
     <div class="card ob-card"><label class="lab" for="kname">First name or nickname</label>
@@ -89,16 +90,36 @@ export function viewWelcome() {
       ${btn('Next →', 'obNext', '', 'primary big wide', d.name.trim() ? '' : 'disabled')}</div>`, 0);
   if (d.step === 1) return shell(`${guide(`Good to meet you, <b>${esc(d.name)}</b>! How old are you? It decides where your journey starts.`)}
     <div class="card ob-card ob-opts">${BANDS.map((b) => `<button class="ob-opt${d.band === b.id ? ' on' : ''}" data-act="draftBand" data-arg="${b.id}"><b>${b.label}</b><span>${b.blurb} — you start on Level ${levelOf(START[b.id]).n}, ${esc(levelOf(START[b.id]).name)}.</span></button>`).join('')}</div>`, 1);
+  /* A6 (the owner, audit v4): placement — the landing's five, plus five more from the band's own starting
+     road, PROPOSE a start level; the child (or the grown-up beside them) chooses. Skipping costs nothing. */
+  if (d.step === 'place') {
+    const P = d.pq, Q = placeRound(d.band), L0 = landScore(), base = START[d.band];
+    if (!P) return shell(`${guide(`${L0 != null ? `You got <b>${L0} of 5</b> on the first page. ` : ''}Five quick questions, and I will suggest where your journey starts. Or skip — you can always climb with a level check.`, 'think')}
+      <div class="card ob-card">${btn('Five quick questions', 'placeGo', '', 'primary big wide')}${btn(`Skip — start on Level ${base}`, 'obReady', '', 'ghost wide')}</div>`, 2);
+    if (P.i < Q.length) { const q = Q[P.i], pk = P.picks[P.i];
+      return shell(`<div class="card ob-card place-q"><p class="kicker">Finding your level · ${P.i + 1} of ${Q.length}</p><h2 class="place-t">${esc(q.text)}</h2>
+        <div class="choice-row">${q.opts.map((o) => `<button class="btn opt${pk ? (o === q.ans ? ' right' : o === pk ? ' wrong' : '') : ''}" data-act="placeAns" data-arg="${esc(o)}" ${pk ? 'disabled' : ''}>${esc(o)}</button>`).join('')}</div>
+        ${pk ? `<p class="fb ${pk === q.ans ? 'good' : 'bad'}">${pk === q.ans ? 'Right.' : `It is ${esc(q.ans)}.`}</p>${btn('Next →', 'placeNext', '', 'primary big wide')}` : ''}</div>`, 2); }
+    const got = P.score + (L0 || 0), of = Q.length + (L0 != null ? 5 : 0), lv = placeLevel(d.band, got, of);
+    return shell(`${guide(`<b>${got} of ${of}</b>. ${lv > base ? `You know your way around — you could start on <b>Level ${lv}, ${esc(levelOf(lv).name)}</b>.` : lv < base ? `Let us start gently, on <b>Level ${lv}, ${esc(levelOf(lv).name)}</b>, and climb from there.` : `<b>Level ${lv}, ${esc(levelOf(lv).name)}</b> is just right for you.`}`, 'cheer')}
+      <div class="card ob-card">${btn(`Start on Level ${lv}`, 'obLevel', String(lv), 'primary big wide')}${lv !== base ? btn(`Start on Level ${base} instead`, 'obLevel', String(base), 'ghost wide') : ''}</div>`, 2);
+  }
+  /* A3 (the owner, audit v4): a face and a world are already chosen — setup is a name, an age and Start.
+     Both can be changed here, or later on My page and in Settings. */
+  if (d.step === 'ready') return shell(`${guide(`All set, <b>${esc(d.name)}</b>! I picked a face and a world for you — change them now, or any time later.`, 'cheer')}
+    <div class="card ob-card ob-ready"><div class="ob-ready-row">${av(d.avatar, 88)}<span><b>${esc(AVATAR_NAME[d.avatar].replace(/ \(.*\)/, ''))}</b><span class="muted small">${esc((THEMES.find((t) => t.id === d.theme) || {}).name || '')} world · Level ${d.level || START[d.band]}</span></span></div>
+      <div class="row gap">${btn('Change face', 'obGo', '2', 'ghost')}${btn('Change world', 'obGo', '3', 'ghost')}</div>
+      ${btn(`Start exploring ${ico('next')}`, 'createKid', '', 'primary big wide')}</div>`, 2);
   if (d.step === 2) return shell(`${guide('Every explorer needs a face of their own. Which one is yours? There are ninety-six to find.', 'point')}
     <div class="card ob-card"><div class="ob-avs" role="radiogroup" aria-label="Your companion">${STARTER_AVATARS.map((a) => `<button id="av-ob-${a}" class="av-pick${d.avatar === a ? ' on' : ''}" role="radio" aria-checked="${d.avatar === a}" data-act="draftAv" data-arg="${a}" aria-label="${esc(AVATAR_NAME[a])}">${av(a, 96)}<span>${esc(AVATAR_NAME[a].replace(/ \(.*\)/, ''))}</span></button>`).join('')}</div>
       <p class="hint center-t">${AVATARS.length - STARTER_AVATARS.length} more faces wait in your Collection — some free, some to earn with Bizzing coins.</p>
-      ${btn('Next →', 'obNext', '', 'primary big wide')}</div>`, 2);
-  return shell(`${guide('Last one! Which world would you like to explore in? It changes the colours, the letters, the living picture and the music.', 'think')}
+      ${btn('Done', 'obReady', '', 'primary big wide')}</div>`, 2);
+  return shell(`${guide('Which world would you like to explore in? Which world would you like to explore in? It changes the colours, the letters, the living picture and the music.', 'think')}
     <div class="card ob-card"><div class="themes ob-themes" role="radiogroup" aria-label="Your world">${THEMES.filter((t) => STARTER_THEMES.includes(t.id)).map((t) => `<button class="theme-card" id="theme-ob-${t.id}" data-theme="${t.id}" data-act="draftTheme" data-arg="${t.id}" role="radio" aria-checked="${d.theme === t.id}">
         <span class="tc-sw" aria-hidden="true"><svg class="tc-map" viewBox="0 0 120 60"><rect width="120" height="60" class="tc-sea"/><path class="tc-land" d="M8 14c10-6 22-4 28 4s2 16-6 20-18 8-22 0-6-18 0-24zM52 8c14-4 30 0 36 8s14 4 22 10-2 18-14 18-16-6-26-4-22-2-22-12 0-16 4-20z"/><path class="tc-hl" d="M64 22c6-2 12 2 10 8s-10 6-13 2-3-8 3-10z"/></svg><span class="tc-aa">Aa</span>${d.theme === t.id ? '<span class="tc-on">On</span>' : ''}</span>
         <span class="tc-t"><b>${t.name}</b><span>${t.blurb}</span></span></button>`).join('')}</div>
       <p class="hint center-t">Four more worlds — rainforest, desert, aurora and space — open later with Bizzing coins or the family plan.</p>
-      ${btn(`Start exploring ${ico('next')}`, 'createKid', '', 'primary big wide')}</div>`, 3);
+      ${btn('Done', 'obReady', '', 'primary big wide')}</div>`, 2);
 }
 
 /* ------------------------------------------------------------- the landing (a page that WORKS)
@@ -129,6 +150,21 @@ export function landPair(t = new Date()) {
   for (let i = 0; i < P.length; i++) for (let j = i + 1; j < P.length; j++) { const x = Math.max(P[i].area, P[j].area) / Math.min(P[i].area, P[j].area); if (x >= 1.15 && x <= 4) return [P[i], P[j]]; }
   return P.slice(0, 2);
 }
+/* A6: placement. Five choosing questions from five different stops of the band's starting road (the day's
+   own, like the landing's), and the proposal: nine or ten of ten (or five of five) climbs one level; three
+   or fewer of ten (one or none of five) starts one lower. Never more than one step either way. */
+export function placeRound(band, t = new Date()) {
+  const L = levelOf(START[band]), r = seeded('place' + band + dayKey(t)), S = newSeen(), out = [];
+  for (const st of shuffle(L.steps, r)) { if (out.length >= 5) break;
+    const q = drill(byId[st.stop], st.lv || 1, 10, r, S).find((x) => x.kind === 'mc' && !x.html && x.opts.length >= 3 && !['True', 'False'].includes(x.ans));
+    if (q) out.push(q); }
+  return out;
+}
+export function placeLevel(band, got, of) {
+  const base = START[band], f = of ? got / of : 0;
+  return f >= 0.9 ? Math.min(base + 1, LEVELS.length) : f <= 0.3 ? Math.max(1, base - 1) : base;
+}
+const landScore = () => { const L = R.ui.land; return L && L.picks.filter(Boolean).length >= 5 ? L.score : null; };
 function viewLanding() {
   const L = R.ui.land || (R.ui.land = { i: 0, score: 0, picks: [] }), Q = landRound(), q = Q[L.i], picked = L.picks[L.i];
   const tryCard = L.i >= Q.length
@@ -190,14 +226,16 @@ export function hourQuestion(pc) {
   return { pc, c, opts: shuffle([c, ...others], r) };
 }
 const FAMOUS_H = new Set('IN CN JP US CA MX BR AR GB FR DE IT ES RU AU NZ EG ZA KE NG SA TR KR ID TH PE CL NO SE GR'.split(' '));
+/* B1/B8 (audit v4): ONE place card. The family's "… of the hour" tile IS today's place: its painting behind,
+   the question and four countries on it; answered, it says the place and offers the map. (It was a second
+   card that the shell's grid ordering put below the footer.) */
 function hourCard(k, pc) {
   const q = hourQuestion(pc), a = ((k.lib.hourq || {})[hourKey()]) || null;
-  const said = a ? (a.cc === q.c.cc ? `<p class="fb good">Right — ${esc(pc.place)}. ${esc(pc.clues[0])}.</p>` : `<p class="fb bad">Not ${esc(byCc[a.cc].name)} — it is ${esc(q.c.name)}: ${esc(pc.place)}. ${esc(pc.clues[0])}.</p>`) : '';
-  return `<section class="card hourq" data-hourq>
-    <img class="hourq-art" src="art/${pc.id}.webp" alt="A painting of a place somewhere on Earth" width="480" height="320">
-    <div class="hourq-b"><p class="kicker">Today’s place · a painting, not a photo</p><h3 id="hourq-q">Which country is this?</h3>
-      <div class="choice-row">${q.opts.map((o) => `<button class="btn opt${a ? (o.cc === q.c.cc ? ' right' : o.cc === a.cc ? ' wrong' : '') : ''}" data-act="hourAns" data-arg="${o.cc}" ${a ? 'disabled' : ''}>${esc(o.name)}</button>`).join('')}</div>
-      ${said}${a ? `<a class="btn small" href="#/place/${pc.id}">Pin it on the map →</a>` : ''}</div></section>`;
+  const said = a ? (a.cc === q.c.cc ? `<p class="fb good">Right — ${esc(pc.place)}.</p>` : `<p class="fb bad">Not ${esc(byCc[a.cc].name)} — it is ${esc(q.c.name)}: ${esc(pc.place)}.</p>`) : '';
+  return `<section class="bz-card bz-hour hourq-tile" data-bz="hour" data-hourq aria-labelledby="hourq-q">
+    <div class="hourq-b"><span class="bz-kicker">Place of the hour · a painting, not a photo</span><h3 id="hourq-q">Which country is this?</h3>
+      ${said}<div class="choice-row">${q.opts.map((o) => `<button class="btn opt${a ? (o.cc === q.c.cc ? ' right' : o.cc === a.cc ? ' wrong' : '') : ''}" data-act="hourAns" data-arg="${o.cc}" ${a ? 'disabled' : ''}>${esc(o.name)}</button>`).join('')}</div>
+      ${a ? `<a class="hourq-pin" href="#/place/${pc.id}">Pin it on the map →</a>` : ''}</div></section>`;
 }
 
 /* What Shelly says (B5): a line BUILT from what this child last did — the stop, the score,
@@ -221,6 +259,9 @@ export function greetLines(k) {
   return out.filter(Boolean);
 }
 function greetLine(k) {
+  /* L7: a sticker from a brother or sister is said first, until My page has shown it */
+  const st = unseenStk(k)[0];
+  if (st) return `${esc(st.name)} sent you ${byStk[st.s].g} — it is on My page, ${esc(k.name)}.`;
   const key = ((k.last || {}).at || 0) + '|' + dayKey();
   if (k.greet && k.greet.key === key) return k.greet.line;
   const lines = greetLines(k), prev = k.greet && k.greet.line;
@@ -264,9 +305,9 @@ export function viewHome() {
     foot: FOOT(),
   })
     /* the place of the hour shows its painting (the url is written here, so it resolves against the page) */
-    .replace('<div class="bz-home" data-bz="home">', `<div class="bz-home" data-bz="home"><style>:root .bz-home a.bz-hour[data-bz=hour]{background-image:linear-gradient(90deg,var(--surface) 48%,color-mix(in srgb,var(--surface) 55%,transparent) 70%,color-mix(in srgb,var(--surface) 10%,transparent)),url(art/${pc.id}.webp)}</style>`)
-    /* today's place, asked right here, between the cards and the footer */
-    .replace('<div class="bz-foot">', hourCard(k, pc) + '<div class="bz-foot">');
+    .replace('<div class="bz-home" data-bz="home">', `<div class="bz-home" data-bz="home"><style>:root .bz-home .bz-hour[data-bz=hour]{background-image:linear-gradient(90deg,var(--surface) 50%,color-mix(in srgb,var(--surface) 55%,transparent) 72%,color-mix(in srgb,var(--surface) 10%,transparent)),url(art/${pc.id}.webp)}</style>`)
+    /* the shell's hour tile becomes today's place, asked right on it */
+    .replace(/<a class="bz-card bz-hour" data-bz="hour"[\s\S]*?<\/a>/, () => hourCard(k, pc));
 }
 export const libTile = (t) => `<button class="lib-tile" data-act="openTool" data-arg="${t.id}">
       <span class="lib-art" style="background-image:url(art/${t.art}.webp)"></span>

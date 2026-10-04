@@ -31,7 +31,10 @@ let PLACES = null, LOADING = null, AGES = null;
    and each continent's ages — never a hard moment's own age, which the tool shows only to 11–14 */
 export const placesReady = () => LOADING || (LOADING = Promise.all([import('./data/places.js'), import('./data/eras.js'), import('./data/history.js')]).then(([m, er, hi]) => {
   AGES = [...er.EARTH.map((e) => [e, 'Earth through time']), ...er.MAPS.map((e) => [e, 'Our maps through time']), ...Object.entries(hi.CONTINENT_HISTORY).flatMap(([c, L]) => L.filter((e) => !e.hard).map((e) => [e, c + ' through time']))];
-  PLACES = m.PLACES; INDEX = null; if (typeof window !== 'undefined' && window.dispatchEvent) window.dispatchEvent(new Event('bzg-search-ready')); }));
+  PLACES = m.PLACES; INDEX = null;
+  /* the index is rebuilt with the cities while the browser is idle, never on the next keystroke */
+  if (typeof window !== 'undefined') (window.requestIdleCallback || ((f) => setTimeout(f, 1)))(() => index());
+  if (typeof window !== 'undefined' && window.dispatchEvent) window.dispatchEvent(new Event('bzg-search-ready')); }));
 function places() { if (!PLACES) placesReady(); return PLACES; }
 let INDEX = null;
 export function index() {

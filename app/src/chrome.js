@@ -13,7 +13,8 @@ import { THEMES, themeOf } from './themes.js';
 import { HIVE, APP, balance, ledger as walletLedger, ledgerWords } from './family.js';
 import { PACKS, CATALOGUE, byAvatar, avCtx, stateOf, WORLD_IDS, worldNo, TIERS } from './avatars.js';
 import { worldOpen, WORLD_PRICE, FREE_WORLDS } from './bizzing-avatars.js';
-import { MEDALS, earned, medallion, SHOP, shopOf, PIN_PATH } from './rewards.js';
+import { MEDALS, earned, medallion, SHOP, shopOf, PIN_PATH, shipSwatch } from './rewards.js';
+import { STICKERS, byStk, inbox, sentToday, PER_DAY } from './stickers.js';
 import { worldSVG } from './map.js';
 import { GKEY } from './photos.js';
 import { missDue, missCount } from './mistakes.js';
@@ -182,9 +183,9 @@ export function viewShop() {
         ${open ? `<span class="chip">${n <= FREE_WORLDS ? 'Open to everyone' : 'Yours'}</span>` : `<span class="muted small">${short ? `${WORLD_PRICE} coins · ${short} more to go` : `${WORLD_PRICE} coins`} · or the family plan</span><button class="btn small${short ? '' : ' primary-o'}" data-act="buyWorld" data-arg="${n}" ${short ? 'aria-disabled="true"' : ''}>${ico('unlock')} Open for ${WORLD_PRICE}</button>`}</div>`; }).join('')}</div>`;
   } else {
     const sh = shopOf(k);
-    body = `<p class="muted small">Looks for your maps: the pin you drop in Where on Earth? and the frame round every map. Nothing here changes your rank or opens a lesson — every lesson is already yours.</p>
+    body = `<p class="muted small">Looks: the pin you drop in Where on Earth?, the frame round every map, and your ship in Shelly’s Trade Winds. Nothing here changes your rank, your ship’s speed or a lesson — every lesson is already yours.</p>
       <ul class="shop">${SHOP.map((it) => { const id2 = it.id.split(':')[1], own = sh.owned.includes(it.id), use = sh[it.kind] === id2;
-        return `<li class="shop-i${use ? ' on' : ''}"><span class="shop-look ${it.kind}" data-look="${id2}">${it.kind === 'pin' ? pinSwatch(id2) : ''}</span><b>${esc(it.name)}</b><span class="muted small">${esc(it.blurb)}</span>
+        return `<li class="shop-i${use ? ' on' : ''}"><span class="shop-look ${it.kind}" data-look="${id2}">${it.kind === 'pin' ? pinSwatch(id2) : it.kind === 'ship' ? shipSwatch(id2) : ''}</span><b>${esc(it.name)}</b><span class="muted small">${esc(it.blurb)}</span>
         ${use ? '<span class="chip">In use</span>' : own ? `<button class="btn small" data-act="use" data-arg="${it.id}">Use</button>` : `<button class="btn small" data-act="buy" data-arg="${it.id}" ${c < it.price ? 'aria-disabled="true"' : ''}>${ico('coin')} ${it.price}</button>`}</li>`; }).join('')}</ul>`;
   }
   return `<section class="shop-page">
@@ -205,6 +206,17 @@ export function medalShelf(k) {
 export const viewMedals = () => `<section class="narrow">${head('Medals')}${medalShelf(kid(R.h))}</section>`;
 
 /* ------------------------------------------------------------------ My page: the explorer card (J7) */
+/* L7: stickers between the explorers on this device — eight pictures, no words */
+function stickerCard(k) {
+  const others = R.h.kids.filter((x) => x.id !== k.id), got = inbox(k);
+  if (!others.length && !got.length) return '';
+  return `<div class="card stk-card"><h3>Stickers</h3>
+    ${got.length ? `<ul class="stk-got" aria-label="Stickers you were sent">${got.map((x) => `<li${x.seen ? '' : ' class="new"'}><span class="stk-g" aria-hidden="true">${byStk[x.s].g}</span><span class="small">${byStk[x.s].name} from <b>${esc(x.name)}</b></span></li>`).join('')}</ul>` : '<p class="muted small">No stickers yet.</p>'}
+    ${R.demo ? '' : others.map((o) => { const left = PER_DAY - sentToday(k, o);
+      return `<div class="stk-send"><p class="small">Send <b>${esc(o.name)}</b> a sticker${left > 0 ? '' : ' — three today already; more tomorrow'}:</p>
+        <div class="stk-row">${STICKERS.map(([id, g, name]) => `<button class="stk-b" data-act="sticker" data-arg="${o.id}|${id}" aria-label="Send ${esc(o.name)} ${name}" ${left > 0 ? '' : 'disabled'}>${g}</button>`).join('')}</div></div>`; }).join('')}
+  </div>`;
+}
 export function viewMe() {
   const k = kid(R.h), rk = rankOf(k.xp), ctx = ctxOf(k);
   const known = Object.entries((k.lib.capitals || {}).box || {}).filter(([, b]) => b >= 2).map(([cc]) => cc);
@@ -231,6 +243,7 @@ export function viewMe() {
       <ol class="ladder">${RANKS.map((r, i) => `<li class="${i <= rk.i ? 'got' : ''}${i === rk.i ? ' now' : ''}"><b>${i + 1}. ${esc(r.n)}</b> <span class="muted small">${r.xp} right answers — ${esc(r.why)}</span></li>`).join('')}</ol>
       <details class="src"><summary>Where this is checked</summary><ul>${RANK_SRC.map((s) => `<li>${esc(s)}</li>`).join('')}</ul></details>
     </details>
+    ${stickerCard(k)}
     <div class="card"><h3>Explorers on this device</h3>
       <div class="who-list">${R.h.kids.map((x) => `<button class="who-row${x.id === k.id ? ' on' : ''}" data-act="switchKid" data-arg="${x.id}">${av(x.avatar, 40)} <b>${esc(x.name)}</b></button>`).join('')}
         ${R.demo ? '' : `<button class="btn" data-act="nav" data-arg="welcome">${ico('plus')} Add an explorer</button>`}</div></div>

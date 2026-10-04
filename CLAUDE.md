@@ -176,8 +176,16 @@ Inherited from the family, and it holds here:
   true scale — all chosen by the day, none of it saving a child; and a link to the sample's report
   (`?demo#/grownups` opens without a PIN — the sample is no one's).
 - **The welcome is Bizzing Finance's**: a landing page, then one question a screen with Shelly as
-  guide — name, age, **five** Common faces, **two** open worlds — and then an easy first question on the
-  whole map whose right answer is celebrated (A8), then the first stop.
+  guide — name, age, then an optional **placement** (A6: the landing's five plus five from the band's
+  starting road PROPOSE a start one level up or down, never more; `placeRound`/`placeLevel`; the child
+  chooses), then a **ready** card with a face and a world already picked (A3: name, age, Start; **five**
+  Common faces and **two** open worlds behind "Change") — and then an easy first question on the whole map
+  whose right answer is celebrated (A8), then the first stop.
+- **A reached world is the child's to wander** (D9, the owner): the road leads from world to world in order,
+  but inside a world with an open stop, any of this level's stops opens in any order (`model.js stopOpen`).
+- **Stickers** (L7, the owner): one explorer can send another on this device one of eight pictures
+  (`src/stickers.js`) — never words, three a day, said once in the greeting, kept on My page. Nothing leaves
+  the device; the sample cannot send.
 - **Above the fold is for doing.** Page heads are one row (no subtitle on a phone); tool pages
   lead with their controls; filter rows scroll in one line. `test/ui.mjs` asserts each key
   screen's core content starts above the fold, desktop and phone.
@@ -248,8 +256,10 @@ The shared spec every Bizzing app follows. Here it lives in five files:
 - **Report card**: Time (active minutes from the feed) · Progress (level, road, expeditions) ·
   Mastery (worlds, capitals, flags, objectives learned). Per child: ring goal, read-aloud, delete.
 - **Weight**: Where on Earth? and Earth Through Time load on demand (`library/index.js loadTool`,
-  prefetched when idle so they work offline). The browser check holds initial JS ≤ 400 KB gzipped
-  and the phone's first screen ≤ 1.5 MB.
+  prefetched when idle so they work offline). So do the eight countries' state shapes (`map.js regionsReady`;
+  a state map asked for first draws "Drawing the map…" and re-renders on `bzg-regions-ready`) and the
+  search's cities, whose index is built while idle, never on a keystroke. The browser check holds initial JS
+  ≤ 400 KB gzipped (365 KB after the v4 split) and the phone's first screen ≤ 1.5 MB.
 - **Tabs: Home · Atlas · Expeditions · Library · Play · My Feed** (the owner kept "Expeditions" and asked for Play; My Feed is last, owner 2 Oct 2026): a tab row under the top bar
   at ≥900px, a bottom bar below. Everything else is in the **☰ drawer** (`src/chrome.js`): My page · Shop ·
   Collection · Medals · Your journey · My mistakes · Where on Earth? · My Feed (Search when the feed is off — the shell takes four app rows) · Settings · Grown-ups · Help ·
@@ -257,7 +267,7 @@ The shared spec every Bizzing app follows. Here it lives in five files:
 - **Top bar** (standard §3): ⬡ Hive · ☰ · Shelly + Bizzing Geography · search · coin chip (opens the wallet
   history) · light/dark · 🔒 · avatar ▾. **Settings** is Bee's sheet in five sections (Me · Sound & music ·
   Look · Comfort · Grown-ups). **Shop**: Avatars · Worlds (240 coins each, or the family plan — a grown-ups'
-  flag until the family server) · Extras (map pins and frames), then the wallet history.
+  flag until the family server) · Extras (map pins, frames and Trade Winds ship looks — colour only, never speed or cargo), then the wallet history.
 - **Music** is composed in code (`src/music.js`, `music/CREDITS.md`): a loop per world, home and games,
   default 40%, ducks under effects and read-aloud, paused when hidden, off in Calm mode. No narration.
   Each Atlas world has its own five-note **entry sting** (`WORLD_STINGS`), once on entering, not again
@@ -266,7 +276,8 @@ The shared spec every Bizzing app follows. Here it lives in five files:
   pages in her six poses, labelled "the adventure is made up — every fact in it is true", turned by ← →,
   a tap or a swipe, read aloud for the youngest; a door with Shelly on each world page; the last page
   names and opens the world's first stop (`test/learning.mjs`).
-- **Learning** (family audit E4/E6/F3/C4): typed and put-in-order items beside multiple choice; one hint per
+- **Learning** (family audit E4/E6/F3/C4): typed and put-in-order items beside multiple choice — a stop's own
+  drill too, about a third asked another way (`stops.js vary`; for a 6–7 a map tap only, never spelling); one hint per
   question (`src/hints.js`; a hinted right answer pays no coin); the mistakes deck (`src/mistakes.js`) brings
   a miss back after a gap; one search over stops, places, countries, every state and state capital of the eight State Capitals countries, 2,600 cities (loaded on the first search; a city opens the Map Explorer with a pin), landmarks and words (`src/search.js`) — accents, case and punctuation never decide a match ("washington dc").
   Stars come only from answers and fall due for review after four weeks; a miss then drops one star.
@@ -293,7 +304,10 @@ The shared spec every Bizzing app follows. Here it lives in five files:
   kind and stop). `test/feed.mjs` holds each card to its own link — watched to fail on one generic link.
 - **Ranked on the device** by the family engine (`bizzing-feed.js`, vendored) from `src/feed.js`: the child's
   road as `level`, the last stops and expedition, the Library tools opened, the mistakes deck as `due`. A
-  right answer pays one coin, once; nothing else in the feed pays or counts as learning.
+  right answer pays one coin, once; nothing else in the feed pays or counts as learning. The engine is the
+  family's and is not edited here: `feed.js capSession` takes its ranked order and keeps at most **2 cards
+  about one thing, 4 of a kind, 3 from one world's painting and 1 true/false** a session (audit v4: one topic
+  was 6 of 20). No card per expedition day (a template), and no card of fewer than three words.
 
 ## Real photos — Google Street View, on by default (the owner's decision)
 

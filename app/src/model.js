@@ -150,8 +150,12 @@ export function stopOpen(h, k, id) {
   const f = firstLevel(id); if (!f) return false;
   if (f < k.road.level) return true;
   if (f > k.road.level) return false;
-  const st = road(k).steps.find((s) => s.stop === id);
-  return !!(st && st.open);
+  const rd = road(k), st = rd.steps.find((s) => s.stop === id);
+  if (st && st.open) return true;
+  /* D9 (the owner, audit v4): a world the child has reached is theirs to wander — any of this level's stops
+     in it opens, in any order. The road still leads from world to world, and a later level stays later. */
+  const w = (byId[id] || {}).world;
+  return !!(st && w && rd.steps.some((x) => x.open && x.stop !== id && (byId[x.stop] || {}).world === w));
 }
 /* The level check: twelve questions from this level's steps. Passing it
    finishes the level — whether the child walked every step or is ready to

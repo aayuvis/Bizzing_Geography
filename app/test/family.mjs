@@ -5,7 +5,7 @@ globalThis.localStorage = { getItem: (k) => (k in store ? store[k] : null), setI
 
 const F = await import('../src/family.js');
 const { newKid, scoreRun, stopRec, tick } = await import('../src/model.js');
-const { xpFor, bonus, XP_CAP, newMedals, MEDALS, SHOP } = await import('../src/rewards.js');
+const { xpFor, bonus, XP_CAP, newMedals, MEDALS, SHOP, SHIP_LOOK, shopOf, shipVars } = await import('../src/rewards.js');
 const { road } = await import('../src/model.js');
 let fails = 0, n = 0; const ok = (c, m) => { n++; if (!c) { fails++; console.error('✗ ' + m); } };
 const W = () => JSON.parse(store['bizzing.wallet'] || '{"kids":{}}');
@@ -22,6 +22,12 @@ ok(!F.spend('geography', 'Ahana', bal + 1, 'extra:pin:gem') && F.balance('Ahana'
 ok(F.spend('geography', 'Ahana', 20, 'extra:pin:star') && F.balance('Ahana') === bal - 20 && W().kids.ahana.ledger.at(-1).n === -20, 'a fixed price is charged and written to the ledger');
 ok(F.earn('geography', 'Kabir', 'right') === 1 && F.balance('kabir') === 1 && F.balance('Ahana') === bal - 20, 'siblings never share coins');
 ok(SHOP.every((x) => Number.isInteger(x.price) && x.price >= 0) && !SHOP.some((x) => /random|mystery|pack|spin|chance/i.test(x.name + x.blurb)), 'the shop: printed prices, nothing random');
+/* K6: Trade Winds ship looks — each has its colours, one is free, an old shop record reads as the classic ship,
+   and a look never says it changes speed or cargo */
+{ const ships = SHOP.filter((x) => x.kind === 'ship'), ids = ships.map((x) => x.id.split(':')[1]);
+  const old = { shop: { owned: ['pin:dot', 'frame:plain'], pin: 'dot', frame: 'plain' } };
+  ok(ships.length >= 4 && ids.every((i) => SHIP_LOOK[i]) && ships.filter((x) => x.price === 0).length === 1 && shopOf(old).ship === 'classic' && old.shop.owned.includes('ship:classic')
+    && !ships.some((x) => /fast|speed|cargo|strong/i.test(x.blurb)) && shipVars({ shop: { ship: 'indigo' } }).includes(SHIP_LOOK.indigo.sail), 'ship looks: priced, one free, a look only, and an old record reads as the classic ship'); }
 /* the demo writes nothing shared */
 const before = JSON.stringify(store); F.familyOff(true);
 ok(F.earn('geography', 'Sample', 'stop') === 0 && !F.spend('geography', 'Ahana', 1, 'x'), 'the demo neither earns nor spends');
@@ -35,9 +41,9 @@ Date.now = () => t; globalThis.window = globalThis; globalThis.addEventListener 
 globalThis.document = { visibilityState: 'visible' }; globalThis.setInterval = (fn) => { tickFn = fn; return 1; }; globalThis.clearInterval = () => {};
 const A = F.trackActivity('geography', () => 'Ahana');
 for (let i = 0; i < 9; i++) { t += 15000; tickFn(); }            // two active minutes (input "now" kept fresh below)
-/* the drop-in stamps the day from the wall clock (new Date()), not the pinned Date.now — expect what it writes,
-   so this check does not break when the real date rolls over (it did on 3 Oct 2026) */
-const dayNow = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+/* the drop-in stamps the day from the same clock it times with (Date.now), so the pinned clock decides it:
+   2 Oct 2026, whatever the real date is */
+const dayNow = () => '2026-10-02';
 const rows0 = JSON.parse(store['bizzing.activity'] || '{"s":[]}').s.filter((x) => x.a === 'geography' && !x.ev);
 ok(rows0.length === 1 && rows0[0].m >= 1 && rows0[0].who === 'Ahana' && rows0[0].d === dayNow(), 'an active minute, one sitting: { a, d, t, m, who }');
 const m0 = rows0[0].m; t += 10 * 60000; for (let i = 0; i < 8; i++) { t += 15000; tickFn(); }
@@ -47,6 +53,12 @@ F.familyOff(true); const b2 = JSON.stringify(store); const A2 = F.trackActivity(
 ok(JSON.stringify(store) === b2, 'the demo starts no tracker'); F.familyOff(false);
 F.trackMilestone('geography', 'Ahana', 'band', 'Reached Level 4');
 ok(JSON.parse(store['bizzing.activity']).s.some((x) => x.ev === 'band' && x.m === 0 && x.label === 'Reached Level 4'), 'a milestone is a row with m:0, ev and label');
+
+/* L7: stickers between explorers on one device — eight pictures, no words; three a day; never to oneself */
+{ const St = await import('../src/stickers.js'), a = { id: 'a', name: 'Ahana' }, b = { id: 'b', name: 'Kabir' }, hh = { kids: [a, b] }, T0 = Date.UTC(2026, 9, 2, 10);
+  const r = [St.sendSticker(hh, a, 'b', 'ship', T0), St.sendSticker(hh, a, 'b', 'star', T0), St.sendSticker(hh, a, 'b', 'map', T0), St.sendSticker(hh, a, 'b', 'map', T0), St.sendSticker(hh, a, 'b', 'map', T0 + 864e5), St.sendSticker(hh, a, 'a', 'map', T0), St.sendSticker(hh, a, 'b', 'hello there', T0)];
+  ok(r.join() === 'sent,sent,sent,limit,sent,bad,bad' && St.unseen(b).length === 4 && St.STICKERS.length === 8 && b.stk.every((x) => St.byStk[x.s]), 'stickers: a picture from the eight, three a day, never to yourself, never words');
+  St.markSeen(b); ok(!St.unseen(b).length && b.stk.length === 4, 'seen stickers are kept'); }
 
 /* rank moves only on learning */
 const k = newKid('Ahana', '8-10', 'compowl'), st = road(k).steps[0];

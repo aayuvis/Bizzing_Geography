@@ -1,14 +1,20 @@
 /* model.mjs — the rules about progress and the household. */
 import { reviewDue, newHousehold, newKid, scoreRun, road, stopOpen, lvFor, passLevel, rankOf, tick, stopRec, RANKS } from '../src/model.js';
-import { LEVELS, START } from '../src/levels.js';
+import { LEVELS, START, firstLevel } from '../src/levels.js';
+import { byId } from '../src/stops.js';
 import { migrate, SCHEMA } from '../src/store.js';
 let fails = 0; const ok = (c, m) => { if (!c) { fails++; console.error('✗ ' + m); } };
 
 const h = newHousehold(), a = newKid('Ahana', '8-10', 'panda'), b = newKid('Kabir', '6-7', 'pengu');
 h.kids.push(a, b); h.active = a.id;
 ok(a.road.level === START['8-10'] && b.road.level === 1, 'each band starts on its own level');
-const L = LEVELS.find((x) => x.n === a.road.level), first = L.steps[0], second = L.steps[1];
-ok(stopOpen(h, a, first.stop) && !stopOpen(h, a, second.stop), 'a level is walked in order: station 2 waits for station 1');
+const L = LEVELS.find((x) => x.n === a.road.level), first = L.steps[0];
+/* the road leads from world to world in order; inside a world the child has reached, any of the level's stops opens (D9) */
+const second = L.steps[1], wOf = (st) => byId[st.stop].world;
+const otherW = L.steps.find((s) => wOf(s) !== wOf(first) && firstLevel(s.stop) === L.n), sameW = L.steps.find((s) => s !== first && wOf(s) === wOf(first));
+ok(stopOpen(h, a, first.stop) && otherW && !stopOpen(h, a, otherW.stop), 'a level is walked in order from world to world: the next world waits');
+if (sameW) ok(stopOpen(h, a, sameW.stop), 'inside a reached world, any of the level’s stops is open, in any order');
+else ok(L.steps.length > 0, 'a level');
 ok(stopOpen(h, a, LEVELS[0].steps[0].stop), 'earlier levels are all open');
 ok(!stopOpen(h, a, LEVELS[9].steps.find((s) => !LEVELS.slice(0, 9).some((l) => l.steps.some((x) => x.stop === s.stop))) ? LEVELS[9].steps[0].stop : 'plates'), 'later levels are closed');
 let r = scoreRun(a, first.stop, first.lv, 6, 10);

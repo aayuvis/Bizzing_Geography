@@ -13,7 +13,6 @@
 import { geoNaturalEarth1, geoPath, geoContains, geoGraticule10, geoAlbersUsa, geoConicConformal, geoMercator, geoBounds, geoAzimuthalEqualArea, geoCentroid, geoArea, geoInterpolate, geoDistance } from 'd3-geo';
 import { feature } from 'topojson-client';
 import { WORLD } from './data/world.js';
-import { REGIONS } from './data/regions.js';
 import { INDIA } from './geo.js';
 
 export const W = 1000, H = 520;
@@ -165,6 +164,12 @@ function zoneCircle(at, km, rot = 0) {
 /* A country's states, each in its own projection (the US in Albers with
    Alaska and Hawaii as insets, as every American school map draws it). */
 const REG = {};
+/* the states of the eight State Capitals countries (125 KB of shapes) are not in the first screen: they load
+   when the browser is idle, or the first time a state map is asked for — which then draws a placeholder and
+   re-renders on 'bzg-regions-ready', as search does with its cities. India's map is in the main data. */
+let REGIONS = null, REG_LOADING = null;
+export const regionsReady = () => REG_LOADING || (REG_LOADING = import('./data/regions.js').then((m) => {
+  REGIONS = m.REGIONS; if (typeof window !== 'undefined' && window.dispatchEvent) window.dispatchEvent(new Event('bzg-regions-ready')); }));
 function region(c) {
   if (REG[c]) return REG[c];
   if (c === 'IN') {
@@ -174,6 +179,7 @@ function region(c) {
       cap: Object.fromEntries(INDIA.states.map((s) => [s.id, s.capXY])) };
     return REG[c];
   }
+  if (!REGIONS) { regionsReady(); return null; }
   const fc = feature(REGIONS, REGIONS.objects[c]);
   const proj = c === 'US' ? geoAlbersUsa() : c === 'CA' ? geoConicConformal().rotate([96, 0]).parallels([49, 77]) : geoMercator();
   proj.fitExtent([[10, 10], [W - 10, (c === 'CA' ? 640 : 600) - 10]], fc);
@@ -183,13 +189,14 @@ function region(c) {
   return REG[c];
 }
 export function regionCap(c, id, at) {
-  const r = region(c);
+  const r = region(c); if (!r) return null;
   if (c === 'IN') return r.cap[id];
   const p = r.proj([at[1], at[0]]); return p || null;
 }
 /* fill: { 'US-CA': 'hl' }; pins: [{ xy, cls, label }] in the region's frame */
 export function regionSVG(c, { fill = {}, pins = [], key = 'r', tap = false, label = 'Map' } = {}) {
   const r = region(c);
+  if (!r) return `<div class="gmap reg reg-wait" role="img" aria-label="${esc(label)}"><p class="muted">Drawing the map…</p></div>`;
   return `<div class="gmap reg reg-${c}${tap ? ' tap' : ''}" data-gmap="${esc(key)}" data-home="${r.vb}" ${tap ? 'tabindex="0" role="application"' : ''} aria-label="${esc(label)}${tap ? '. Tap a region, or use the arrow keys and Enter.' : ''}">
     <svg viewBox="${r.vb}" preserveAspectRatio="xMidYMid meet" style="--s:1">
       ${r.outline ? `<path class="outline" d="${r.outline}"/>` : ''}

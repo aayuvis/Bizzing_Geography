@@ -25,6 +25,8 @@ for (const s of STOPS) {
           const low = q.text.toLowerCase(), named = (o) => low.includes(o.toLowerCase());
           if (!['True', 'False'].includes(q.ans) && q.ans.length > 2 && named(q.ans) && !q.opts.every(named)) bad(s, lv, q, 'answer in the text');
           if (q.opts.some((o) => o === 'undefined' || o === '' || o === 'null')) bad(s, lv, q, `empty option: ${q.opts.join(' | ')}`);
+          /* a distance that rounds to nothing is not an option a child can reason about ("0.0 km" was offered) */
+          if (q.opts.some((o) => /^0(\.0+)?\s*(km|m|cm|miles?)$/.test(o))) bad(s, lv, q, `a zero distance offered: ${q.opts.join(' | ')}`);
         } else if (q.kind === 'map') {
           if (!q.ok.length) bad(s, lv, q, 'no target');
           if (!q.ok.some(hasShape)) bad(s, lv, q, 'no target has a shape on the map');

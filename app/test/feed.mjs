@@ -29,7 +29,7 @@ import { ERAS_NEED_REVIEW } from '../src/data/eras.js';
 import { HISTORY_NEEDS_REVIEW } from '../src/data/history.js';
 import { newHousehold, newKid } from '../src/model.js';
 import { feedFor, order, LIMIT } from '../src/bizzing-feed.js';
-import { feedOpts, feedSession } from '../src/feed.js';
+import { feedOpts, feedSession, topicOf } from '../src/feed.js';
 import { plain, QSEED, QN, bandOfLevel, leaks, words, jaccard, NEAR, nearDups, groupOf, metaOf } from '../../tools/build-feed.mjs';
 import { RANKS } from '../src/model.js';
 import { OCEANS } from '../src/geo.js';
@@ -177,6 +177,15 @@ for (let n = 1; n <= 10; n++) {
   k.last = { k: 'stop', title: 'x', at: T + 7200e3 };
   const s3 = feedSession(h, k, FEED, T + 7200e3);
   ok(!s3.some((x) => s1.some((y) => y.id === x.id)), 'something new draws a new session — and what was seen today is not shown again');
+}
+/* audit v4: one topic was 6 of 20 cards. A session holds at most 2 cards about one thing, 4 of one kind and
+   1 two-option question — at every level, on three days — and still fills itself */
+for (let n = 1; n <= 10; n++) for (const d of [0, 1, 2]) {
+  const { h, k } = child('11-14', n); h.parent.tester = true;
+  const list = feedSession(h, k, FEED, T + d * 864e5), cnt = (f) => list.reduce((a, x) => ((a[f(byIdF[x.id])] = (a[f(byIdF[x.id])] || 0) + 1), a), {});
+  const top = Math.max(...Object.values(cnt(topicOf))), kind = Math.max(...Object.values(cnt((c) => c.kind))), tf = list.filter((x) => byIdF[x.id].play && byIdF[x.id].play.opts.length === 2).length;
+  const wc = list.reduce((a, x) => { const w = (byIdF[x.id].topics || []).find((z) => z.startsWith('world:')); if (w) a[w] = (a[w] || 0) + 1; return a; }, {}), world = Math.max(0, ...Object.values(wc));
+  ok(list.length >= 15 && top <= 2 && kind <= 4 && tf <= 1 && world <= 3, `level ${n} day ${d}: ${list.length} cards, a topic at most ${top}×, a kind ${kind}×, a world's painting ${world}×, ${tf} true/false`);
 }
 /* the right option's slot is spread, not written first */
 const slots = [0, 0, 0, 0];

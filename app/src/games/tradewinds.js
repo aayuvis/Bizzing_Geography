@@ -13,6 +13,7 @@ import { geoArea, geoGraticule10 } from 'd3-geo';
 import { haversine, fmtKm } from '../geo.js';
 import { shelly } from '../mascot.js';
 import { esc, ico, readBtn } from './kit.js';
+import { shipVars } from '../rewards.js';
 import { PORTS, HOMES, OCEANS, GOODS, newGame, plan, sail, nextMonth, wants, awakeCount, portFact, windAt } from './tw-engine.js';
 import { ERAS, BANDS, MONTHS, STRAITS, CANALS, HAZARDS, MONSOON, TRADEWINDS_NEEDS_REVIEW, PORT_SRC, STRAITS_SRC, ERAS_SRC, WIND_SRC } from './tw-data.js';
 
@@ -52,17 +53,17 @@ const DEFS = `<defs>
   <linearGradient id="tw-land-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6ead0"/><stop offset="1" stop-color="#e8d3a6"/></linearGradient>
   <filter id="tw-coast" x="-5%" y="-5%" width="110%" height="110%"><feMorphology in="SourceAlpha" operator="dilate" radius="1.6" result="d"/><feGaussianBlur in="d" stdDeviation="2.2" result="b"/><feFlood flood-color="#bff3ee" flood-opacity=".75"/><feComposite in2="b" operator="in" result="halo"/><feDropShadow in="SourceGraphic" dx="0" dy="1.2" stdDeviation="1" flood-color="#0b2e45" flood-opacity=".45" result="sh"/><feMerge><feMergeNode in="halo"/><feMergeNode in="sh"/></feMerge></filter>
   <symbol id="tw-sail" viewBox="-13 -19 26 27" overflow="visible">
-    <path d="M-12 1.5H12L8.5 7H-8.5Z" fill="#7a4a24" stroke="#3e2410" stroke-width=".7"/><path d="M-10.5 3.3H10.5" stroke="#f2c14e" stroke-width=".9"/>
+    <path d="M-12 1.5H12L8.5 7H-8.5Z" style="fill:var(--tw-hull,#7a4a24)" stroke="#3e2410" stroke-width=".7"/><path d="M-10.5 3.3H10.5" style="stroke:var(--tw-trim,#f2c14e)" stroke-width=".9"/>
     <path d="M-3 2V-15M4.5 2V-12.5" stroke="#3e2410" stroke-width="1.1"/>
-    <path d="M-8 -14H1.5Q4 -9 1.5 -3.5H-8Q-5.5 -9 -8 -14Z" fill="#fffaf0" stroke="#b9a27a" stroke-width=".55"/>
-    <path d="M0.5 -11.5H8.5Q10.6 -7.5 8.5 -3.5H0.5Q2.6 -7.5 0.5 -11.5Z" fill="#fffaf0" stroke="#b9a27a" stroke-width=".55"/>
+    <path d="M-8 -14H1.5Q4 -9 1.5 -3.5H-8Q-5.5 -9 -8 -14Z" style="fill:var(--tw-sail,#fffaf0)" stroke="#b9a27a" stroke-width=".55"/>
+    <path d="M0.5 -11.5H8.5Q10.6 -7.5 8.5 -3.5H0.5Q2.6 -7.5 0.5 -11.5Z" style="fill:var(--tw-sail,#fffaf0)" stroke="#b9a27a" stroke-width=".55"/>
     <path d="M5.5 -12L12.5 0.6H6Z" fill="#f4ead6" stroke="#b9a27a" stroke-width=".5"/>
     <path d="M-3 -15L3 -16.6L-3 -18.3Z" fill="currentColor" stroke="#3e2410" stroke-width=".4"/></symbol>
   <symbol id="tw-steam" viewBox="-14 -19 28 27" overflow="visible">
     <circle class="tw-smoke" cx="-5" cy="-13" r="2.8" fill="#6d7480" opacity=".55"/><circle class="tw-smoke s2" cx="-10" cy="-15.5" r="2.2" fill="#8a919c" opacity=".4"/>
-    <path d="M-13 1H13L9.5 7H-9.5Z" fill="#2b2f45" stroke="#14172a" stroke-width=".7"/><path d="M-11.3 5.2H11.3" stroke="#d64535" stroke-width="1.3"/>
+    <path d="M-13 1H13L9.5 7H-9.5Z" style="fill:var(--tw-hull2,#2b2f45)" stroke="#14172a" stroke-width=".7"/><path d="M-11.3 5.2H11.3" stroke="#d64535" stroke-width="1.3"/>
     <rect x="-8" y="-3.2" width="13" height="4.2" rx=".8" fill="#f5efe4" stroke="#9c9486" stroke-width=".5"/>
-    <rect x="-3.2" y="-10.5" width="4.4" height="7.4" fill="#d64535" stroke="#7a1f16" stroke-width=".5"/><rect x="-3.2" y="-10.5" width="4.4" height="1.7" fill="#1d1d1d"/>
+    <rect x="-3.2" y="-10.5" width="4.4" height="7.4" style="fill:var(--tw-funnel,#d64535)" stroke="#7a1f16" stroke-width=".5"/><rect x="-3.2" y="-10.5" width="4.4" height="1.7" fill="#1d1d1d"/>
     <path d="M8 -3V-12" stroke="#14172a" stroke-width=".9"/><path d="M8 -12L13 -13.4L8 -15Z" fill="currentColor" stroke="#14172a" stroke-width=".4"/></symbol>
   <symbol id="tw-swirl" viewBox="-12 -12 24 24" overflow="visible"><path d="M0 0m-9 0a9 9 0 1 1 9 9M0 0m9 0a9 9 0 1 1-9-9M0 0m0-5a5 5 0 1 1-5 5M0 0m0 5a5 5 0 1 1 5-5" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/><circle r="1.8" fill="#fff"/></symbol>
 </defs>`;
@@ -262,7 +263,7 @@ export function view(ctx) {
       <div class="tw-fleet">${ico('ship')} <b>${S.ships.filter((x) => !x.voyage).length}</b> in port · <b>${S.ships.filter((x) => x.voyage).length}</b> at sea</div>
     </div>
     <div class="tw-main">
-      <div class="tw-map">${worldSVG({ key: 'tw', tap: true, grat: false, fill, view: vb, under: L.under, extra: L.extra, label: 'Trade Winds world map: tap a port' })}
+      <div class="tw-map" style="${shipVars(ctx.kid)}">${worldSVG({ key: 'tw', tap: true, grat: false, fill, view: vb, under: L.under, extra: L.extra, label: 'Trade Winds world map: tap a port' })}
         <div class="tw-zoom">${[['in', 'plus', 'Zoom in'], ['out', 'minus', 'Zoom out'], ['home', 'reset', 'Back to the start view']].map(([h, i, l]) => `<button class="btn small" data-act="mapZoom" data-arg="tw|${h}" aria-label="${l}">${ico(i)}</button>`).join('')}</div>
         <p class="tw-legend small"><span class="tw-lg w"><svg viewBox="-18 -6 34 12" width="30" height="11"><path d="M-16 0C-10 -3.5 -4 3.5 2 0S10 -2.5 13 0M9 -3.2L13.5 0L9 3.2" fill="none" stroke="currentColor" stroke-width="2"/></svg> this month’s winds</span>${MONSOON.sw.includes(S.month) ? '<span class="tw-lg m">summer monsoon blows north-east</span>' : MONSOON.ne.includes(S.month) ? '<span class="tw-lg m">winter monsoon blows south-west</span>' : ''}${season ? '<span class="tw-lg s">cyclone season</span>' : ''}${HAZARDS.ice.north.includes(S.month) || HAZARDS.ice.south.includes(S.month) ? '<span class="tw-lg i">sea ice</span>' : ''}<span class="tw-lg p">lit port</span></p>
         ${pop ? `<div class="tw-pop" role="dialog" aria-label="${esc(pop.name)}"><div class="tw-pop-card"><div class="tw-pop-art" style="background-image:url(art/game-tw-era-${pop.id}.webp)"></div>

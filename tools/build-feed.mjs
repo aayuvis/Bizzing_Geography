@@ -103,6 +103,9 @@ export function build() {
   if (LANDMARK_NEEDS_REVIEW === undefined || ERAS_NEED_REVIEW === undefined || HISTORY_NEEDS_REVIEW === undefined) throw new Error('a review flag is missing');
   const cards = [];
   const add = (c) => {
+    /* a card whose words are fewer than three is not worth reading on its own: a figure's letters ("NESW"),
+       a bare example ("Pangaea.") — the auditor found both */
+    if (c.body && !c.play && plain(c.body).split(/\s+/).filter((w) => /[a-z]/i.test(w)).length < 3) return;
     const lv = c.level;
     cards.push({ ...c, bands: c.bands || (lv ? bandsFrom(bandOfLevel(lv)) : BANDS) });
   };
@@ -202,10 +205,8 @@ export function build() {
       add({ id: `e-${e.id}-${m.id}-p`, kind: 'exp', level: lv, topics: tm, src: `exp:${e.id}:${m.id}:project`, exp: e.id, day: `${m.id}.project`, title: 'Make: ' + m.project.name, badge: B('Make'), art: eart, body: `${plain(m.project.brief)} (${e.name}, part: ${m.name}.)`, route: dayRoute(`${m.id}.project`), cta: `Open day ${dayN(`${m.id}.project`)}` });
       m.days.forEach((d, i) => { if (d.tool && d.how) add({ id: `e-${e.id}-${m.id}-${i}`, kind: 'exp', level: lv, topics: [...t, 'tool:' + d.tool], src: `exp:${e.id}:${m.id}.${i}`, exp: e.id, day: `${m.id}.${i}`, title: d.name, badge: B('Expedition day'), art: eart, body: `${plain(d.how)} (${e.name}, part: ${m.name}.)`, route: dayRoute(`${m.id}.${i}`), cta: `Open day ${dayN(`${m.id}.${i}`)}` }); });
     }
-    /* each day's own aim, as the expedition writes it */
-    for (const d of daysOf(e)) if (d.o) add({ id: `e-${e.id}-d${d.n}`, kind: 'day', level: lv, topics: [...t, ...(d.stop ? ['stop:' + d.stop] : (d.stops || []).map((x) => 'stop:' + x))], src: `expday:${e.id}:${d.key}`, exp: e.id, day: d.key,
-      title: `${e.name} · day ${d.n}: ${plain(dayTitle(d))}`, badge: B('Expedition day'), art: eart,
-      body: `Day ${d.n} of ${all.length}: a ${KIND[d.k].toLowerCase()} day${d.mod === 'final' ? ' at the finish' : ` in the part “${e.modules.find((x) => x.id === d.mod).name}”`}${covers(d) ? `, on ${covers(d)}` : ''}. Today’s aim: ${plain(d.o)}.`, route: dayRoute(d.key), cta: `Open day ${d.n}` });
+    /* no card per expedition day: "Day 3 of 27: a practise day… Today’s aim: ten." was a template, not news
+       (audit v4). The parts, the makes and the days with a tool to open carry the expedition. */
     add({ id: `e-${e.id}-final`, kind: 'exp', level: lv, topics: t, src: `exp:${e.id}:final`, exp: e.id, day: 'final.project', title: 'Make: ' + e.final.name, badge: B('Make'), art: eart, body: `${plain(e.final.brief)} The last day of ${e.name}.`, route: dayRoute('final.project'), cta: `Open day ${dayN('final.project')}` });
   }
 
@@ -276,7 +277,7 @@ export function nearDups(cards, near = NEAR) {
    and one for the level-agnostic cards — a session loads only the groups its cards are in */
 export const groupOf = (c) => (c.level == null ? 'any' : 'L' + c.level);
 const META = ['id', 'kind', 'level', 'bands', 'topics', 'key', 'stop', 'exp', 'day'];
-export const metaOf = (c) => Object.fromEntries(META.filter((f) => c[f] !== undefined).map((f) => [f, c[f]]).concat(c.play ? [['play', 1]] : []));
+export const metaOf = (c) => Object.fromEntries(META.filter((f) => c[f] !== undefined).map((f) => [f, c[f]]).concat(c.play ? [['play', c.play.opts.length === 2 ? 2 : 1]] : []));   // play: 2 marks a two-option (true/false) question, which a session caps
 
 export function manifest(cards) {
   const by = (f) => cards.reduce((a, c) => ((a[f(c)] = (a[f(c)] || 0) + 1), a), {});

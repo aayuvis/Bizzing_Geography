@@ -9,7 +9,7 @@ import * as C from './chrome.js';
 import { bindShell } from './bizzing-shell.js';
 import { oops } from './mascot.js';
 import * as M from './music.js';
-import { viewSearch, placeOf } from './search.js';
+import { viewSearch, placeOf, placesReady } from './search.js';
 import { missAdd, missDue, missRight, missWrong, keyOf } from './mistakes.js';
 import { CATALOGUE, byAvatar, worldNo, canWear, stateOf as avState } from './avatars.js';
 import { buy as buyAvatar, buyWorld as buyWorldFam, worldOpen } from './bizzing-avatars.js';
@@ -21,7 +21,7 @@ import { STORIES } from './data/stories.js';
 import * as V from './views.js';
 import { toolById, SHELF, loadTool, GAMES, GAME_IDS, metaOf } from './library/index.js';
 import { bindMaps, restoreMaps, zoomMap, resetMap } from './mapui.js';
-import { shapeName, project } from './map.js';
+import { shapeName, project, regionsReady } from './map.js';
 import { regionsOf } from './library/states.js';
 import { GKEY, photosOn } from './photos.js';
 import { THEMES, themeOf, isTheme, applyTheme, syncThemeColor } from './themes.js';
@@ -29,6 +29,7 @@ import { syncScene } from './scenes.js';
 import * as X from './expeditions.js';
 import { APP, trackActivity, trackMilestone, familyOff, earn as famEarn, spend, balance as famBalance } from './family.js';
 import { xpFor, bonus, newMedals, SHOP, shopOf } from './rewards.js';
+import { sendSticker, byStk, markSeen } from './stickers.js';
 import { nextStep } from './next.js';
 import { demoHousehold } from './demo.js';
 import { expeditionById } from './data/expeditions.js';
@@ -88,10 +89,12 @@ function libCtx(id) {
 /* ------------------------------------------------------------- routing */
 
 let selfHash = false;
-function writeHash() {
+function writeHash(replace = false) {
   const { nav, arg } = R.ui;
   const h = '#/' + nav + (arg ? '/' + encodeURIComponent(arg) : '');
-  if (location.hash !== h) { selfHash = true; location.hash = h; }
+  /* a corrected address REPLACES the bad one: pushing it left #/stop/nope behind, and Back landed on it,
+     was corrected to the Atlas again, and Back seemed to repeat the Atlas (audit v4) */
+  if (location.hash !== h) { if (replace) history.replaceState(history.state, '', h); else { selfHash = true; location.hash = h; } }
 }
 /* #/continue (from the Hive): straight to the Continue card's target */
 function doContinue() { const k = kid(R.h); if (!k) return go(R.h.kids.length ? 'home' : 'welcome'); const n = nextStep(k); fire(n.act, n.arg); }
@@ -138,12 +141,13 @@ function go(nav, arg = null, fromHash = false) {
   if (nav === 'world' && !worldOf(arg)) { nav = 'atlas'; arg = null; }
   if (nav === 'story' && !STORIES[arg]) { nav = 'atlas'; arg = null; }
   if (nav === 'story' && (R.ui.nav !== 'story' || R.ui.arg !== arg)) R.ui.storyPage = 0;
+  const corrected = fromHash && nav !== asked;
   if (nav !== asked) fromHash = false;
   if (nav === 'grownups' && R.ui.nav !== 'grownups') { R.ui.gate = false; R.ui.gateIn = ''; }
   if (nav !== R.ui.nav) R.ui.prev = R.ui.nav;
   R.ui.nav = nav; R.ui.arg = arg; R.ui.confirm = null; R.ui.menu = false; R.ui.drawer = false; R.ui.sheet = null;
   hush();
-  if (!fromHash) writeHash();
+  if (!fromHash) writeHash(corrected);
   render();
   if (!fromHash) scrollTo(0, 0);
   if (nav === 'lib' && focus) focusTool(arg, focus);
@@ -177,7 +181,7 @@ function screen() {
       loadTool(meta.id).then(() => { if (isTool() && R.ui.arg === meta.id) render(); });
       return `<section class="tool-page">${V.pageHead(`${gi(meta.glyph)} ${meta.name}`, '', n === 'game' ? V.back('nav', 'Play', 'play') : V.back('nav', 'Library', 'library'))}<div class="card center-card"><p class="muted">Opening ${V.esc(meta.name)}…</p></div></section>`;
     }
-    case 'me': return C.viewMe();
+    case 'me': { const out = C.viewMe(); markSeen(k); return out; }   // a new sticker is shown once as new, then kept
     case 'settings': return C.viewSettings();
     case 'shop': return C.viewShop();
     case 'collection': return C.viewCollection();
@@ -329,6 +333,9 @@ function startRun(kind, title, items, extra = {}) {
   /* a mixed set, never all choosing: Library quizzes, the trip and level checks (stops.js vary) */
   if (kind === 'lib' || kind === 'trip' || kind === 'check') items = vary(items, rnd);
   const kk0 = kid(R.h);
+  /* a stop's own drill is mixed too (audit v4: 97% choosing): about a third asked another way — for a 6–7 a
+     tap on the map only, never spelling a name out */
+  if (kind === 'drill') items = vary(items, rnd, 0.3, kk0 && kk0.band === '6-7' ? ['map'] : ['map', 'type']);
   R.run = { kind, title, items, i: 0, results: [], fb: null, over: false, t0: Date.now(), coins: 0, hints: {}, bal0: kk0 ? famBalance(kk0.name) : 0, stars0: extra.stop && kk0 ? ((kk0.stops[extra.stop] || {}).stars || 0) : null, ...extra };
   R.run.back = backLabel(R.run);
   R.ui.mapPick = null;
@@ -500,6 +507,12 @@ on('buy', (id) => {
   sh.owned.push(id); sh[it.kind] = id.split(':')[1]; sfx.coin(); toast(`${it.name} is yours — and in use.`); save(); render();
 });
 on('use', (id) => { const k = kid(R.h), it = SHOP.find((x) => x.id === id), sh = shopOf(k); if (!it || !sh.owned.includes(id)) return; sh[it.kind] = id.split(':')[1]; save(); render(); });
+on('sticker', (arg) => {
+  const k = kid(R.h), [to, s] = String(arg).split('|'); if (!k || R.demo) return;
+  const r = sendSticker(R.h, k, to, s), o = R.h.kids.find((x) => x.id === to);
+  if (r === 'sent') { sfx.click(); toast(`Sent ${byStk[s].g} to ${o.name}.`); save(); } else if (r === 'limit') toast('Three today already — more tomorrow.');
+  render();
+});
 on('medalOk', () => { R.ui.medalPop = (R.ui.medalPop || []).slice(1); render(); });
 on('firstOk', () => { R.ui.firstPop = null; render(); });
 
@@ -537,6 +550,7 @@ on('plan', () => { if (!R.ui.gate) return; R.h.parent.plan = R.h.parent.plan ===
 on('openState', (a) => { const [c, id] = a.split('|'); loadTool('states').then((t) => { const x = libCtx('states'); t.act('c', c, x); t.act('sel', id, x); go('lib', 'states'); }); });
 on('openCity', (id) => { const p = placeOf(id); if (!p) return; loadTool('explorer').then((t) => { t.act('place', JSON.stringify({ cc: p.cc, n: p.n, at: p.at }), libCtx('explorer')); go('lib', 'explorer'); }); });
 if (typeof window !== 'undefined') window.addEventListener('bzg-search-ready', () => { if (R.ui.nav === 'search') render(); });
+if (typeof window !== 'undefined') window.addEventListener('bzg-regions-ready', () => { if (document.querySelector('.reg-wait')) render(); });
 on('openCountry', (cc) => { loadTool('explorer').then((t) => { if (t) t.act('sel', cc, libCtx('explorer')); go('lib', 'explorer'); }); });
 on('practiseMisses', () => {
   const k = kid(R.h), due = missDue(k).sort((a, b) => a.at - b.at).slice(0, 10);
@@ -633,14 +647,22 @@ bindMaps(root, mapTap);
 /* welcome */
 on('obStart', () => { R.ui.draft.step = 0; render(); });
 on('obNext', () => { const d = R.ui.draft; if (d.step === 0 && !d.name.trim()) return; d.step++; sfx.click && sfx.click(); render(); scrollTo(0, 0); });
-on('obBack', () => { const d = R.ui.draft; d.step = Math.max(0, d.step - 1); render(); });
-on('draftBand', (b) => { R.ui.draft.band = b; R.ui.draft.step = 2; render(); scrollTo(0, 0); });
+on('obBack', () => { const d = R.ui.draft; d.step = d.step === 'place' || d.step === 'ready' ? 1 : d.step === 2 || d.step === 3 ? 'ready' : Math.max(0, d.step - 1); d.pq = null; render(); });
+/* A6 placement and A3's ready step (views.js viewWelcome) */
+on('placeGo', () => { R.ui.draft.pq = { i: 0, score: 0, picks: [] }; render(); });
+on('placeAns', (a) => { const d = R.ui.draft, P = d.pq, q = V.placeRound(d.band)[P.i]; if (!q || P.picks[P.i]) return; P.picks[P.i] = a; if (a === q.ans) { P.score++; sfx.good(); } else sfx.bad(); render(); });
+on('placeNext', () => { R.ui.draft.pq.i++; render(); });
+on('obLevel', (n) => { R.ui.draft.level = +n; R.ui.draft.step = 'ready'; render(); scrollTo(0, 0); });
+on('obReady', () => { R.ui.draft.step = 'ready'; render(); scrollTo(0, 0); });
+on('obGo', (n) => { R.ui.draft.step = +n; render(); scrollTo(0, 0); });
+on('draftBand', (b) => { R.ui.draft.band = b; R.ui.draft.level = null; R.ui.draft.pq = null; R.ui.draft.step = 'place'; render(); scrollTo(0, 0); });
 on('draftAv', (a) => { R.ui.draft.avatar = a; render(); });
 on('draftTheme', (t) => { if (isTheme(t)) { R.ui.draft.theme = t; applyTheme(t); syncScene(t, false); render(); } });
 on('createKid', () => {
   const d = R.ui.draft; if (!d || !d.name.trim() || !d.band) return;
   const k = newKid(d.name, d.band, d.avatar);
   if (d.theme) k.prefs.theme = d.theme;
+  if (d.level && Math.abs(d.level - k.road.level) <= 1) k.road.level = d.level;   // a placement moves the start by one, never more
   R.h.kids.push(k); R.h.active = k.id; R.ui.draft = null;
   if (R.trial) { tick(k, R.trial.right > 0, 1); R.trial = null; }   // the question tried first counts
   save(); sfx.click();
@@ -756,7 +778,7 @@ root.addEventListener('input', (e) => {
   if (t.dataset.typed != null && R.run) { R.run.typed = t.value; return; }
   if (t.dataset.set === 'name') { const k = kid(R.h), v = t.value.trim().slice(0, 20); if (k && v) { k.name = v; save(); } return; }
   if (t.dataset.set === 'vol') { Store.saveDevice('vol', +t.value); M.setVolume(+t.value); const l = t.closest('.set-r').querySelector('i'); if (l) l.textContent = t.value + '%'; return; }
-  if (t.dataset.search != null) { R.ui.q = t.value; clearTimeout(inT); inT = setTimeout(() => { render(); }, 120); return; }
+  if (t.dataset.search != null) { R.ui.q = t.value; clearTimeout(inT); inT = setTimeout(() => { render(); }, 80); return; }
   if (t.dataset.libQuiet) { libCtx(R.ui.arg).ui[t.dataset.libQuiet] = t.value; return; }   // kept, never re-rendered while typing
   if (t.dataset.libInput) { const ctx = libCtx(R.ui.arg); ctx.ui[t.dataset.libInput] = t.value; clearTimeout(inT); inT = setTimeout(render, 90); }
   if (t.dataset.libRange) { const tool = toolById[t.dataset.libRange]; tool.act('range', t.value, libCtx(t.dataset.libRange)); render(); }
@@ -858,9 +880,9 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
 
 /* the family's activity feed: active minutes for the Hive, per child, never sent anywhere */
 const act = trackActivity(APP, () => (kid(R.h) || {}).name);
-window.__bzg = { landRound: () => V.landRound(), hourRight: () => V.hourQuestion(V.todaysCard()).c.cc, R, go, fire, music: M.musicState, next: nextStep, project, byCc, SHELF,
+window.__bzg = { landRound: () => V.landRound(), placeRound: (b) => V.placeRound(b), hourRight: () => V.hourQuestion(V.todaysCard()).c.cc, R, go, fire, music: M.musicState, next: nextStep, project, byCc, SHELF,
   NB: (cc) => toolById.chain.NB[cc], get TW() { return toolById.tradewinds; } };   // for test/ui.mjs, which drives the built app
 /* the tools kept out of the first download arrive once the app is idle, so they work offline too */
-setTimeout(() => (window.requestIdleCallback || ((f) => setTimeout(f, 1)))(() => { loadTool('geoguess'); loadTool('time'); }), 4000);
+setTimeout(() => (window.requestIdleCallback || ((f) => setTimeout(f, 1)))(() => { loadTool('geoguess'); loadTool('time'); regionsReady(); placesReady(); }), 4000);
 R.ui.nav = kid(R.h) ? 'home' : 'welcome';
 if (location.hash) readHash(); else render();

@@ -116,13 +116,19 @@ async function run(vp, tag) {
   await page.fill('#kname', 'Ahana'); await page.press('#kname', 'Enter');
   await page.waitForSelector('[data-act=draftBand]'); await shot('01b-age');
   await page.click('[data-act=draftBand][data-arg="8-10"]');
+  /* A6: a placement is offered, never forced; A3: skipping it lands on a ready card — a face and a world already chosen */
+  ok(await page.locator('[data-act=placeGo]').count() === 1 && await page.locator('[data-act=obReady]').count() === 1, 'after the age, five placement questions are offered — or skipped');
+  await page.click('[data-act=obReady]'); await page.waitForSelector('.ob-ready');
+  ok(await page.locator('.ob-ready [data-act=createKid]').count() === 1, 'A3: name, age, skip, Start — the face and the world are already picked');
+  await page.click('[data-act=obGo][data-arg="2"]');
   ok(await page.locator('.ob-avs .av-pick').count() === 5, 'the welcome offers five companions, not forty');
-  await page.click('[data-act=draftAv][data-arg="dolphin"]'); await page.click('[data-act=obNext]');
+  await page.click('[data-act=draftAv][data-arg="dolphin"]'); await page.click('[data-act=obReady]'); await page.click('[data-act=obGo][data-arg="3"]');
   ok(await page.locator('.ob-themes .theme-card').count() === 2, 'and two worlds');
   await page.click('[data-act=draftTheme][data-arg="ocean"]');
   ok(await page.evaluate(() => document.documentElement.dataset.theme) === 'ocean', 'choosing a world shows it straight away');
   await shot('01c-world'); await noSideways('welcome');
-  await page.click('[data-act=draftTheme][data-arg="atlas"]');
+  await page.click('[data-act=draftTheme][data-arg="atlas"]'); await page.click('[data-act=obReady]');
+  ok(/Dolphin/i.test(await page.locator('.ob-ready').innerText()), 'the ready card shows the face chosen');
   await page.click('[data-act=createKid]');
   /* A8: the welcome ends IN an easy first question on the whole map; its right answer is celebrated (not the sign-up) */
   await page.waitForSelector('.runner .qcard');
@@ -137,6 +143,11 @@ async function run(vp, tag) {
   ok(await page.evaluate(() => { const h = document.querySelector('.runner .phead'); return !!h && !/</.test(h.innerText) && !!h.querySelector('.phead-t p svg'); }), 'the drill header shows the stop’s glyph as a picture, never as "<svg…" text');
   ok(await page.evaluate(() => { const b = document.querySelector('.runner .phead .back'); return !!b && b.getAttribute('aria-label') === window.__bzg.R.run.back && window.__bzg.R.run.back !== 'Stop'; }), 'the drill’s back pill names where it goes (its stop), not a bare "Stop"');
   ok(await page.evaluate(() => window.__bzg.R.h.kids[0].days && Object.values(window.__bzg.R.h.kids[0].days).some((d) => d.q >= 1)), 'the question tried first is counted on the new explorer');
+  /* audit v4: a wrong answer's explanation is never under Shelly, and the back pill is one line */
+  await page.evaluate(() => { const r = window.__bzg.R.run, q = r.items[r.i]; window.__bzg.fire('choose', q.kind === 'map' ? 'AQ' : q.kind === 'mc' ? q.opts.find((o) => o !== q.ans) : 'zzz'); }); await page.waitForTimeout(250);
+  ok(await page.evaluate(() => { const s = document.querySelector('.q-shelly'); if (!s || !s.offsetParent) return true; const a = s.getBoundingClientRect();
+    return [...document.querySelectorAll('.qcard .fb, .qcard .why-chip')].every((e) => { const b = e.getBoundingClientRect(); const range = document.createRange(); range.selectNodeContents(e); return [...range.getClientRects()].every((t) => t.right <= a.left + 1 || t.bottom <= a.top + 1 || t.top >= a.bottom - 1); }); }), 'a wrong answer’s words are never under Shelly');
+  ok(await page.evaluate(() => { const b = document.querySelector('.runner .phead .back'); return b.getBoundingClientRect().height <= 48; }), 'the drill’s back pill is one line');
   await page.click('[data-act=quitRun]'); await page.evaluate(() => window.__bzg.go('home'));
   await page.waitForSelector('[data-bz=home]');
   await page.waitForTimeout(300); await shot('02-home'); await noSideways('home'); await targets('home');
@@ -174,12 +185,16 @@ async function run(vp, tag) {
   ok(await page.evaluate(() => { const b = document.querySelector('.map-board').getBoundingClientRect(); return b.left >= -1 && b.right <= innerWidth + 1 && [...document.querySelectorAll('.map-pin .mp-g')].every((g) => { const r = g.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; }); }), 'atlas: the whole island is on screen — no pin cut off at the screen’s edge (the audit’s "ne Street", "Latitu")');
   await page.click('.map-pin[data-arg=compass]'); await page.waitForSelector('.world-page');
   await page.waitForTimeout(300); await shot('04-world');
+  /* D6 (audit v4): every stop of the world's road is on screen, phone included (the board scrolled and showed 1–2) */
+  ok(await page.evaluate(() => { const v = document.querySelector('.world-page .board-scroll').getBoundingClientRect(); const ps = [...document.querySelectorAll('.world-page .bpin')];
+    return ps.length >= 4 && ps.every((p) => { const r = p.getBoundingClientRect(); return r.left >= v.left - 1 && r.right <= v.right + 1; }); }), 'a world’s whole road is on screen, every stop');
   await page.click('[data-act=openStop]'); await page.waitForSelector('.stop-page');
   await shot('05-stop');
   ok(await page.locator('[data-act=learned]').count() === 0, 'E9: no star for saying "I’ve read it" — stars come only from answers');
 
   // a drill, answered right by keyboard: ★★★ and station 1 done
   await page.click('[data-act=startDrill]'); await page.waitForSelector('.qcard');
+  const kindsSeen = new Set();
   for (let i = 0; i < 12; i++) {
     const s = await S(); if (!s.run || s.run.over) break;
     if (i === 0) {
@@ -190,9 +205,12 @@ async function run(vp, tag) {
       ok(said.includes(s.run.q.text) && !said.includes('🔊') && (s.run.q.kind !== 'mc' || said.includes(s.run.q.opts[0])), `🔊 reads the question${s.run.q.kind === 'mc' ? ' and its answers' : ''} in the device voice`);
     }
     if (s.run.q.kind === 'mc') await page.keyboard.press(String(s.run.q.opts.indexOf(s.run.q.ans) + 1));
+    else if (s.run.q.kind === 'type') { kindsSeen.add('type'); await page.fill('#type-in', s.run.q.ans); await page.press('#type-in', 'Enter'); }
+    else if (s.run.q.kind === 'map') { kindsSeen.add('map'); await page.evaluate((cc) => window.__bzg.fire('choose', cc), s.run.q.ok[0]); }
     await page.waitForTimeout(1700);
   }
   ok((await S()).run.over, 'the drill finishes');
+  ok(kindsSeen.size >= 1, `E4: a stop's own drill is mixed, not all choosing (${[...kindsSeen].join(', ')})`);
   ok(await page.evaluate(() => window.__bzg.R.h.kids[0].stops['eight-points'].stars) === 3, 'ten right earns three stars');
   await shot('07-end');
   /* I4/J1: the first medal spins in once, with what earned it; coins only from the standard events */
@@ -310,15 +328,17 @@ async function run(vp, tag) {
   await page.evaluate(() => { window.__bzg.R.run = null; window.__bzg.go('home'); });
   /* Home: the place of the hour shows its painting; today's place is asked right here, once an hour */
   ok(await page.evaluate(async () => { const m = /url\("?([^")]+art\/pc-[^")]+)/.exec(getComputedStyle(document.querySelector('[data-bz=hour]')).backgroundImage); if (!m) return false; const r = await fetch(m[1]); return r.ok && (r.headers.get('content-type') || '').includes('image'); }), 'the place-of-the-hour card shows its painting (and the picture is really there)');
-  ok(await page.locator('.hourq img.hourq-art').count() === 1 && await page.locator('.hourq .opt').count() === 4, 'today’s place is a question on Home: the painting and four countries');
+  ok(await page.locator('[data-bz=hour][data-hourq] .opt').count() === 4 && await page.locator('[data-hourq]').count() === 1, 'today’s place is asked ON the place-of-the-hour tile: one place card, four countries');
+  /* B1 (audit v4): nothing on Home is drawn below the family footer */
+  ok(await page.evaluate(() => { const f = document.querySelector('.bz-home > .bz-foot').getBoundingClientRect(); return [...document.querySelectorAll('.bz-home > :not(.bz-foot):not(style)')].every((el) => el.getBoundingClientRect().bottom <= f.top + 1); }), 'the footer is the last thing on Home');
   ok(/stars · \d+ capitals known/.test(await page.locator('.h-prog').innerText()), 'the ring card says stars and capitals known');
   { const right = await page.evaluate(() => window.__bzg.hourRight());
-    await page.click(`.hourq .opt[data-arg="${right}"]`); await page.waitForSelector('.hourq .fb.good');
-    ok(await page.locator('.hourq .opt[disabled]').count() === 4, 'a right answer holds, says the place, and the question is answered for the hour'); }
+    await page.click(`[data-hourq] .opt[data-arg="${right}"]`); await page.waitForSelector('[data-hourq] .fb.good');
+    ok(await page.locator('[data-hourq] .opt[disabled]').count() === 4, 'a right answer holds, says the place, and the question is answered for the hour'); }
   /* the place of the hour opens THAT place (it opened the game's menu) */
-  await page.waitForSelector('[data-bz=hour]');
-  const placeId = (await page.locator('[data-bz=hour]').getAttribute('href')).split('/').pop();
-  await page.click('[data-bz=hour]'); await page.waitForSelector('.wo-hud');
+  await page.waitForSelector('[data-hourq] .hourq-pin');
+  const placeId = (await page.locator('[data-hourq] .hourq-pin').getAttribute('href')).split('/').pop();
+  await page.click('[data-hourq] .hourq-pin'); await page.waitForSelector('.wo-hud');
   ok(await page.evaluate((id) => { const g = window.__bzg.R.ui.lib.geoguess.g; return !!g && g.place && g.cards.length === 1 && g.cards[0].id === id; }, placeId), 'the place-of-the-hour card opens that very place');
   await page.evaluate(() => { window.__bzg.R.ui.lib.geoguess.g = null; });
   /* a link to a tool that does not exist lands on the Library and the address says so */
@@ -608,6 +628,12 @@ async function run(vp, tag) {
   /* a link to nowhere lands on Home AND says so in the address (it kept #/qqq) */
   await page.evaluate(() => { location.hash = '#/qqq'; }); await page.waitForTimeout(300);
   ok(await page.evaluate(() => window.__bzg.R.ui.nav === 'home' && location.hash === '#/home'), 'an unknown address (#/qqq) lands on Home and the address is corrected');
+  /* …and the corrected address replaces the bad one, so Back leaves (it landed on the bad one, which went to the Atlas again) */
+  await page.evaluate(() => window.__bzg.go('library')); await page.waitForTimeout(200);
+  await page.evaluate(() => { location.hash = '#/stop/nope'; }); await page.waitForTimeout(300);
+  const atAtlas = await page.evaluate(() => window.__bzg.R.ui.nav === 'atlas' && location.hash === '#/atlas');
+  await page.goBack(); await page.waitForTimeout(300);
+  ok(atAtlas && await page.evaluate(() => window.__bzg.R.ui.nav === 'library'), 'a bad stop id lands on the Atlas, and Back goes to where the child was — not to the Atlas again');
   /* a Library quiz's back pill names its tool */
   await page.evaluate(() => window.__bzg.fire('openTool', 'flags')); await page.waitForTimeout(400);
   await page.evaluate(() => window.__bzg.fire('lib', 'flags|quiz')); await page.waitForTimeout(400);
@@ -804,8 +830,14 @@ async function run(vp, tag) {
   /* B7: a second explorer, switched from the top bar; switching never mixes their data */
   await page.evaluate(() => window.__bzg.go('welcome')); await page.waitForSelector('#kname');
   await page.fill('#kname', 'Kabir'); await page.press('#kname', 'Enter'); await page.click('[data-act=draftBand][data-arg="6-7"]');
+  /* A6: placement — the landing's five (5 of 5 above) and five more, all right, propose one level up */
+  await page.click('[data-act=placeGo]');
+  for (let i = 0; i < 5; i++) { const a = await page.evaluate(() => { const d = window.__bzg.R.ui.draft; return window.__bzg.placeRound(d.band)[d.pq.i].ans; }); await page.click(`[data-act=placeAns][data-arg="${a.replace(/"/g, '\\"')}"]`); await page.click('[data-act=placeNext]'); }
+  ok(await page.locator('[data-act=obLevel][data-arg="2"]').count() === 1 && await page.locator('[data-act=obLevel][data-arg="1"]').count() === 1, 'ten of ten proposes Level 2 for a 6–7, and offers the usual Level 1 too');
+  await page.click('[data-act=obLevel][data-arg="2"]');
   await page.evaluate(() => { window.__spoken = []; });
-  await page.click('[data-act=obNext]'); await page.click('[data-act=createKid]'); await page.waitForSelector('.runner'); await page.waitForTimeout(600);
+  await page.click('[data-act=createKid]'); await page.waitForSelector('.runner'); await page.waitForTimeout(600);
+  ok(await page.evaluate(() => window.__bzg.R.h.kids.find((k) => k.name === 'Kabir').road.level) === 2, 'the placement chosen is where the journey starts');
   ok(await page.evaluate(() => window.__spoken.length >= 1 && window.__spoken[0].includes(window.__bzg.R.run.items[0].text)), 'for a 6–7 explorer each question reads itself aloud');
   await page.click('[data-act=quitRun]'); await page.evaluate(() => window.__bzg.go('home')); await page.waitForSelector('[data-bz=home]');
   await page.click('[data-bz=kid]'); await page.waitForSelector('.who-menu');
@@ -815,6 +847,13 @@ async function run(vp, tag) {
   const xpA = await page.evaluate(() => window.__bzg.R.h.kids.find((k) => k.name === 'Ahana').xp);
   await page.click('.who-menu .wm-kid:has-text("Ahana")'); await page.waitForSelector('[data-bz=home]');
   ok(await page.evaluate(() => { const R = window.__bzg.R; return R.h.kids.find((k) => k.id === R.h.active).name; }) === 'Ahana', 'one tap switches explorer');
+  /* L7: Ahana sends Kabir a sticker; Kabir's greeting says so; My page shows it */
+  { const ids = await page.evaluate(() => { const H = window.__bzg.R.h; return [H.kids.find((k) => k.name === 'Ahana').id, H.kids.find((k) => k.name === 'Kabir').id, H.active]; });
+    await page.evaluate(([a, b]) => { window.__bzg.fire('switchKid', a); window.__bzg.fire('sticker', b + '|ship'); window.__bzg.fire('switchKid', b); }, ids); await page.waitForTimeout(250);
+    const g = await page.locator('[data-bz=greet]').innerText();
+    await page.evaluate(() => window.__bzg.go('me')); await page.waitForSelector('.stk-card');
+    ok(/Ahana sent you/.test(g) && await page.locator('.stk-got li').count() === 1 && await page.locator('.stk-b').count() === 8, 'a sticker from a sibling: said on Home, kept on My page, eight to send back');
+    await page.evaluate((x) => { window.__bzg.fire('switchKid', x); window.__bzg.go('home'); }, ids[2]); await page.waitForTimeout(250); }
   ok(await page.evaluate(() => window.__bzg.R.h.kids.find((k) => k.name === 'Kabir').xp) <= 1 && xpA > 1 && (await page.locator('[data-bz=greet]').innerText()).includes('Ahana'), 'switching never mixes their progress');
   await page.keyboard.press('Escape');
   /* M3: one child deleted, behind the PIN and a confirm; the other untouched */

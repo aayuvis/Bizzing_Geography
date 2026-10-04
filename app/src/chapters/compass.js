@@ -33,9 +33,11 @@ function scale(r, lv) {
   if (lv >= 3 && r() < 0.5) {
     const S = pick([10000, 25000, 50000, 100000, 250000], r), cm = int(2, 8, r);
     const km = (S * cm) / 100000;
-    const f = (x) => (Number.isInteger(x) ? x : x.toFixed(1)) + ' km';
+    /* two decimals at most (0.75 km, never rounded to a wrong 0.8), and no wrong option so small it
+       rounds to nothing — "0.0 km" was offered once */
+    const f = (x) => +x.toFixed(2) + ' km';
     return mc(r, `A map has the scale 1 : ${S.toLocaleString('en-US')}. Two places are ${cm} cm apart on it. How far apart are they really?`,
-      f(km), [f(km * 10), f(km / 10), f(km * 2), f(km + 1), f(km / 2)],
+      f(km), [km * 10, km / 10, km * 2, km + 1, km / 2].filter((x) => x >= 0.1).map(f),
       `1 cm on the map is ${S.toLocaleString('en-US')} cm on the ground — that is ${(S / 100000).toString()} km. So ${cm} cm is ${cm} × ${S / 100000} = ${f(km)}.`);
   }
   const k = pick(lv === 1 ? KM.slice(0, 3) : KM, r), cm = int(2, lv === 1 ? 5 : 9, r);

@@ -78,8 +78,8 @@ export function varyOne(q, how) {
   if (how === 'map') { const c = BY_NAME[q.ans]; return { ...mapQ(`${q.text.replace(/\s*$/, '')} Tap it on the map.`, [c.cc], null, q.why || '', c.cc), html: q.html || '', targetName: c.name, varied: 'map', from: q.from, stop: q.stop, lv: q.lv }; }
   return { ...typeQ(`${q.text.replace(/\s*$/, '')} Type it.`, q.ans, [], q.why || '', q.html || ''), varied: 'type', from: q.from, stop: q.stop, lv: q.lv };
 }
-export function vary(items, r = rnd, share = 0.34) {
-  const can = items.map((q, i) => [i, varyKind(q)]).filter(([, k]) => k);
+export function vary(items, r = rnd, share = 0.34, allow = ['map', 'type']) {
+  const can = items.map((q, i) => [i, varyKind(q)]).filter(([, k]) => k && allow.includes(k));
   const n = Math.min(can.length, Math.max(can.length >= 2 ? 2 : can.length, Math.round(items.length * share)));
   const pickIdx = new Map(shuffle(can, r).slice(0, n));
   return items.map((q, i) => (pickIdx.has(i) ? { ...q, ...varyOne(q, pickIdx.get(i)) } : q));

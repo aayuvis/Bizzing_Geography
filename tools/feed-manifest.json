@@ -1,11 +1,11 @@
 {
- "total": 5231,
+ "total": 5022,
  "byKind": {
   "world": 10,
   "stop": 45,
-  "idea": 140,
+  "idea": 133,
   "why": 41,
-  "quiz": 2625,
+  "quiz": 2624,
   "map": 76,
   "country": 195,
   "neighbours": 131,
@@ -14,9 +14,8 @@
   "continent": 73,
   "island": 1,
   "exp": 145,
-  "day": 190,
-  "word": 305,
-  "example": 114,
+  "word": 304,
+  "example": 104,
   "wordq": 309,
   "state": 218,
   "stateq": 185,
@@ -25,17 +24,17 @@
   "where": 40
  },
  "byLevel": {
-  "1": 265,
+  "1": 222,
   "2": 168,
-  "3": 440,
-  "4": 416,
-  "5": 512,
+  "3": 345,
+  "4": 413,
+  "5": 456,
   "6": 487,
   "7": 422,
   "8": 360,
   "9": 389,
-  "10": 587,
-  "any": 1185
+  "10": 586,
+  "any": 1174
  },
  "heldBack": [
   "Landmarks (awaiting a second reader)",

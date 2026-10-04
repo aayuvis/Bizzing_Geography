@@ -1524,14 +1524,22 @@ h1,h2,h3,.tab,.tb,.set-head h1,.set-sec h2,.shop-page h1,.dr-i{font-family:var(-
 }
 
 /* Home: the place of the hour shows its painting (B1), and is asked right here (B4) */
-:root .bz-home a.bz-hour[data-bz=hour]{background-size:cover;background-position:right center;background-color:var(--surface)}
+:root .bz-home .bz-hour[data-bz=hour]{background-size:cover;background-position:right center;background-color:var(--surface)}
 .hourq{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:16px;align-items:center;margin:0 0 18px;text-align:left}
 .hourq-art{width:100%;height:auto;aspect-ratio:3/2;object-fit:cover;border-radius:14px;display:block}
 .hourq-b h3{margin:2px 0 10px} .hourq .choice-row{display:grid;grid-template-columns:1fr 1fr;gap:8px} .hourq .fb{margin:10px 0 6px}
 @media (max-width:640px){.hourq{grid-template-columns:1fr}}
 /* on a phone the shell orders its cards (greeting 1 … second 5, tip/quote after): today's place comes last, above the footer */
 .bz-home > .hourq{order:8}
-@media (max-width:760px){:root .bz-home a.bz-hour[data-bz=hour]{background-position:right top}}
+@media (max-width:760px){:root .bz-home .bz-hour[data-bz=hour]{background-position:right top}}
+.hourq-tile{align-items:flex-start}
+.hourq-tile .hourq-b{width:100%;min-width:0} .hourq-tile .bz-kicker,.hourq-tile h3{display:block;max-width:62%}
+.hourq-tile h3{font-size:20px;margin:2px 0 8px}
+.hourq-tile .choice-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);justify-content:stretch;gap:6px}
+.hourq-tile .choice-row .opt{min-width:0;max-width:none;width:100%;box-sizing:border-box;flex:none;padding:6px 8px;font-size:13.5px;min-height:38px;line-height:1.15}
+.hourq-tile .fb{margin:0 0 6px;font-size:13.5px;padding:4px 8px}
+.hourq-pin{display:inline-block;margin-top:8px;font-weight:700;font-size:14px}
+
 .h-prog{display:block;font-size:13px;color:var(--muted);margin:2px 0 6px} .h-prog .ico{width:14px;height:14px;vertical-align:-2px;color:#E8A317}
 
 /* painted medals: earned in full colour; not yet, the same painting faded */
@@ -1587,3 +1595,33 @@ img.medal.dim{filter:grayscale(.75) opacity(.62) contrast(1.05)}
 /* E9: a world whose stars are fading carries a small count on its pin */
 .mp-g{position:relative}.mp-due{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#E8A33D;color:#2a1a00;font:800 12px/20px var(--ui,inherit);font-style:normal;border:2px solid #fff;box-shadow:0 2px 5px rgb(0 0 0 / .3)}
 .rc-help{margin:14px 0;padding:12px 14px;border-radius:12px;background:color-mix(in srgb,var(--accent) 9%,var(--card))}.rc-help h4{margin:0 0 6px}.rc-help ul{margin:0;padding-left:18px;display:grid;gap:6px}
+/* audit v4: Shelly sits in the card's corner — the verdict and the explanation keep clear of her */
+@media (min-width:641px){.qcard:has(.q-shelly) .fb,.qcard:has(.q-shelly) .why-chip{margin-right:88px}}
+/* a back pill is one line ("← Eight compass points" wrapped to two) */
+.back{white-space:nowrap;max-width:min(46vw,300px)} .back-l{overflow:hidden;text-overflow:ellipsis;min-width:0}
+/* audit v4 (O4): My Feed's head sits on a plate, so a scene's cloud behind it never takes its words (night, phone) */
+.feed-page > .bz-phead{background:color-mix(in srgb,var(--surface) 94%,transparent);border-radius:16px;padding:10px 16px;box-shadow:0 2px 10px rgb(0 0 0 / .08)}
+/* audit v4 (D6): on a phone the whole road is on screen — the board fits the width (it scrolled sideways
+   at 980px and showed one or two stops), with smaller pins */
+@media (max-width:760px){
+  .board{min-width:0;aspect-ratio:16/10}
+  .board .bpin{width:36px;height:36px;border-width:3px;font-size:14px}
+  .board .bpin .lvb{font-size:10px;top:calc(100% + 3px)}
+  .board .bpin em{font-size:10px}
+}
+/* (O4) the world and expedition paintings dim with the night, like the rest of the app */
+:root[data-mode=dark] .board > img{filter:brightness(.66) saturate(.85)}
+@media (prefers-color-scheme:dark){:root:not([data-mode=light]) .board > img{filter:brightness(.66) saturate(.85)}}
+/* A3 the ready card, A6 placement */
+.ob-ready-row{display:flex;align-items:center;gap:14px;margin-bottom:12px} .ob-ready-row > span{display:flex;flex-direction:column;gap:2px}
+.ob-ready .row{margin-bottom:12px}
+.place-q .place-t{font-size:20px;margin:4px 0 12px} .place-q .choice-row{display:grid;grid-template-columns:1fr;gap:8px} .place-q .choice-row .opt{max-width:none;min-width:0;width:100%}
+.place-q .fb{margin:10px 0}
+/* L7 stickers */
+.stk-got{list-style:none;margin:0 0 10px;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.stk-got li{display:flex;align-items:center;gap:6px;padding:4px 10px 4px 6px;border-radius:99px;background:var(--surface2)}
+.stk-got li.new{outline:2px solid var(--treasure)}
+.stk-g{font-size:22px;line-height:1}
+.stk-row{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
+.stk-b{font-size:22px;width:44px;height:44px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);cursor:pointer}
+.stk-b:hover:not([disabled]){border-color:var(--action)} .stk-b[disabled]{opacity:.4;cursor:default}

@@ -99,8 +99,25 @@ export const SHOP = [
   { id: 'frame:rope', kind: 'frame', name: 'Ship’s rope', price: 30, blurb: 'A sailor’s rope round your maps.' },
   { id: 'frame:brass', kind: 'frame', name: 'Brass', price: 40, blurb: 'A polished brass rim, like an old instrument.' },
   { id: 'frame:wood', kind: 'frame', name: 'Chart-table wood', price: 50, blurb: 'Dark wood, like a captain’s chart table.' },
+  /* K6 (the owner, audit v4): Trade Winds ship looks — colours for sails, hull and trim, never speed or cargo */
+  { id: 'ship:classic', kind: 'ship', name: 'Classic ship', price: 0, blurb: 'Cream sails and a teak hull.' },
+  { id: 'ship:monsoon', kind: 'ship', name: 'Monsoon red', price: 30, blurb: 'Rust-red sails, like a dhow in the evening.' },
+  { id: 'ship:indigo', kind: 'ship', name: 'Indigo trader', price: 40, blurb: 'Indigo-dyed sails and a dark hull.' },
+  { id: 'ship:saffron', kind: 'ship', name: 'Saffron', price: 45, blurb: 'Saffron sails with a green trim.' },
+  { id: 'ship:pearl', kind: 'ship', name: 'Pearl and gold', price: 60, blurb: 'Pearl-white sails, a white hull, gold trim.' },
 ];
-export const shopOf = (k) => { k.shop = k.shop || { owned: ['pin:dot', 'frame:plain'], pin: 'dot', frame: 'plain' }; return k.shop; };
+export const SHIP_LOOK = {
+  classic: { sail: '#fffaf0', hull: '#7a4a24', trim: '#f2c14e', hull2: '#2b2f45', funnel: '#d64535' },
+  monsoon: { sail: '#c8553d', hull: '#5a3218', trim: '#f2c14e', hull2: '#3a2620', funnel: '#c8553d' },
+  indigo: { sail: '#4b5fa8', hull: '#22253a', trim: '#e9e2c8', hull2: '#1d2340', funnel: '#4b5fa8' },
+  saffron: { sail: '#f4a62a', hull: '#6b3d1c', trim: '#2f8f5b', hull2: '#2b3a2f', funnel: '#f4a62a' },
+  pearl: { sail: '#fbf7ee', hull: '#f1ede4', trim: '#d4a32a', hull2: '#e8e4da', funnel: '#d4a32a' },
+};
+/* a shop record from before the ships carries no ship: it reads as the free classic one */
+export const shopOf = (k) => { k.shop = k.shop || { owned: ['pin:dot', 'frame:plain'], pin: 'dot', frame: 'plain' }; if (!k.shop.ship) k.shop.ship = 'classic'; if (!k.shop.owned.includes('ship:classic')) k.shop.owned.push('ship:classic'); return k.shop; };
+export const shipVars = (k) => { const L = SHIP_LOOK[(k && k.shop && k.shop.ship) || 'classic'] || SHIP_LOOK.classic; return `--tw-sail:${L.sail};--tw-hull:${L.hull};--tw-trim:${L.trim};--tw-hull2:${L.hull2};--tw-funnel:${L.funnel}`; };
+export const shipSwatch = (id) => { const L = SHIP_LOOK[id] || SHIP_LOOK.classic;
+  return `<svg viewBox="-14 -19 28 27" width="40" height="38" aria-hidden="true"><path d="M-12 1.5H12L8.5 7H-8.5Z" fill="${L.hull}" stroke="#3e2410" stroke-width=".7"/><path d="M-10.5 3.3H10.5" stroke="${L.trim}" stroke-width=".9"/><path d="M-3 2V-15M4.5 2V-12.5" stroke="#3e2410" stroke-width="1.1"/><path d="M-8 -14H1.5Q4 -9 1.5 -3.5H-8Q-5.5 -9 -8 -14Z" fill="${L.sail}" stroke="#b9a27a" stroke-width=".55"/><path d="M0.5 -11.5H8.5Q10.6 -7.5 8.5 -3.5H0.5Q2.6 -7.5 0.5 -11.5Z" fill="${L.sail}" stroke="#b9a27a" stroke-width=".55"/></svg>`; };
 export const PIN_PATH = {
   dot: null,
   star: 'M0-9l2.6 5.4 5.9.8-4.3 4.1 1 5.9L0 4.4-5.2 7.2l1-5.9-4.3-4.1 5.9-.8z',

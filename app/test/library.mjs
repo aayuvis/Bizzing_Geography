@@ -1,6 +1,8 @@
 /* library.mjs — every Library tool proves its own facts (selftest), and
    renders without throwing for every band. */
 import { allTools } from '../src/library/index.js';
+import { regionsReady } from '../src/map.js';
+await regionsReady();   // state maps load lazily in the app; the tools' selftests draw them
 const TOOLS = await allTools();
 let fails = 0, n = 0;
 const makeCtx = (id, band = '8-10') => ({ id, band, kid: { band, lib: {} }, ui: {}, data: {}, save() {}, render() {}, toast() {}, sfx: { good() {}, bad() {}, click() {}, level() {} }, confetti() {}, say() {}, tick() {}, startRun(t, items) { this.run = { t, items }; }, go() {}, openStop() {} });

@@ -68,12 +68,38 @@ export function feedOpts(h, k, items, now = Date.now()) {
   };
 }
 
+/* The family engine ranks; this app adds one rule on top (audit v4: "bird's-eye view" 6 of 20, map scale
+   5 of 20). From the engine's own ranked order, take at most MAX_TOPIC cards about one thing (a stop, a
+   country, a word's topic…), MAX_KIND of one kind, MAX_WORLD from one world (its painting) and MAX_TF two-option questions, keeping the engine's tier
+   shares (review and any ≤ a quarter each, next ≤ 2) and its "never three of a kind in a row". */
+export const LIMIT = 20, MAX_TOPIC = 2, MAX_KIND = 4, MAX_TF = 1, MAX_WORLD = 3;
+export const topicOf = (it) => (it.stop ? 'stop:' + it.stop : (it.topics || []).find((t) => /^(stop|cc|exp|dict|world):/.test(t)) || (it.topics || [])[0] || it.kind);
+export function capSession(ranked, items) {
+  const byId = new Map(items.map((x) => [x.id, x])), out = [], n = { topic: {}, kind: {}, tier: {} };
+  const cap = { review: Math.floor(LIMIT * 0.25), any: Math.floor(LIMIT * 0.25), next: 2 };
+  let tf = 0;
+  for (const x of ranked) {
+    if (out.length >= LIMIT) break;
+    const it = byId.get(x.id); if (!it) continue;
+    const t = topicOf(it), two = it.play === 2 || !!(it.play && it.play.opts && it.play.opts.length === 2), L = out.length;
+    /* a world's cards carry its painting: three from one world is the most, or one plate fills the feed */
+    const w = (it.topics || []).find((z) => z.startsWith('world:'));
+    if ((n.topic[t] || 0) >= MAX_TOPIC || (n.kind[x.kind] || 0) >= MAX_KIND || (two && tf >= MAX_TF) || (w && (n.topic[w] || 0) >= MAX_WORLD)) continue;
+    if (cap[x.tier] != null && (n.tier[x.tier] || 0) >= cap[x.tier]) continue;
+    if (L >= 2 && out[L - 1].kind === x.kind && out[L - 2].kind === x.kind) continue;
+    if (w) n.topic[w] = (n.topic[w] || 0) + 1;
+    n.topic[t] = (n.topic[t] || 0) + 1; n.kind[x.kind] = (n.kind[x.kind] || 0) + 1; n.tier[x.tier] = (n.tier[x.tier] || 0) + 1; if (two) tf++;
+    out.push(x);
+  }
+  return out;
+}
+
 /* today's session, kept until the child does something new (a stop, a level, a slipped card) */
 export function feedSession(h, k, items, now = Date.now()) {
   const o = feedOpts(h, k, items, now), f = feedRec(k);
   const key = [o._today, (k.last || {}).at || 0, k.road.level, Object.keys(o.due).length, k.band].join('|');
   if (f.sess && f.sess.key === key && f.sess.list.every((x) => items.some((i) => i.id === x.id))) return f.sess.list;
-  const list = feedFor(o);
+  const list = capSession(feedFor({ ...o, limit: 60, maxKind: MAX_KIND }), items);
   for (const x of list) f.seen[x.id] = o._today;
   for (const id of Object.keys(f.seen)) if (o._today - f.seen[id] > 14) delete f.seen[id];
   f.sess = { key, list };
