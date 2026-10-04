@@ -238,3 +238,5 @@
 .tw-lg.z::before{background:#ffe9a3}
 .tw-quiz .tw-opts .btn{flex:1 1 40%}
 @media (max-width:600px){.tw-marks{grid-template-columns:1fr}.tw-pop-shelly{display:none}.tw-goal{grid-template-columns:1fr}}
+.tw-side > *{flex-shrink:0}
+@media (max-width:600px){.tw-bar .tw-fleet{display:flex!important;grid-column:1/-1!important;justify-content:center;gap:6px;font-size:14px}}

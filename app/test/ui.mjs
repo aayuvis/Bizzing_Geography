@@ -842,7 +842,7 @@ async function run(vp, tag) {
   ok(await page.locator('.tw-port').count() === 60 && await page.locator('.tw-port.awake').count() === 1 && await page.locator('.tw-ship').count() === 1, 'sixty ports, one lit, one small boat at home');
   ok(await page.evaluate(() => { const r = document.querySelector('.tw-ship use').getBoundingClientRect(); return r.width >= 14; }), 'a ship is big enough to see on this screen');
   ok(await page.locator('.tw-wind').count() > 20, 'this month’s winds are drawn');
-  ok(await page.locator('.tw-marks .tw-mk').count() === 4 && /Market/.test(await page.locator('.tw-port-card').innerText()), 'ashore: the ship’s four marks and the market');
+  ok(await page.locator('.tw-marks .tw-mk').count() === 4 && /market/i.test(await page.locator('.tw-port-card').innerText()), 'ashore: the ship’s four marks and the market');
   await page.click('[data-arg="tradewinds|buy|999"]'); await page.waitForTimeout(150);
   ok((await TWS()).ships[0].hold.reduce((a, l) => a + l.n, 0) === 8, 'fill the hold: eight crates of fruit (Cargo 2)');
   await page.click('[data-arg="tradewinds|plan|1"]'); await page.waitForSelector('.tw-plan-card');

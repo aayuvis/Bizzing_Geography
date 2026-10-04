@@ -78,14 +78,17 @@ export function capSession(ranked, items) {
   const byId = new Map(items.map((x) => [x.id, x])), out = [], n = { topic: {}, kind: {}, tier: {}, why: {} };
   const cap = { review: Math.floor(LIMIT * 0.25), any: Math.floor(LIMIT * 0.25), next: 2 };
   let tf = 0;
-  for (const x of ranked) {
-    if (out.length >= LIMIT) break;
+  for (const pass of [0, 1]) for (const x of ranked) {
+    /* a second pass only when the first fell short: the caps on a topic, a kind and a world hold; the
+       quarter-shares of review and level-free cards give way (never "next", never past the limit) */
+    if (out.length >= LIMIT || (pass && out.length >= 16)) break;
+    if (out.includes(x)) continue;
     const it = byId.get(x.id); if (!it) continue;
     const t = topicOf(it), two = it.play === 2 || !!(it.play && it.play.opts && it.play.opts.length === 2), L = out.length;
     /* a world's cards carry its painting: three from one world is the most, or one plate fills the feed */
     const w = (it.topics || []).find((z) => z.startsWith('world:'));
     if ((n.topic[t] || 0) >= MAX_TOPIC || (n.kind[x.kind] || 0) >= MAX_KIND || (two && tf >= MAX_TF) || (w && (n.topic[w] || 0) >= MAX_WORLD)) continue;
-    if (cap[x.tier] != null && (n.tier[x.tier] || 0) >= cap[x.tier]) continue;
+    if (cap[x.tier] != null && (n.tier[x.tier] || 0) >= cap[x.tier] && (!pass || x.tier === 'next')) continue;
     if ((n.why[x.why] || 0) >= 6) continue;                                   // one reason is not the whole feed (the engine's own rule)
     if (L >= 2 && out[L - 1].kind === x.kind && out[L - 2].kind === x.kind) continue;
     if (w) n.topic[w] = (n.topic[w] || 0) + 1;
