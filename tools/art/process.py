@@ -97,6 +97,15 @@ if '--friends' in sys.argv:         # raw/fr-<id>-<pose>.png -> app/public/frien
     print(f'friends: total {total // 1024} KB')
     if GHOSTS: print('GHOSTS — repaint these (their ground was not pure magenta):', ', '.join(GHOSTS)); sys.exit(1)
     sys.exit(0)
+# the browser tab's icon (the owner: Shelly's face on no tile, like Bizzing Bee's bee): keyed to alpha, 32 and 64 px
+if '--favicon' in sys.argv:
+    PUB = os.path.join(HERE, '..', '..', 'app', 'public')
+    avatar(os.path.join(RAW, 'favicon.png'), os.path.join(RAW, 'favicon-keyed.webp'), 256)
+    k = Image.open(os.path.join(RAW, 'favicon-keyed.webp')).convert('RGBA')
+    for n, f in [(64, 'favicon.png'), (32, 'favicon-32.png')]: k.resize((n, n), Image.LANCZOS).save(os.path.join(PUB, f))
+    if GHOSTS: print('GHOSTS — repaint the favicon:', ', '.join(GHOSTS)); sys.exit(1)
+    print('favicon: 64 and 32 px'); sys.exit(0)
+
 if '--avatars' in sys.argv:
     total = 0
     for f in sorted(os.listdir(RAW)):
@@ -131,7 +140,7 @@ def trim(im):
 total = 0
 PREFIX = next((a.split('=', 1)[1] for a in sys.argv if a.startswith('--prefix=')), '')   # e.g. --prefix=game- : only those
 for f in sorted(os.listdir(RAW)):
-    if not f.endswith('.png') or f.startswith(('av-', 'mascot-', 'md-', 'fr-')) or not f.startswith(PREFIX): continue
+    if not f.endswith('.png') or f.startswith(('av-', 'mascot-', 'md-', 'fr-', 'favicon')) or not f.startswith(PREFIX): continue
     n = f[:-4]; im = Image.open(os.path.join(RAW, f)).convert('RGB')
     if not n.startswith('st-'): im = trim(im)   # a story scene's pale sand or snow is its ground, not a mat (each is looked at)
     w = 1024 if n.startswith('st-') else 1280 if n.startswith(('pc-', 'era-', 'hist-')) else 960 if n.startswith('lm-') else 640 if n.startswith('lib-') else 1600 if n == 'game-tradewinds' else 800 if n.startswith('game-') else 1920
