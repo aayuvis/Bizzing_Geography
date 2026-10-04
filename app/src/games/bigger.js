@@ -11,7 +11,7 @@ import { QUIZ, byCc, fmtArea } from '../geo.js';
 import { worldSVG, shapesAtOneScale, hasShape, drawnArea } from '../map.js';
 import { FAMOUS } from '../chapters/kit.js';
 import { seeded, shuffle, dayKey } from '../rand.js';
-import { readBtn, ico, titleCard, finishCard, hud, esc } from './kit.js';
+import { readBtn, ico, titleCard, finishCard, hud, esc, todaySeed, todayStart, keepToday } from './kit.js';
 
 export const TOOL = GAME_META.bigger;
 const ROUND = 10;
@@ -31,19 +31,19 @@ export function makePairs(r, band, n = ROUND) {
   }
   return out;
 }
-function newRound(ctx, daily) { const r = seeded(daily ? 'bigger' + dayKey() : 'bigger' + Date.now()); ctx.ui.g = { pairs: makePairs(r, daily ? '8-10' : ctx.band, daily ? 5 : ROUND), i: 0, done: [], daily }; }
+function newRound(ctx, daily) { const r = seeded(daily ? todaySeed('bigger') : 'bigger' + Date.now()); ctx.ui.g = { pairs: makePairs(r, daily ? '8-10' : ctx.band, daily ? 5 : ROUND), i: 0, done: [], daily }; }
 const times = (x) => (x < 1.95 ? `${Math.round((x - 1) * 100)}% more` : `about ${Math.round(x)} times as much`);
 
 export function view(ctx) {
   const g = ctx.ui.g, d = ctx.data;
   if (!g) return titleCard(TOOL, {
     how: ['Two countries appear on the map.', 'Tap the one with <b>more land</b>.', 'Then see them side by side at their true size. Careful — far from the equator, a flat map makes land look bigger than it is.'],
-    starts: [['bigger|start', `Play ${ROUND} pairs`], ['bigger|daily', (d.daily || {})[dayKey()] != null ? 'Today’s five ✓' : 'Today’s five']],
+    starts: [['bigger|start', `Play ${ROUND} pairs`], todayStart('bigger', d)],
     best: d.best ? `Best round: ${d.best} of ${ROUND} · ${d.plays || 0} played` : '',
   });
   if (g.over) {
     const right = g.done.filter((x) => x.right).length;
-    return finishCard({ kicker: g.daily ? 'Today’s five' : 'Round complete', count: right, title: `of ${g.pairs.length} right`,
+    return finishCard({ kicker: g.daily ? 'Today’s round' : 'Round complete', count: right, title: `of ${g.pairs.length} right`,
       lines: [g.done.some((x) => x.fool) ? 'Some of those pairs were chosen to fool your eyes: a flat map stretches the land near the poles.' : '', 'You practised: comparing the size of countries, and reading a map with care.'],
       again: ['bigger|start', 'Play again'], home: 'bigger|home' });
   }
@@ -76,7 +76,7 @@ export function act(name, arg, ctx) {
     if (g.i >= g.pairs.length) {
       g.over = true; const d = ctx.data, right = g.done.filter((x) => x.right).length;
       d.plays = (d.plays || 0) + 1;
-      if (g.daily) { d.daily = d.daily || {}; d.daily[dayKey()] = right; } else if (right > (d.best || 0)) d.best = right;
+      if (g.daily) keepToday(d, right); else if (right > (d.best || 0)) d.best = right;
       d.foolsBeaten = (d.foolsBeaten || 0) + g.done.filter((x) => x.fool && x.right).length;
       if (ctx.session) ctx.session(); if (ctx.earn) ctx.earn('stop'); ctx.save();
     }

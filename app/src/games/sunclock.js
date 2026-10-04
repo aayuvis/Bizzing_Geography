@@ -12,7 +12,7 @@ import { worldSVG, worldPath } from '../map.js';
 import { geoCircle } from 'd3-geo';
 import { FAMOUS } from '../chapters/kit.js';
 import { seeded, shuffle, dayKey, pick } from '../rand.js';
-import { readBtn, ico, titleCard, finishCard, hud, esc } from './kit.js';
+import { readBtn, ico, titleCard, finishCard, hud, esc, todaySeed, todayStart, keepToday } from './kit.js';
 
 export const TOOL = GAME_META.sunclock;
 export const SUN_SRC = ['NOAA — “Solar time: the Earth turns 15° of longitude per hour”', 'Encyclopaedia Britannica — “equinox”, “time zone”'];
@@ -41,7 +41,7 @@ export function makeQ(r, band) {
   return { k, A, target: wrap(A.at[1] + TAPS[k].off) };
 }
 function newRound(ctx, daily) {
-  const r = seeded(daily ? 'sun' + dayKey() : 'sun' + Date.now()), band = daily ? '8-10' : ctx.band;
+  const r = seeded(daily ? todaySeed('sunclock') : 'sun' + Date.now()), band = daily ? '8-10' : ctx.band;
   ctx.ui.g = { list: Array.from({ length: daily ? 3 : ROUND }, () => makeQ(r, band)), i: 0, done: [], daily };
 }
 const prompt = (q) => q.k === 'day' ? `It is noon in <b>${esc(q.A.n)}</b>. Is it day or night in <b>${esc(q.B.n)}</b>?`
@@ -52,13 +52,13 @@ export function view(ctx) {
   const g = ctx.ui.g, d = ctx.data;
   if (!g) return titleCard(TOOL, {
     how: ['The Earth turns once a day — <b>15° of longitude every hour</b>.', 'It is noon where the sun is overhead. 90° west it is sunrise, 90° east sunset, 180° away midnight.', 'Answer from the longitudes. Then watch where night falls.'],
-    starts: [['sunclock|start', `Play ${ROUND}`], ['sunclock|daily', (d.daily || {})[dayKey()] != null ? 'Today’s three ✓' : 'Today’s three']],
+    starts: [['sunclock|start', `Play ${ROUND}`], todayStart('sunclock', d)],
     best: d.best ? `Best round: ${d.best} of ${ROUND} · ${d.plays || 0} played` : '',
     note: 'This is SUN time. Real clocks use time zones, so a city’s clock can differ from its sun by an hour or more.',
   });
   if (g.over) {
     const right = g.done.filter((x) => x.right).length;
-    return finishCard({ kicker: g.daily ? 'Today’s three' : 'Round complete', count: right, title: `of ${g.list.length} right`,
+    return finishCard({ kicker: g.daily ? 'Today’s round' : 'Round complete', count: right, title: `of ${g.list.length} right`,
       lines: ['You practised: longitude, and how the turning Earth makes day and night — 15° to every hour.'],
       again: ['sunclock|start', 'Play again'], home: 'sunclock|home' });
   }
@@ -100,7 +100,7 @@ export function act(name, arg, ctx) {
     if (g.i >= g.list.length) {
       g.over = true; const d = ctx.data, right = g.done.filter((x) => x.right).length;
       d.plays = (d.plays || 0) + 1;
-      if (g.daily) { d.daily = d.daily || {}; d.daily[dayKey()] = right; } else if (right > (d.best || 0)) d.best = right;
+      if (g.daily) keepToday(d, right); else if (right > (d.best || 0)) d.best = right;
       if (ctx.session) ctx.session(); if (ctx.earn) ctx.earn('stop'); ctx.save();
     }
   }

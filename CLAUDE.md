@@ -196,7 +196,7 @@ Inherited from the family, and it holds here:
 
 ## Play (the games)
 
-Seven games on the **Play** tab, each a Library-contract file in `src/games/` (`TOOL`, `view`,
+Nine games on the **Play** tab, each a Library-contract file in `src/games/` (`TOOL`, `view`,
 `act`, `key`, `selftest`), routed at `#/game/<id>` (an old `#/lib/geoguess` link lands there).
 `games/meta.js` names them; `games/kit.js` is the shared title card, finish card and HUD.
 Every fact a game asks comes from the data, and each proves its puzzles before showing them:
@@ -223,6 +223,19 @@ Every fact a game asks comes from the data, and each proves its puzzles before s
   **Shape Detective** (true-shape outlines, clues from the data), **Sun Clock** (sun time from
   longitude; the night side drawn only after the answer), and **Where on Earth?**, moved here
   from the Library.
+- **Geo Bee** (`geobee.js` screen, `geobee-engine.js` rules): Bizzing Maths' Mock Contest with the SAME
+  ten rivals (every field but `spec` — `test/games.mjs` reads the Maths file and holds them to it) and the
+  Bee's rules (round one knocks nobody out, an all-miss round is replayed, championship rules for the last
+  two, sudden death after `SUDDEN_AT`). Questions come only from the stops' `drill()`, up a ladder of the
+  ten levels' own steps, capped at the band's roads; leak rules are `test/stops.mjs`'s (`leaks`). One Bee a
+  month, seeded by year-month and band; the best finish per month is kept. Rivals are coloured discs with
+  an initial — no painted people.
+- **Flag Sprint**: 60 seconds, four names a flag, only the 195, wrong names from the flag's continent,
+  near-identical flags never offered together. A wrong pick holds 1.2 s (or a tap) — the sprint's
+  exception to "a wrong answer holds until dismissed", written beside `HOLD`. The clock is injectable.
+- **Today's round** (G9): every puzzle game (chain, compass, bigger, shape, sunclock, flagsprint) has one,
+  seeded by `kit.js todaySeed(id)` from the local day; `keepToday` keeps today's first result and only a
+  month of days. Nothing counts consecutive days. Trade Winds and Where on Earth? (its own daily) are exempt.
 - Medals for play (`rewards.js`) come from what each game recorded, never from time played.
 
 ## The family layer (Bizzing_Schedule docs/family/FAMILY-STANDARD.md)

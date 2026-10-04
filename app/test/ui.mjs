@@ -720,7 +720,7 @@ async function run(vp, tag) {
     if (xy) await tapXY(xy[0], xy[1]); return xy;
   };
   await page.evaluate(() => { window.__bzg.R.ui.medalPop = []; }); await nav('play'); await page.waitForSelector('.play-hero');
-  ok(await page.locator('.play-card').count() === 6 && (await page.locator('.play-hero').innerText()).includes('Trade Winds'), 'the Play tab: Trade Winds as the big card, then six games');
+  ok(await page.locator('.play-card').count() === 8 && (await page.locator('.play-hero').innerText()).includes('Trade Winds'), 'the Play tab: Trade Winds as the big card, then eight games');
   ok(await page.locator(phone ? '[data-bz=tabbar] a[href="#/play"][aria-current=page]' : '[data-bz=tabs] a[href="#/play"][aria-current=page]').count() === 1, 'the Play tab is lit');
   await page.waitForTimeout(300); await shot('30-play'); await noSideways('play');
   ok(!(await page.evaluate(() => window.__bzg.SHELF.map((t) => t.id))).includes('geoguess'), 'Where on Earth? has moved off the Library shelf…');
@@ -783,6 +783,53 @@ async function run(vp, tag) {
   ok(await page.evaluate(() => window.__bzg.R.ui.lib.sunclock.g.done[0].right) && await page.locator('.sc-night').count() === 1, 'sunrise when it is noon in Delhi: 90° west, near 13° W — then night is drawn');
   await shot('36-sunclock');
   await page.evaluate(() => { window.__bzg.R.ui.lib.sunclock.g = null; });
+
+  // Geo Bee (F6): opens from the shelf; this month's Bee; round one answered by key, round two by tap
+  await page.evaluate(() => window.__bzg.go('play')); await page.waitForSelector('.play-card');
+  await page.click('.play-card[data-arg=geobee]'); await page.waitForSelector('[data-arg="geobee|start"]');
+  ok(await page.locator('.gb-rival .gb-disc').count() === 10 && await page.locator('.gb-rival img').count() === 0, 'Geo Bee: the ten rivals, each a coloured disc with an initial (no painted faces)');
+  await shot('36b-geobee-title');
+  await page.click('[data-arg="geobee|start"]'); await page.waitForSelector('.gb-q');
+  const gbAnswer = async (how) => {
+    const q = await page.evaluate(() => { const g = window.__bzg.R.ui.lib.geobee.g; return { kind: g.q.kind, ans: g.q.ans, n: (g.q.opts || []).length }; });
+    if (q.kind === 'type') { await page.fill('#gb-in', q.ans); if (how === 'key') await page.press('#gb-in', 'Enter'); else await page.click('[data-arg="geobee|typed"]'); }
+    else if (how === 'key') { await page.evaluate(() => document.activeElement && document.activeElement.blur()); await page.keyboard.press('1'); }
+    else await page.click('.gb-opts .opt >> nth=0');
+    await page.waitForSelector('.gb-round');
+  };
+  await gbAnswer('key');
+  ok(await page.evaluate(() => { const g = window.__bzg.R.ui.lib.geobee.g; return g.c.log.length === 1 && g.c.field.every((f) => !f.out); }), 'Geo Bee: round one answered by key — and nobody sits down in round one');
+  await shot('36c-geobee-round'); await noSideways('geo bee');
+  await page.keyboard.press('Enter'); await page.waitForSelector('.gb-q');
+  await gbAnswer('tap');
+  ok(await page.evaluate(() => window.__bzg.R.ui.lib.geobee.g.c.log.length === 2), 'Geo Bee: round two answered by tap');
+  await page.evaluate(() => { window.__bzg.R.ui.lib.geobee.g = null; });
+
+  // Flag Sprint (F2): one flag by key, one by tap; a wrong pick holds with the right name shown
+  await page.evaluate(() => window.__bzg.go('play')); await page.waitForSelector('.play-card');
+  await page.click('.play-card[data-arg=flagsprint]'); await page.waitForSelector('[data-arg="flagsprint|start"]');
+  await page.click('[data-arg="flagsprint|start"]'); await page.waitForSelector('.fs-flag');
+  await page.evaluate(() => document.activeElement && document.activeElement.blur());
+  const fsWrong = await page.evaluate(() => { const g = window.__bzg.R.ui.lib.flagsprint.g, P = g.run[g.i]; return P.opts.findIndex((o) => o !== P.cc); });
+  await page.keyboard.press(String(fsWrong + 1)); await page.waitForSelector('.fs-card.held');
+  ok(await page.locator('.fs-opts .opt.right').count() === 1 && await page.locator('.fs-opts .opt.wrong').count() === 1, 'Flag Sprint: a wrong pick by key holds, with the right one shown');
+  await shot('36d-flagsprint');
+  await page.keyboard.press('Enter'); await page.waitForSelector('.fs-card:not(.held)');
+  const fsRight = await page.evaluate(() => { const g = window.__bzg.R.ui.lib.flagsprint.g, P = g.run[g.i]; return P.opts.indexOf(P.cc); });
+  await page.click(`.fs-opts .opt >> nth=${fsRight}`); await page.waitForTimeout(100);
+  ok(await page.evaluate(() => { const g = window.__bzg.R.ui.lib.flagsprint.g; return g.right === 1 && g.i === 2 && /\d+s/.test(document.getElementById('fs-clock').textContent); }), 'Flag Sprint: a right pick by tap counts, and the clock runs');
+  await noSideways('flag sprint');
+  await page.evaluate(() => { window.__bzg.R.ui.lib.flagsprint.g = null; });
+
+  // Today's round (G9): every puzzle game's title card has one, and it starts today's puzzle
+  for (const id of ['chain', 'compass', 'bigger', 'shape', 'sunclock', 'flagsprint']) {
+    await page.evaluate((id) => { const u = (window.__bzg.R.ui.lib || {})[id]; if (u) u.g = null; window.__bzg.go('game', id); }, id);
+    await page.waitForSelector(`[data-arg="${id}|daily"]`);
+    ok(/Today’s round/.test(await page.locator(`[data-arg="${id}|daily"]`).innerText()), `${id}: a “Today’s round” button`);
+  }
+  await page.click('[data-arg="flagsprint|daily"]'); await page.waitForSelector('.fs-flag');
+  ok(await page.evaluate(() => window.__bzg.R.ui.lib.flagsprint.g.daily === true), 'Today’s round starts today’s puzzle');
+  await page.evaluate(() => { window.__bzg.R.ui.lib.flagsprint.g = null; });
 
   // Shelly's Trade Winds: start from Mumbai, plan by tapping, set sail by Enter, N months on, a port wakes
   await page.evaluate(() => window.__bzg.go('game', 'tradewinds')); await page.waitForSelector('[data-arg="tradewinds|new|indian"]'); await shot('37-tw-title');

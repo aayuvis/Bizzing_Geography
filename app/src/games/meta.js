@@ -8,6 +8,8 @@ export const GAME_META = {
   compass: { id: 'compass', name: 'Hot & Cold Compass', glyph: '🧭', art: 'game-compass', blurb: 'A hidden capital. Every guess tells you how far, and which way. Find it in as few guesses as you can.' },
   bigger: { id: 'bigger', name: 'Bigger or Smaller?', glyph: '⚖️', art: 'game-bigger', blurb: 'Two countries: which has more land? Your eyes can be fooled — the map is flat, the Earth is not.' },
   shape: { id: 'shape', name: 'Shape Detective', glyph: '🔍', art: 'game-shape', blurb: 'A country’s outline and a trail of clues. Name it with as few clues as you can.' },
+  geobee: { id: 'geobee', name: 'Geo Bee', glyph: '🏆', art: 'atlas', blurb: 'This month’s mock contest: you and the same ten rivals as the Bee. One question each, every round. Miss and you sit down.' },
+  flagsprint: { id: 'flagsprint', name: 'Flag Sprint', glyph: '🚩', art: 'lib-flags', blurb: 'Sixty seconds. How many flags of the world can you name?' },
   sunclock: { id: 'sunclock', name: 'Sun Clock', glyph: '☀️', art: 'game-sunclock', blurb: 'It is noon in Delhi. Where is the sun just rising? The Earth turns 15° every hour — use it.' },
 };
-export const GAME_ORDER = ['tradewinds', 'geoguess', 'chain', 'compass', 'bigger', 'shape', 'sunclock'];
+export const GAME_ORDER = ['tradewinds', 'geoguess', 'chain', 'compass', 'bigger', 'shape', 'sunclock', 'geobee', 'flagsprint'];

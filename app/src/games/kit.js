@@ -4,6 +4,7 @@
    fewest guesses, fewest clues — never on luck. */
 export const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 import { ico, gi } from '../icons.js';
+import { dayKey, hash } from '../rand.js';
 export const readBtn = (sel, label = 'Read it to me') => `<button class="read-btn" data-act="read" data-arg="${esc(sel)}" aria-label="${esc(label)}" title="${esc(label)}">${ico('sound')}</button>`;
 export { ico, gi };
 
@@ -33,3 +34,23 @@ export const hud = (items) => `<div class="gm-hud">${items.filter(Boolean).map((
 export const POINTS = ['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'];
 export const ARROWS = ['⬆️', '↗️', '➡️', '↘️', '⬇️', '↙️', '⬅️', '↖️'];
 export const pointOf = (deg) => Math.round((((deg % 360) + 360) % 360) / 45) % 8;
+
+/* Today's round (G9): every puzzle game has one, seeded by the calendar day, so every child
+   on every device meets the SAME puzzle today — siblings can compare over breakfast. The
+   result is kept for today, and nothing counts consecutive days: a day missed costs nothing
+   (no streaks). Trade Winds is one long voyage; Where on Earth? has its own daily. */
+export const todaySeed = (id, d = new Date()) => hash(`${id}|today|${dayKey(d)}`);
+export const todayResult = (data) => ((data && data.daily) || {})[dayKey()];
+/* the title card's start button: [arg, label] — "Today’s round", ticked with today's result once played */
+export function todayStart(id, data, fmt = (x) => x) {
+  const r = todayResult(data);
+  return [`${id}|daily`, r != null ? `Today’s round ✓ ${fmt(r)}` : 'Today’s round'];
+}
+/* keep today's FIRST result (a replay is practice, as a shared puzzle's should be); only the
+   last month of days is kept, so the record never grows and never becomes a calendar of misses */
+export function keepToday(data, result) {
+  const d = data.daily || (data.daily = {}), k = dayKey();
+  if (d[k] == null) d[k] = result;
+  const keys = Object.keys(d).sort(); for (const x of keys.slice(0, Math.max(0, keys.length - 31))) delete d[x];
+  return d[k];
+}
