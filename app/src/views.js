@@ -37,6 +37,9 @@ import { certificatesOf } from './certificate.js';
 import { STORIES, STORIES_MORE, STORY_NOTE, storyById, storyWorld } from './data/stories.js';
 import { friendSprite } from './data/friends.js';
 import { unseen as unseenStk, byStk } from './stickers.js';
+import { byAvatar as byAvatarV } from './avatars.js';
+import { ownedIds } from './chrome.js';
+const ownedCount = (k) => ownedIds(k).length;
 
 /* ------------------------------------------------------------- helpers */
 
@@ -308,7 +311,9 @@ export function viewHome() {
     /* the place of the hour shows its painting (the url is written here, so it resolves against the page) */
     .replace('<div class="bz-home" data-bz="home">', `<div class="bz-home" data-bz="home"><style>:root .bz-home .bz-hour[data-bz=hour]{background-image:linear-gradient(90deg,var(--surface) 50%,color-mix(in srgb,var(--surface) 55%,transparent) 72%,color-mix(in srgb,var(--surface) 10%,transparent)),url(art/${pc.id}.webp)}</style>`)
     /* the shell's hour tile becomes today's place, asked right on it */
-    .replace(/<a class="bz-card bz-hour" data-bz="hour"[\s\S]*?<\/a>/, () => hourCard(k, pc));
+    .replace(/<a class="bz-card bz-hour" data-bz="hour"[\s\S]*?<\/a>/, () => hourCard(k, pc))
+    /* the hello card wears the child's own face (Bee's), and a tap fans out their cards */
+    .replace(/(<section class="bz-card bz-greet" data-bz="greet">)<img src="[^"]*" alt="">/, (_, open) => `${open}<button class="bz-greet-av" data-act="openDeck" aria-label="Your avatar cards — ${esc(String(ownedCount(k)))} owned" title="Flip through your avatar cards"><img src="${esc((byAvatarV[k.avatar] || {}).art || 'mascot/shelly-wave.webp')}" alt=""><span class="bz-greet-n">${ownedCount(k)}</span></button>`);
 }
 export const libTile = (t) => `<button class="lib-tile" data-act="openTool" data-arg="${t.id}">
       <span class="lib-art" style="background-image:url(art/${t.art}.webp)"></span>

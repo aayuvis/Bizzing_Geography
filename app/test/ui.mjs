@@ -169,6 +169,18 @@ async function run(vp, tag) {
   ok(await page.evaluate(() => { const b = document.querySelector('[data-bz=continue]'); return b.getAttribute('href') === '#/continue'; }), 'Continue opens the next station');
   ok(await page.locator('.hm-ways, .hm-three').count() === 0 && await page.evaluate(() => ['greet', 'ring', 'hour', 'next', 'second', 'tip', 'quote'].every((x) => document.querySelector(`[data-bz=home] [data-bz=${x}]`)) && document.querySelectorAll('[data-bz=home] .bz-card, [data-bz=home] .bz-journey').length === 7), 'home is Bee’s three rows: greeting · ring · hour, two journeys, tip · quote — nothing else');
   ok(await page.locator('[data-bz=hive]').getAttribute('href') === 'https://aayuvis.github.io/Bizzing_Schedule/', 'the top bar goes back to the Hive');
+  /* the deck (Bizzing Bee's): the hello card wears the child's face; a tap fans out their cards */
+  ok(await page.evaluate(() => { const b = document.querySelector('[data-bz=greet] .bz-greet-av img'); return !!b && b.getAttribute('src').includes(window.__bzg.R.h.kids[0].avatar); }), 'the hello card shows the child’s own avatar');
+  await page.click('[data-bz=greet] .bz-greet-av'); await page.waitForSelector('[data-deck] .avc-card');
+  const deck0 = await page.evaluate(() => ({ n: document.querySelector('.avd-count') ? document.querySelector('.avd-count').innerText : '', name: document.querySelector('.avc-name').innerText, stats: document.querySelectorAll('.avc-stat').length, rank: document.querySelector('.avc-rank').innerText, hist: (document.querySelector('.avc-hist') || {}).innerText || '', worn: !!document.querySelector('.avc-worn') }));
+  ok(deck0.stats === 4 && /#\d+ of 96/.test(deck0.rank) && /your/.test(deck0.rank) && /story with you/i.test(deck0.hist) && deck0.worn, `the deck opens on the card you wear: four stats, its rank of 96 and of yours, its story with you (${deck0.rank})`);
+  await shot('02c-deck'); await noSideways('deck');
+  if (deck0.n) { await page.keyboard.press('ArrowRight'); await page.waitForTimeout(150); ok((await page.locator('.avc-name').innerText()) !== deck0.name, '→ flips to the next card'); await page.keyboard.press('ArrowLeft'); await page.waitForTimeout(150); }
+  await page.click('[data-act=deckAll]'); await page.waitForTimeout(150);
+  ok(/\/ 96/.test(await page.locator('.avd-count').innerText()), '“All 96 cards” turns the deck into the whole collection');
+  await page.keyboard.press('Escape'); await page.waitForSelector('[data-deck]', { state: 'detached' });
+  ok(await page.locator('[data-deck]').count() === 0, 'Esc puts the deck away');
+
   /* the activity feed (O3): an active minute is written for this child */
   for (let i = 0; i < 6; i++) { await page.keyboard.press('Shift'); await page.clock.runFor(15000); }
   ok(await page.evaluate(() => { const f = JSON.parse(localStorage.getItem('bizzing.activity') || '{}'); return (f.s || []).some((x) => x.a === 'geography' && x.who === 'Ahana' && x.m >= 1); }), 'bizzing.activity gets an active minute for this child');

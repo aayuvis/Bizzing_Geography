@@ -513,6 +513,13 @@ on('sticker', (arg) => {
   if (r === 'sent') { sfx.click(); toast(`Sent ${byStk[s].g} to ${o.name}.`); save(); } else if (r === 'limit') toast('Three today already — more tomorrow.');
   render();
 });
+/* the deck (Bizzing Bee's): the hello card's avatar opens the cards the child owns; the Collection opens any */
+on('openDeck', () => { const k = kid(R.h); if (!k) return; R.ui.deck = { all: false, i: 0 }; const ids = C.deckIds(k); R.ui.deck.i = Math.max(0, ids.indexOf(k.avatar)); sfx.click(); render(); focusIn('[data-deck] .avd-bar .btn'); });
+on('openCard', (id) => { const k = kid(R.h); if (!k) return; R.ui.deck = { all: true, i: 0 }; R.ui.deck.i = Math.max(0, C.deckIds(k).indexOf(id)); sfx.click(); render(); focusIn('[data-deck] .avd-bar .btn'); });
+on('deckAll', () => { const k = kid(R.h), cur = C.deckIds(k)[R.ui.deck.i]; R.ui.deck = { all: true, i: 0 }; R.ui.deck.i = Math.max(0, C.deckIds(k).indexOf(cur)); render(); });
+on('deckGo', (n) => { const k = kid(R.h), N = C.deckIds(k).length; if (!R.ui.deck || N < 2) return; R.ui.deck.i = (R.ui.deck.i + (+n) + N) % N; sfx.click(); render(); });
+on('deckWear', (id) => { const k = kid(R.h); if (!k || !canWear(id, C.ctxOf(k))) return; k.avatar = id; sfx.unlock ? sfx.unlock() : sfx.click(); confetti(40); save(); render(); });
+on('deckClose', () => { R.ui.deck = null; render(); focusIn('[data-act=openDeck]'); });
 on('medalOk', () => { R.ui.medalPop = (R.ui.medalPop || []).slice(1); render(); });
 on('firstOk', () => { R.ui.firstPop = null; render(); });
 
@@ -788,6 +795,7 @@ root.addEventListener('change', (e) => { if (e.target.dataset.act === 'tester') 
 addEventListener('keydown', (e) => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   if ((R.ui.medalPop || []).length && (e.key === 'Enter' || e.key === 'Escape' || e.key === ' ')) { e.preventDefault(); fire('medalOk'); return; }
+  if (R.ui.deck && !(R.ui.medalPop || []).length) { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); fire('deckGo', e.key === 'ArrowLeft' ? '-1' : '1'); return; } if (e.key === 'Escape') { e.preventDefault(); fire('deckClose'); return; } }
   if ((R.ui.drawer || R.ui.sheet) && e.key === 'Escape') { e.preventDefault(); if (R.ui.drawer) fire('drawer'); else fire('wallet'); return; }
   if ((R.ui.drawer || R.ui.sheet) && e.key === 'Tab') {   // focus stays inside the open drawer or sheet
     const box = root.querySelector(R.ui.drawer ? '.drawer' : '.sheet'), f = box ? [...box.querySelectorAll('button, a, input')] : [];
@@ -834,7 +842,10 @@ addEventListener('keydown', (e) => {
   }
 });
 /* a story turns its page with a swipe, as a picture book would */
-let stX = null;
+let stX = null, dkX = null;
+/* the deck flips under a swipe, like Bee's */
+root.addEventListener('pointerdown', (e) => { dkX = R.ui.deck && e.target.closest('.avdeck-stage') ? e.clientX : null; });
+root.addEventListener('pointerup', (e) => { if (dkX == null) return; const d = e.clientX - dkX; dkX = null; if (Math.abs(d) > 45) fire('deckGo', d < 0 ? '1' : '-1'); });
 root.addEventListener('pointerdown', (e) => { stX = R.ui.nav === 'story' && e.target.closest('.st-art') ? e.clientX : null; });
 root.addEventListener('pointerup', (e) => {
   if (stX == null) return; const d = e.clientX - stX; stX = null; if (Math.abs(d) < 50) return;

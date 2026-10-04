@@ -1625,3 +1625,50 @@ img.medal.dim{filter:grayscale(.75) opacity(.62) contrast(1.05)}
 .stk-row{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
 .stk-b{font-size:22px;width:44px;height:44px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);cursor:pointer}
 .stk-b:hover:not([disabled]){border-color:var(--action)} .stk-b[disabled]{opacity:.4;cursor:default}
+
+/* ---- the deck: Bizzing Bee's trading cards (avatar-cards.js) ---- */
+.bz-greet-av{position:relative;flex:0 0 auto;width:150px;height:164px;padding:0;border:0;background:none;cursor:pointer;border-radius:18px}
+.bz-greet-av img{width:100%;height:100%;object-fit:contain;transition:transform .15s}
+.bz-greet-av:hover img,.bz-greet-av:focus-visible img{transform:scale(1.05) rotate(-2deg)}
+.bz-greet-n{position:absolute;right:4px;bottom:8px;min-width:26px;height:26px;padding:0 7px;border-radius:99px;background:var(--action);color:#fff;font:800 13px/26px var(--ui);text-align:center;box-shadow:0 2px 8px rgb(0 0 0 / .25)}
+@media (max-width:760px){.bz-greet-av{width:120px;height:140px}}
+.av-cardbtn{border:0;background:none;padding:0;cursor:pointer;display:block;margin:0 auto}
+.avc-ov{position:fixed;inset:0;z-index:95;background:rgba(20,15,38,.7);display:grid;place-items:center;align-content:center;gap:12px;padding:16px;overflow:auto}
+.avdeck-stage{position:relative;display:grid;place-items:center;padding:0 46px}
+.avd-ghost{position:absolute;width:300px;max-width:78vw;height:92%;border-radius:20px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3)}
+.avd-g1{transform:rotate(4deg) translateX(10px)}.avd-g2{transform:rotate(-5deg) translateX(-10px)}
+.avd-live{position:relative;z-index:1}
+.avd-nav{position:absolute;top:50%;transform:translateY(-50%);z-index:2;width:44px;height:44px;border-radius:50%;border:0;background:#fff;color:#241e33;font:800 26px/1 var(--ui);box-shadow:0 4px 14px rgb(0 0 0 / .3);cursor:pointer}
+.avd-prev{left:0}.avd-next{right:0}
+.avd-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center}
+.avd-count{color:#fff;font:700 14px var(--ui)}
+.avc-worn{color:#fff;font:800 14px var(--ui);background:rgba(47,163,92,.9);padding:8px 14px;border-radius:99px}
+.avd-note{color:#e6def5;font-size:12px;text-align:center;margin:0;max-width:340px}
+.avc-card{position:relative;width:300px;max-width:78vw;border-radius:20px;padding:14px 14px 12px;overflow:hidden;color:#241e33;
+  background:linear-gradient(165deg,color-mix(in srgb,var(--c2) 35%,#fffdf7),#fffdf7 45%,color-mix(in srgb,var(--c1) 12%,#fffdf7));
+  border:3px solid var(--rc);box-shadow:0 22px 55px rgb(0 0 0 / .45),inset 0 0 0 1px rgb(255 255 255 / .6)}
+.avc-foil{position:absolute;inset:0;pointer-events:none;z-index:3;background:linear-gradient(115deg,transparent 35%,rgb(255 255 255 / .55) 50%,transparent 65%);transform:translateX(-90%);animation:avcSweep 3.6s ease-in-out infinite}
+.avc-legendary .avc-foil{background:linear-gradient(115deg,transparent 30%,rgb(255 230 150 / .7) 48%,rgb(255 255 255 / .9) 52%,transparent 70%);animation-duration:2.6s}
+@keyframes avcSweep{0%,30%{transform:translateX(-90%)}70%,100%{transform:translateX(90%)}}
+@media (prefers-reduced-motion:reduce){.avc-foil{animation:none;opacity:0}}
+.avc-top{position:relative;display:flex;justify-content:space-between;align-items:flex-start;z-index:1}
+.avc-ovr{display:grid;justify-items:center;line-height:1;background:var(--rc);color:#fff;border-radius:12px;padding:6px 10px;box-shadow:0 3px 8px rgb(0 0 0 / .25)}
+.avc-ovr b{font:900 22px var(--display)}.avc-ovr i{font:800 8px var(--mono);letter-spacing:.14em;font-style:normal}
+.avc-badges{display:grid;gap:5px;justify-items:end}
+.avc-rar{font:800 10px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:#fff;background:var(--rc);padding:4px 10px;border-radius:99px}
+.avc-rank{font:700 11px var(--ui);color:#4a4058;background:rgb(255 255 255 / .8);padding:3px 8px;border-radius:99px}
+.avc-art{position:relative;z-index:1;width:150px;height:150px;margin:2px auto 0;display:grid;place-items:center;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--c2) 45%,#fff) 0,transparent 70%)}
+.avc-art img{width:100%;height:100%;object-fit:contain}
+.avc-art.locked{filter:grayscale(1)}.avc-lock{font-size:46px}
+.avc-name{position:relative;z-index:1;text-align:center;font:800 21px var(--display);margin-top:2px}
+.avc-title{position:relative;z-index:1;text-align:center;font:700 11.5px var(--ui);color:var(--c1);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.avc-lore{position:relative;z-index:1;text-align:center;font:500 13px/1.45 var(--ui);margin:0 4px 8px}
+.avc-stats{position:relative;z-index:1;display:grid;gap:5px;background:rgb(255 255 255 / .7);border-radius:12px;padding:8px 10px}
+.avc-stat{display:grid;grid-template-columns:94px 1fr 26px;align-items:center;gap:8px;font:700 12px var(--ui)}
+.avc-stat-bar{height:8px;border-radius:9px;background:#e9e4da;overflow:hidden}.avc-stat-bar i{display:block;height:100%;border-radius:9px}
+.avc-stat-v{text-align:right}
+.avc-power{position:relative;z-index:1;margin-top:7px;font:600 12px/1.4 var(--ui)}.avc-power b{color:var(--c1)}
+.avc-fact,.avc-hist{position:relative;z-index:1;margin-top:7px;background:rgb(255 255 255 / .75);border:1px solid color-mix(in srgb,var(--c1) 25%,#ddd);border-radius:10px;padding:6px 9px;font:500 12px/1.45 var(--ui);display:grid;gap:2px}
+.avc-fact-h{font:800 10.5px var(--ui);text-transform:uppercase;letter-spacing:.06em;color:var(--c1)}
+.avc-pack{position:relative;z-index:1;display:flex;align-items:center;gap:6px;margin-top:7px;font:700 11px var(--ui);color:#6b6176}
+.avc-dot{width:9px;height:9px;border-radius:50%;background:linear-gradient(135deg,var(--c1),var(--c2))}

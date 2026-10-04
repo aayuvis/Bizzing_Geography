@@ -19,6 +19,7 @@ import { worldSVG } from './map.js';
 import { GKEY } from './photos.js';
 import { missDue, missCount } from './mistakes.js';
 import { shell as famShell } from './bizzing-shell.js';
+import { deckHTML } from './avatar-cards.js';
 import { feedOn } from './feed.js';
 
 export const VERSION = '2.0';
@@ -151,7 +152,7 @@ export function avCard(a, k, ctx) {
   const btn = st.state === 'owned' ? (wearing ? '<span class="chip">Wearing</span>' : `<button class="btn small" data-act="setAv" data-arg="${a.id}">Wear</button>`)
     : st.state === 'buy' ? `<button class="btn small${st.short ? '' : ' primary-o'}" data-act="buyAv" data-arg="${a.id}" ${st.short ? 'aria-disabled="true"' : ''}>${ico('coin')} ${TIERS[a.tier].price}</button>` : '';
   return `<figure class="bz-av${wearing ? ' wearing' : ''}" data-tier="${a.tier}" data-state="${st.state}" id="av-${a.id}">
-    <img src="${a.art}" alt="${esc(a.name)}" loading="lazy" decoding="async" width="96" height="96">
+    <button class="av-cardbtn" data-act="openCard" data-arg="${a.id}" aria-label="${esc(a.name)}: see its card">${st.state === 'owned' ? '' : ''}<img src="${a.art}" alt="" loading="lazy" decoding="async" width="96" height="96"></button>
     <figcaption>${esc(a.name)} <b>${TIERS[a.tier].label}</b></figcaption><p class="av-say">${esc(st.say)}</p>${btn}</figure>`;
 }
 export function viewCollection() {
@@ -263,6 +264,13 @@ export const viewHelp = () => `<section class="narrow prose">${head('Help')}
 
 /* ------------------------------------------------------------------ the shell */
 /* A medal, celebrated once: it spins in with what earned it — never compared with anyone. */
+/* the deck (Bizzing Bee's): the cards this child owns — or all 96, from "All 96 cards" or the Collection */
+export const ownedIds = (k) => { const ctx = ctxOf(k); return CATALOGUE.filter((a) => stateOf(a.id, ctx).state === 'owned').map((a) => a.id); };
+export function deckIds(k) { const own = ownedIds(k); return R.ui.deck && R.ui.deck.all ? CATALOGUE.map((a) => a.id) : own.length ? own : [k.avatar]; }
+function deck(k) {
+  const ids = deckIds(k), i = Math.max(0, Math.min(ids.length - 1, R.ui.deck.i || 0));
+  return deckHTML(ids, i, { owned: ownedIds(k), wearing: k.avatar, ledger: walletLedger(k.name), all: !!R.ui.deck.all, milestone: (id) => (byAvatar[id].milestone || {}).label });
+}
 function medalPop(m) {
   return `<div class="mp-veil" role="dialog" aria-modal="true" aria-label="New medal: ${esc(m.name)}"><div class="card mp-card">
     ${shelly('cheer', 96, 'mp-shelly')}<p class="kicker">New medal</p><div class="mp-spin">${medallion(m, 132)}</div><h2>${esc(m.name)}</h2><p class="muted">${esc(m.how)}</p>
@@ -318,5 +326,6 @@ export function shell(body, { home = false } = {}) {
   ${out}
   ${k && R.ui.menu ? whoMenu(k) : ''}
   ${k && R.ui.sheet === 'wallet' ? walletSheet(k) : ''}
-  ${k && R.ui.firstPop ? firstPop(k) : k && (R.ui.medalPop || []).length ? medalPop(R.ui.medalPop[0]) : ''}`;
+  ${k && R.ui.firstPop ? firstPop(k) : k && (R.ui.medalPop || []).length ? medalPop(R.ui.medalPop[0]) : ''}
+  ${k && R.ui.deck && !R.ui.firstPop && !(R.ui.medalPop || []).length ? deck(k) : ''}`;
 }

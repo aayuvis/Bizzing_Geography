@@ -60,6 +60,20 @@ ok(JSON.parse(store['bizzing.activity']).s.some((x) => x.ev === 'band' && x.m ==
   ok(r.join() === 'sent,sent,sent,limit,sent,bad,bad' && St.unseen(b).length === 4 && St.STICKERS.length === 8 && b.stk.every((x) => St.byStk[x.s]), 'stickers: a picture from the eight, three a day, never to yourself, never words');
   St.markSeen(b); ok(!St.unseen(b).length && b.stk.length === 4, 'seen stickers are kept'); }
 
+/* the deck (Bee's trading cards): every face has a story, a true fact and four stats; the ranking is a
+   strict order of all 96; the sixteen faces from Bee say exactly what Bee's cards say */
+{ const D = await import('../src/avatar-cards.js'), { LORE } = await import('../src/data/avatar-lore.js'), { CATALOGUE } = await import('../src/avatars.js');
+  ok(CATALOGUE.every((a) => LORE[a.id] && LORE[a.id].lore.length > 10 && LORE[a.id].fact.length > 20), 'every one of the 96 cards has a story and a true fact');
+  ok(CATALOGUE.every((a) => { const c = D.card(a.id); return D.STATS.every(([k]) => c.stats[k] >= 28 && c.stats[k] <= 99) && c.overall > 0 && c.power && c.title; }), 'every card has four stats (28–99), an overall, a power and a title');
+  const ranks = CATALOGUE.map((a) => D.rankOf(a.id)); ok(new Set(ranks).size === 96 && Math.min(...ranks) === 1 && Math.max(...ranks) === 96, 'the ranking is #1 to #96, each once');
+  ok(CATALOGUE.filter((a) => a.tier === 'legendary').every((a) => D.card(a.id).overall > D.card(CATALOGUE.find((b) => b.pack === a.pack && b.tier === 'common').id).overall), 'a Legendary outranks the Commons of its own pack');
+  const fs = await import('node:fs'), beeFile = process.env.BIZZING_BEE || '../../Bizzing-Bee/spellbound-app/avatar-cards.js';
+  if (fs.existsSync(beeFile)) { const src = fs.readFileSync(beeFile, 'utf8'), shared = ['pebble', 'breeze', 'droplet', 'ember', 'leafy', 'wave', 'zappy', 'elemental', 'mammoth', 'argentavis', 'titanoboa', 'megalodon', 'vasuki', 'livyatan', 'dunkleo', 'bluewhale'];
+    ok(shared.every((id) => { const L = LORE[id]; return src.includes(`lore:'${L.lore.replace(/'/g, "\\'")}'`) && src.includes(`fact:'${L.fact.replace(/'/g, "\\'")}'`); }), 'the sixteen faces from Bee keep Bee’s own words — nothing invented twice'); }
+  else console.log('  (Bizzing Bee not checked out here: the shared-words check is skipped)');
+  const h0 = D.historyOf('compowl', { owned: true, ledger: [] }), h1 = D.historyOf('dolphin', { owned: true, ledger: [{ why: 'avatar:dolphin', n: -120, t: Date.UTC(2026, 9, 2) }] }), h2 = D.historyOf('globetortle', { owned: false, ledger: [], milestone: 'walk every stop in Home Street' });
+  ok(/first day/.test(h0[0]) && /2 October 2026/.test(h1[0]) && /120/.test(h1[0]) && /medal/.test(h2[0]), 'a card tells its story with this child: free from day one, bought on a date, or waiting for a medal'); }
+
 /* rank moves only on learning */
 const k = newKid('Ahana', '8-10', 'compowl'), st = road(k).steps[0];
 let xp = 0; for (let i = 0; i < 40; i++) xp += xpFor(k, 'plain-src');

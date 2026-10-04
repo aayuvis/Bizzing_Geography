@@ -140,6 +140,13 @@ Inherited from the family, and it holds here:
   ring** (sessions today against a 2/3/5 goal — `model.js session()`; today only, nothing carries
   over, so it is not a streak), word of the day; two picture journey cards (next station, your
   expedition); today's place and landmark of the day. Rank lives in the header pill and on Me.
+  **The hello card wears the child's own avatar, and a tap opens the deck** (Bizzing Bee's, the owner;
+  `src/avatar-cards.js`, `data/avatar-lore.js`): every one of the 96 is a trading card — an overall and Bee's four
+  stats from Bee's own arithmetic, its rank of all 96 and of the child's own, a title, a line of story, a power,
+  one TRUE "Inspired by" fact (`CARDS_NEED_REVIEW`), and its story with this child (free from day one, bought on a
+  date from the wallet ledger, waiting for a medal). ‹ › / ← → / a swipe flip it; Wear puts one on; "All 96
+  cards" and a tap on any face in the Collection open the whole set. The sixteen faces from Bee keep Bee's words
+  byte for byte (`test/family.mjs` reads Bee's file when it is checked out).
 - **Expeditions** (`data/expeditions.js`, `src/expeditions.js`, `src/projects.js`) are Bizzing
   India's **Paathshala**, laid out like the Atlas: a painted plate (`art/crs-<id>.webp`), a road,
   a camp per part and a 🏁 final camp, a pick-card below. Ten expeditions of 20–30 days; each part
