@@ -89,7 +89,7 @@ export function capSession(ranked, items) {
     const w = (it.topics || []).find((z) => z.startsWith('world:'));
     if ((n.topic[t] || 0) >= MAX_TOPIC || (n.kind[x.kind] || 0) >= MAX_KIND || (two && tf >= MAX_TF) || (w && (n.topic[w] || 0) >= MAX_WORLD)) continue;
     if (cap[x.tier] != null && (n.tier[x.tier] || 0) >= cap[x.tier] && (!pass || x.tier === 'next')) continue;
-    if ((n.why[x.why] || 0) >= 6) continue;                                   // one reason is not the whole feed (the engine's own rule)
+    if (!pass && (n.why[x.why] || 0) >= 6) continue;                          // one reason is not the whole feed (the engine's own rule) — unless the session is short
     if (L >= 2 && out[L - 1].kind === x.kind && out[L - 2].kind === x.kind) continue;
     if (w) n.topic[w] = (n.topic[w] || 0) + 1;
     n.topic[t] = (n.topic[t] || 0) + 1; n.kind[x.kind] = (n.kind[x.kind] || 0) + 1; n.tier[x.tier] = (n.tier[x.tier] || 0) + 1; n.why[x.why] = (n.why[x.why] || 0) + 1; if (two) tf++;
