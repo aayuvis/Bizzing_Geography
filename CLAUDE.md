@@ -201,22 +201,25 @@ Nine games on the **Play** tab, each a Library-contract file in `src/games/` (`T
 `games/meta.js` names them; `games/kit.js` is the shared title card, finish card and HUD.
 Every fact a game asks comes from the data, and each proves its puzzles before showing them:
 
-- **Shelly's Trade Winds** (the flagship; `tradewinds.js` screen, `tw-engine.js` rules,
-  `tw-data.js` facts, `TRADEWINDS_NEEDS_REVIEW`): sixty real ports sleep; each grows its
-  **climate band's** cargo; a ship that brings a port something it cannot grow wakes it. One
-  month a turn, and nothing moves until **Next month** (Sabhyata's Sochna). Wind belts and the
-  monsoon change leg times by month; cyclone season makes a ship wait; winter ice closes the
-  far north (so Reykjavík is iced in for a January start — by design). Goodwill opens four
-  ages (sail 1800, steam, Suez 1869, Panama 1914), each with its painting and history.
-  **The sea lanes are measured from the app's own map** (`tools/geo/sealanes.mjs` →
-  `data/sealanes.js`: a 0.5° grid, straits carved from sourced coordinates, canals by era,
-  and a canal never makes a voyage longer). `test/games.mjs` proves every start can light all
-  sixty ports in 1–5 game-years, every port is reachable, and no lane crosses land away from a
-  port, strait or canal — each watched to fail first.
-  **The chart is drawn, not painted**: `worldSVG`'s `under` layer puts the sea, climate bands,
-  storms, ice and winds beneath the land; ports are lanterns, ships are SVG ships of their age
-  (sail, then steam). Paintings (`art/game-tw-*`) are places and ships only — never a map.
-  On a phone the chart opens on the selected port's ocean (`phoneView`) with zoom buttons.
+- **Shelly's Trade Winds: The Long Voyage** (the flagship, the owner's story made a game; `tradewinds.js` screen,
+  `tw-voyage.js` rules, `tw-story.js` tables; the measured sea of `tw-engine.js`/`tw-data.js` underneath,
+  `TRADEWINDS_NEEDS_REVIEW`). Shelby, the **Small Hope** (Speed 2, Cargo 2 = eight crates, Strength 1, Guard 1),
+  Pereira, Tavi and Shelly in Mumbai, 1800; sixty dark ports. **Sail, meet the sea, go ashore, grow:**
+  a port is **lit** when a ship sells it what its climate cannot grow; ashore are a market (prices fall with a
+  glut), sights (data facts and sourced Ship's Log cards, XP once), an assignment board and, in twenty bigger
+  ports, a shipyard (a game simplification, said so). Every ship is **four marks 1–10** (speed, cargo,
+  strength, guard); twelve **inventions** by age, six things **earned, never sold**. **Dangers stop the clock**
+  and every card prices its choices — the Grey Gulls in the dark water away from lit ports, the war at the Gate
+  (closed to the planner; ended only by Truthlight's true letter), cyclones, great waves, spring ice, fog — and
+  **the crew always comes home** (a wrecked hull is towed to a yard). Six **Keeper's Gifts** with costs and
+  cooldowns; five crew who join and leave as the story says (**named, never drawn** — no human art until the
+  owner signs off a human cast); ranks Sailor → Captain of the Fleet by XP and ships; ten expeditions (open to a
+  Captain); a new age jumps the calendar to its real year. **People can be a danger, never an enemy you defeat**:
+  wars cannot be joined, pirates are never sunk. The invented — the crowns of Varn and Ostery, Saltreach, the
+  Grey Gulls, every person — is labelled a story on every story card. Trade coin (◈) is the game's own money,
+  never Bizzing coins; the family pays only for a port lit, an expedition sealed, an age and the end.
+  `test/games.mjs` sails three whole careers with the test captain (sixty lit, every invention, ten ships), proves
+  a seed is the same voyage, the clock stops for a danger, the tow, the closed strait, the expeditions' gate.
 - **Neighbour Chain** (land borders counted only when BOTH countries list them),
   **Hot & Cold Compass** (found = inside the country or within 150 km of the capital),
   **Bigger or Smaller?** (main-shape area; "foolers" are ≥15° further from the equator),

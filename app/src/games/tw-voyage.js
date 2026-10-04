@@ -163,7 +163,7 @@ export function buyPrice(S, i) { const g = PORTS[i].good; return Math.max(1, Mat
 export function sellPrice(S, i, g) {
   if (g === PORTS[i].good) return Math.max(1, Math.round(BASE[g] * 0.5));
   const far = Math.abs(BAND_I[PORTS[i].band] - BAND_I[GOOD_BAND[g]]), glut = (S.ports[i].glut[g] || 0);
-  const v = BASE[g] * (1 + 0.3 * far) * (60 / (60 + glut)) * (warNear(S, i) ? 1.3 : 1) * (S.ports[i].lit ? 1 : 1.5);
+  const v = BASE[g] * (1 + 0.3 * far) * (100 / (100 + glut)) * (warNear(S, i) ? 1.3 : 1) * (S.ports[i].lit ? 1 : 1.5);
   return Math.max(1, Math.round(v));
 }
 export function buy(S, shipId, n) {
@@ -445,7 +445,7 @@ export function nextMonth(S) {
   if (S.pending.length) return { error: 'Deal with the danger first.' };
   S.news = [];
   S.turn++; S.month = (S.month + 1) % 12; if (S.month === 0) S.year++;
-  S.ports.forEach((p, i) => { if (p.lit) p.stock = Math.min(150, p.stock + 30); for (const g of Object.keys(p.glut)) p.glut[g] = Math.floor(p.glut[g] * 0.75); });
+  S.ports.forEach((p, i) => { if (p.lit) p.stock = Math.min(150, p.stock + 30); for (const g of Object.keys(p.glut)) p.glut[g] = Math.floor(p.glut[g] * 0.6); /* a market recovers: most of a glut is eaten in a month */ });
   for (const sh of S.ships) {
     const v = sh.voyage; if (!v) continue;
     v.elapsed++;
@@ -551,7 +551,8 @@ export function autoplay(S, maxTurns = 900) {
       const sale = PORTS.map((p) => p.i).filter((j) => j !== i && S.ports[j].lit && cargo && PORTS[j].good !== cargo);
       const near = (ts) => ts.map((t) => ({ t, k: haversine(PORTS[i].at, PORTS[t].at) })).sort((a, b) => a.k - b.k).slice(0, 6).map((x) => ({ t: x.t, p: planFor(S, sh.id, i, x.t) })).filter((x) => x.p).sort((a, b) => a.p.months - b.p.months)[0];
       const yard = !isYard(i) && S.coin > 1500 ? near(YARDS.filter((y) => S.ports[y].lit && y !== i)) : null;
-      const go = near(dark) || yard || near(sale) || near(YARDS.filter((y) => y !== i && S.ports[y].lit));
+      const best = (ts) => ts.map((t) => ({ t, k: haversine(PORTS[i].at, PORTS[t].at) })).sort((a, b) => a.k - b.k).slice(0, 10).map((x) => ({ t: x.t, p: planFor(S, sh.id, i, x.t) })).filter((x) => x.p).sort((a, b) => sellPrice(S, b.t, cargo) / b.p.months - sellPrice(S, a.t, cargo) / a.p.months)[0];
+      const go = near(dark) || yard || (cargo && best(sale)) || near(YARDS.filter((y) => y !== i && S.ports[y].lit));
       if (go) sail(S, sh.id, go.t);
       while (S.pending.length) { const d = S.pending[0]; resolve(S, safe[d.k]); }
     }

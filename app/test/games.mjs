@@ -141,5 +141,57 @@ import { dayKey } from '../src/rand.js';
 }
 void geobee;
 
+/* ---------------------------------------------------------------- Shelly's Trade Winds: The Long Voyage */
+{
+  const V = await import('../src/games/tw-voyage.js'), T = await import('../src/games/tw-story.js');
+  /* a whole career, sailed by the test captain: every port lit, every invention, ten ships */
+  for (const seed of ['lv-a', 'lv-b', 'lv-c']) {
+    const S = V.autoplay(V.newGame(seed), 900), p = V.progress(S);
+    ok(p.lit === 60 && p.inv === p.invAll && p.ships === 10, `Long Voyage ${seed}: a career lights all sixty, fits every invention and builds ten ships (${p.lit} · ${p.inv}/${p.invAll} · ${p.ships} ships · ${S.turn} months)`);
+    ok(S.year >= 1914 && S.era === 3, `${seed}: the calendar reaches the age of Panama (${S.year})`);
+    ok(S.ships.every((sh) => sh.hull > 0), `${seed}: no ship is ever lost — the crew always comes home`);
+  }
+  /* the same seed is the same voyage */
+  const a = V.autoplay(V.newGame('same'), 120), b = V.autoplay(V.newGame('same'), 120);
+  ok(JSON.stringify(a) === JSON.stringify(b), 'the same seed sails the same voyage (seeded, never a dice roll for a reward)');
+  /* the start is the story's */
+  const S0 = V.newGame('start');
+  ok(S0.ships[0].name === 'Small Hope' && V.capacity(S0, S0.ships[0]) === 8 && S0.crew.pereira === 'aboard' && S0.crew.tavi === 'aboard' && V.litCount(S0) === 1 && S0.beats.start === 0, 'Mumbai, 1800: the Small Hope (eight crates), Pereira, Tavi, one lamp lit');
+  /* lighting: a dark port is lit by what its climate cannot grow, not by its own cargo */
+  { const S = V.newGame('light'), K = V.PORTS.findIndex((x) => x.n === 'Karachi');
+    V.buy(S, 1, 99); S.ships[0].at = K; V.sell(S, 1, 'fruit');
+    ok(S.ports[K].lit && S.gifts.tidesense != null && S.crew.farida === 'aboard', 'fruit sold in Karachi lights it; the first light wakes Tidesense; Farida comes aboard');
+    const own = V.newGame('own'), sub = V.PORTS.findIndex((x) => x.band === 'sub' && x.n !== 'Karachi'); own.ships[0].hold = [{ g: V.PORTS[sub].good, n: 4, from: 0, clean: true }]; own.ships[0].at = sub; V.sell(own, 1, V.PORTS[sub].good);
+    ok(!own.ports[sub].lit, 'a port is never lit by the cargo it grows itself'); }
+  /* the market: supply and demand */
+  { const S = V.newGame('mkt'), K = V.PORTS.findIndex((x) => x.n === 'Karachi'); S.ports[K].lit = true; const p0 = V.sellPrice(S, K, 'fruit'); S.ports[K].glut.fruit = 120;
+    ok(V.sellPrice(S, K, 'fruit') < p0, 'a port that has had a lot of one cargo pays less for it'); }
+  /* dangers: the clock stops, every choice is costed, a strong enough ship meets it well */
+  { const S = V.newGame('d'); S.ships[0].voyage = { from: 0, to: 5, path: [[0, 0]], months: 3, left: 3, elapsed: 0, km: 1, pass: [], ev: [{ k: 'pirates', at: 1 }], met: [], gun: false };
+    S.ships[0].at = null; V.nextMonth(S);
+    ok(S.pending.length === 1 && V.nextMonth(S).error, 'a danger stops the clock: no next month until it is met');
+    const c = V.dangerCard(S); ok(c.choices.length >= 3 && c.choices.every((x) => x.cost), 'every danger card shows its choices and what each costs');
+    ok(!/sink|kill|destroy/i.test(JSON.stringify(c)) && /never sunk/.test(c.text), 'pirates are a danger, never an enemy you sink');
+    V.resolve(S, 'parley'); ok(!S.pending.length, 'a choice meets the danger and the clock runs again'); }
+  { const S = V.newGame('tow'), sh = S.ships[0]; sh.voyage = { from: 0, to: 9, path: [[10, 60], [0, 50]], months: 2, left: 2, elapsed: 1, km: 1, pass: [], ev: [], met: [], gun: false }; sh.at = null; sh.hull = 1;
+    S.pending.push({ k: 'cyclone', at: 0, ship: 1 }); V.resolve(S, 'sail');
+    ok(sh.voyage == null && V.isYard(sh.at) && sh.hull > 0, 'a wrecked hull is towed to a yard: the crew always comes home'); }
+  /* war: the strait is closed to the planner; Truthlight's true letter ends it */
+  { const S = V.newGame('war'); for (const p of S.ports) p.lit = true; S.war = { n: 1, strait: 'babelmandeb', at: [12.6, 43.3], until: 99 }; S.era = 0;
+    const A = V.PORTS.findIndex((x) => x.n === 'Aden'), J = V.PORTS.findIndex((x) => x.n === 'Jeddah');
+    const p = V.planFor(S, 1, A, J); ok(!p || !p.pass.includes('babelmandeb'), 'a war closes its strait to every voyage');
+    S.beats.master = 1; ok(!V.board(S, A).some((j) => j.kind === 'peace'), 'no peace without Truthlight’s evidence');
+    S.gifts.truthlight = 1; ok(V.board(S, A).some((j) => j.kind === 'peace'), 'with Truthlight, the true letter is on the board at Aden'); }
+  /* expeditions are counted only for a Captain, and seal on their own goal */
+  { const S = V.newGame('ex'); for (const p of S.ports) p.lit = false; for (const i of V.PACIFIC_ISLANDS) S.ports[i].lit = true; V.checkExpeditions(S);
+    ok(!S.ex.lanterns, 'expeditions wait for a Captain');
+    S.xp = 2000; S.ships.push({ ...S.ships[0], id: 2, name: 'Wakeful', hold: [], jobs: [], ups: [] }); V.checkExpeditions(S);
+    ok(S.ex.lanterns != null && V.PACIFIC_ISLANDS.length >= 4, `the Pacific Lanterns seal when every island port (${V.PACIFIC_ISLANDS.map((i) => V.PORTS[i].n).join(', ')}) is lit`); }
+  /* the tables keep their promises */
+  ok(T.EARNED.every((e) => !T.INVENTIONS.some((u) => u.id === e.id)) && T.INVENTIONS.every((u) => u.price > 0), 'nothing earned is ever for sale');
+  ok(T.EXPEDITIONS.length === 10 && T.GIFTS.length === 6 && T.RANKS.at(-1).ships === 10, 'ten expeditions, six gifts, and the last rank is ten ships');
+  ok(Object.values(T.CREW).every((c) => c.glyph && !/<img/.test(c.glyph)), 'the crew are names and roles, never drawn');
+}
+
 console.log(`${fails ? '✗' : '✓'} games: ${n} checks${fails ? `, ${fails} failures` : ''}`);
 process.exit(fails ? 1 : 0);

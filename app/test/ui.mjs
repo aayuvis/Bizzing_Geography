@@ -831,31 +831,47 @@ async function run(vp, tag) {
   ok(await page.evaluate(() => window.__bzg.R.ui.lib.flagsprint.g.daily === true), 'Today’s round starts today’s puzzle');
   await page.evaluate(() => { window.__bzg.R.ui.lib.flagsprint.g = null; });
 
-  // Shelly's Trade Winds: start from Mumbai, plan by tapping, set sail by Enter, N months on, a port wakes
-  await page.evaluate(() => window.__bzg.go('game', 'tradewinds')); await page.waitForSelector('[data-arg="tradewinds|new|indian"]'); await shot('37-tw-title');
-  await page.click('[data-arg="tradewinds|new|indian"]'); await page.waitForSelector('.tw-map .gmap');
-  ok(await page.locator('.tw-pop').count() === 1 && /Age of Sail/.test(await page.locator('.tw-pop').innerText()), 'the voyage opens on its age: a painting and the history');
-  await page.waitForTimeout(300); await shot('37b-tw-age');
+  // Shelly's Trade Winds: The Long Voyage — the story opens, buy in Mumbai, plan by tapping, sail by Enter,
+  // meet whatever the sea sends, sell in Karachi and its lamp is lit
+  const TWS = () => page.evaluate(() => window.__bzg.R.h.kids[0].lib.tradewinds.save);
+  await page.evaluate(() => window.__bzg.go('game', 'tradewinds')); await page.waitForSelector('[data-arg="tradewinds|new"]'); await shot('37-tw-title');
+  await page.click('[data-arg="tradewinds|new"]'); await page.waitForSelector('.tw-map .gmap');
+  ok(await page.locator('.tw-pop').count() === 1 && /Small Hope/.test(await page.locator('.tw-pop').innerText()) && /made up/.test(await page.locator('.tw-pop').innerText()), 'the voyage opens on the story: Mumbai, 1800, the Small Hope — labelled a story');
+  await page.waitForTimeout(300); await shot('37b-tw-story');
   await page.keyboard.press('Enter'); await page.waitForSelector('.tw-pop', { state: 'detached' });
-  ok(await page.locator('.tw-port').count() === 60 && await page.locator('.tw-port.awake').count() === 1 && await page.locator('.tw-ship').count() === 1 && (await page.locator('.tw-count').textContent()) === '3', 'sixty ports, one awake, three ships at home (drawn as one, counted)');
+  ok(await page.locator('.tw-port').count() === 60 && await page.locator('.tw-port.awake').count() === 1 && await page.locator('.tw-ship').count() === 1, 'sixty ports, one lit, one small boat at home');
   ok(await page.evaluate(() => { const r = document.querySelector('.tw-ship use').getBoundingClientRect(); return r.width >= 14; }), 'a ship is big enough to see on this screen');
   ok(await page.locator('.tw-wind').count() > 20, 'this month’s winds are drawn');
-  const tw = await page.evaluate(() => { const S = window.__bzg.R.ui.lib, d = window.__bzg.R.h.kids[0].lib.tradewinds.save; return { ship: window.__bzg.R.ui.lib.tradewinds.ship, home: d.home }; });
-  ok(!!tw.ship, 'a ship is chosen in the home port');
+  ok(await page.locator('.tw-marks .tw-mk').count() === 4 && /Market/.test(await page.locator('.tw-port-card').innerText()), 'ashore: the ship’s four marks and the market');
+  await page.click('[data-arg="tradewinds|buy|999"]'); await page.waitForTimeout(150);
+  ok((await TWS()).ships[0].hold.reduce((a, l) => a + l.n, 0) === 8, 'fill the hold: eight crates of fruit (Cargo 2)');
+  await page.click('[data-arg="tradewinds|plan|1"]'); await page.waitForSelector('.tw-plan-card');
   const tgt = await page.evaluate(() => window.__bzg.TW.PORTS.find((p) => p.n === 'Karachi').at);
   await tapLL(tgt[0], tgt[1]);
   await page.waitForFunction(() => { const u = window.__bzg.R.ui.lib.tradewinds; return u.dest != null && !!u.plan; }, null, { timeout: 5000 }).catch(() => {});
   ok(await page.evaluate(() => { const u = window.__bzg.R.ui.lib.tradewinds; return u.dest != null && !!u.plan && window.__bzg.TW.PORTS[u.dest].n === 'Karachi'; }), 'a tap on Karachi plans the voyage');
-  ok(/will wake/.test(await page.locator('.tw-plan-card').innerText()), 'the plan says Karachi will wake (it does not grow tropical fruit)');
+  ok(/is lit/.test(await page.locator('.tw-plan-card').innerText()) && /Dark water/.test(await page.locator('.tw-plan-card').innerText()), 'the plan says selling there lights Karachi, and how dark the water is');
   await shot('38-tw-plan'); await noSideways('trade winds');
-  await page.evaluate(() => document.activeElement && document.activeElement.blur());   // focus on the map, Enter means "choose here"
+  await page.evaluate(() => document.activeElement && document.activeElement.blur());
   await page.keyboard.press('Enter');
-  await page.waitForFunction(() => window.__bzg.R.h.kids[0].lib.tradewinds.save.ships.some((s) => s.voyage), null, { timeout: 5000 }).catch(() => {});
-  ok(await page.evaluate(() => window.__bzg.R.h.kids[0].lib.tradewinds.save.ships.some((s) => s.voyage)), 'Enter sets sail');
-  for (let i = 0; i < 4 && !(await page.evaluate(() => window.__bzg.R.h.kids[0].lib.tradewinds.save.ports.some((p, j) => p.awake && j !== window.__bzg.R.h.kids[0].lib.tradewinds.save.home))); i++) { await page.keyboard.press('n'); await page.waitForTimeout(700); }
-  ok(await page.evaluate(() => { const S = window.__bzg.R.h.kids[0].lib.tradewinds.save; return S.ports.filter((p) => p.awake).length === 2; }), 'N moves the months on, and Karachi wakes');
-  ok(/wakes!/.test(await page.locator('.tw-news').innerText()), 'Shelly brings the news, with the port’s own fact');
-  await page.waitForTimeout(300); await shot('39-tw-wake');
+  await page.waitForFunction(() => window.__bzg.R.h.kids[0].lib.tradewinds.save.ships.some((s) => s.voyage) || window.__bzg.R.h.kids[0].lib.tradewinds.save.pending.length, null, { timeout: 5000 }).catch(() => {});
+  ok(await page.evaluate(() => { const S = window.__bzg.R.h.kids[0].lib.tradewinds.save; return S.ships[0].voyage || S.pending.length; }), 'Enter sets sail');
+  let sawDanger = false;
+  for (let i = 0; i < 12 && (await TWS()).ships[0].at == null; i++) {
+    if ((await TWS()).pending.length) { sawDanger = true; await shot('38b-tw-danger'); ok(await page.locator('.tw-danger .tw-choices button').count() >= 2, 'a danger stops the clock and shows its choices'); await page.keyboard.press('1'); await page.waitForTimeout(200); continue; }
+    while (await page.locator('.tw-pop').count()) { await page.keyboard.press('Enter'); await page.waitForTimeout(150); }
+    await page.keyboard.press('n'); await page.waitForTimeout(500);
+  }
+  while (await page.locator('.tw-pop').count()) { await page.keyboard.press('Enter'); await page.waitForTimeout(150); }
+  ok((await TWS()).ships[0].at === (await page.evaluate(() => window.__bzg.TW.PORTS.findIndex((p) => p.n === 'Karachi'))), `N moves the months on, and the Small Hope reaches Karachi${sawDanger ? ' (after a danger)' : ''}`);
+  await page.click('[data-arg="tradewinds|tab|port"]'); await page.waitForTimeout(100);
+  if (await page.locator('[data-arg="tradewinds|sell|fruit"]').count()) await page.click('[data-arg="tradewinds|sell|fruit"]');
+  await page.waitForTimeout(300);
+  ok((await TWS()).ports.filter((p) => p.lit).length === 2 && /is lit/.test(await page.locator('.tw-side').innerText()), 'selling the fruit in Karachi lights it — and says so');
+  while (await page.locator('.tw-pop').count()) { await page.keyboard.press('Enter'); await page.waitForTimeout(150); }
+  await page.click('[data-arg="tradewinds|tab|captain"]'); await page.waitForSelector('.tw-cap');
+  ok(await page.locator('.tw-gifts li').count() === 6 && await page.locator('.tw-exps li').count() === 10 && await page.locator('.tw-crew li').count() === 5 && !(await page.locator('.tw-crew img').count()), 'the Captain tab: six gifts, ten expeditions, five crew — named, never drawn');
+  await page.waitForTimeout(300); await shot('39-tw-captain');
 
   /* B6: the back button never leaves the app */
   await page.evaluate(() => window.__bzg.go('home')); await nav('atlas'); await page.waitForSelector('.map-board');

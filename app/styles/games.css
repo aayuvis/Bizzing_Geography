@@ -196,3 +196,45 @@
   .tw-bar .tw-lit{display:flex!important;flex-direction:row!important;align-items:center!important}.tw-lit .tw-meter{flex:1}.tw-fleet{display:none!important}.tw-map .gmap{border-radius:0;padding:4px}.tw-bar{padding:0 12px}.tw-side,.tw-legend{padding:0 12px}.tw-era img{width:48px;height:34px}.tw-ages{grid-template-columns:repeat(2,1fr)}.tw-pop{position:fixed;border-radius:0;z-index:80;background:rgba(8,30,48,.6)}.tw-pop-card{max-height:calc(100dvh - 24px);overflow:auto}.tw-zoom{top:10px;right:10px}}
 @media (prefers-reduced-motion:reduce){.tw-map .gmap *,.gm-how li > b{animation:none!important}}
 :root[data-motion=reduced] .tw-map .gmap *{animation:none!important}
+
+/* ---- Trade Winds: The Long Voyage ---- */
+.tw-tabs{display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto;margin:0}
+.tw-tabs button{flex:1 1 auto;min-height:44px}
+.tw-sec{border-top:1px solid var(--line);margin-top:10px;padding-top:8px}
+.tw-sec > .kicker{margin:0 0 4px}
+.tw-opts{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0}
+.tw-opts .btn,.tw-sec .btn.small{min-height:40px}
+.tw-marks{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;margin:6px 0}
+.tw-mk{display:grid;grid-template-columns:20px auto 1fr 18px;align-items:center;gap:6px;font-size:12.5px}
+.tw-mk i{font-style:normal} .tw-mk b{font-weight:700} .tw-mk em{font-style:normal;font-weight:800;text-align:right}
+.tw-mk-bar{height:7px;border-radius:9px;background:var(--surface2);overflow:hidden}
+.tw-mk-bar > span{display:block;height:100%;background:linear-gradient(90deg,#3aa0bf,#f6c84c)}
+.tw-cash{font-weight:800;white-space:nowrap;color:var(--ink)}
+.tw-jobs,.tw-buy,.tw-gifts,.tw-crew,.tw-exps,.tw-earned,.tw-goal,.tw-risks{list-style:none;margin:4px 0 8px;padding:0;display:flex;flex-direction:column;gap:6px}
+.tw-jobs li,.tw-buy li{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:6px 8px;border-radius:10px;background:var(--surface2)}
+.tw-jobs li.glow{box-shadow:0 0 0 2px #f6c84c,0 0 14px #f6c84c}
+.tw-buy li .btn[aria-disabled=true]{opacity:.5}
+.tw-gifts li,.tw-crew li{display:grid;grid-template-columns:28px 1fr;gap:6px;align-items:start;opacity:.55}
+.tw-gifts li.on,.tw-crew li.on,.tw-exps li.on,.tw-earned li.on{opacity:1}
+.tw-gifts li > span:first-child,.tw-crew li > span:first-child{font-size:20px}
+.tw-exps li,.tw-earned li{opacity:.75}
+.tw-goal{display:grid;grid-template-columns:1fr 1fr}
+.tw-risks li{padding:0}
+.tw-shiprow{border-top:1px solid var(--line);padding:8px 0}
+.tw-shiprow.on{background:color-mix(in srgb,var(--action) 8%,transparent)}
+.tw-sight-b{margin:2px 4px 2px 0}
+.tw-sight summary{cursor:pointer;font-size:14px}
+.tw-route{display:flex;gap:8px;align-items:center;margin:6px 0}
+.tw-logline{background:color-mix(in srgb,#3aa0bf 12%,var(--surface));border-radius:10px;padding:6px 10px}
+.tw-choices{list-style:none;padding:0;margin:10px 0;display:flex;flex-direction:column;gap:8px}
+.tw-choices .btn{width:100%;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;gap:0 10px;text-align:left;justify-items:start;padding:8px 12px;height:auto;white-space:normal}
+.tw-choices .btn kbd{grid-row:span 2;align-self:center}
+.tw-choices .btn .small{grid-column:2;font-weight:500;color:var(--muted)}
+.tw-pop-card.tw-beat,.tw-pop-card.tw-danger{display:flex;gap:12px;align-items:flex-start;max-width:640px}
+.tw-pop-shelly{flex:none;padding:14px 0 0 12px}
+.tw-litzones path{fill:#ffe9a3;fill-opacity:.13;stroke:#ffd25e;stroke-opacity:.35;stroke-width:.6}
+.tw-warmark .tw-war{fill:rgb(214 69 53 / .25);stroke:#d64535;stroke-width:2}
+.tw-warmark .tw-war-x{stroke:#d64535;stroke-width:2.4;stroke-linecap:round}
+.tw-lg.z::before{background:#ffe9a3}
+.tw-quiz .tw-opts .btn{flex:1 1 40%}
+@media (max-width:600px){.tw-marks{grid-template-columns:1fr}.tw-pop-shelly{display:none}.tw-goal{grid-template-columns:1fr}}
