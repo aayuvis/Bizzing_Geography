@@ -17,7 +17,7 @@ import { byId, drill, correct, worldOf, STOPS, newSeen, remember, vary } from '.
 import { newHousehold, newKid, kid, AVATARS, tick, session, GOALS, stopRec, scoreRun, road, stopOpen, lvFor, passLevel, levelOf, CHECK_PASS } from './model.js';
 import { byCc } from './geo.js';
 import { shuffle, rnd } from './rand.js';
-import { STORIES } from './data/stories.js';
+import { storyById } from './data/stories.js';
 import * as V from './views.js';
 import { toolById, SHELF, loadTool, GAMES, GAME_IDS, metaOf } from './library/index.js';
 import { bindMaps, restoreMaps, zoomMap, resetMap } from './mapui.js';
@@ -136,7 +136,7 @@ function go(nav, arg = null, fromHash = false) {
   if (nav === 'lib' && !SHELF.some((t) => t.id === arg)) { nav = 'library'; arg = null; }
   if (nav === 'game' && !GAME_IDS.has(arg)) { nav = 'play'; arg = null; }
   if (nav === 'world' && !worldOf(arg)) { nav = 'atlas'; arg = null; }
-  if (nav === 'story' && !STORIES[arg]) { nav = 'atlas'; arg = null; }
+  if (nav === 'story' && !storyById(arg)) { nav = 'atlas'; arg = null; }
   if (nav === 'story' && (R.ui.nav !== 'story' || R.ui.arg !== arg)) R.ui.storyPage = 0;
   if (nav !== asked) fromHash = false;
   if (nav === 'grownups' && R.ui.nav !== 'grownups') { R.ui.gate = false; R.ui.gateIn = ''; }
@@ -803,7 +803,7 @@ addEventListener('keydown', (e) => {
     if (q && L.picks[L.i] && e.key === 'Enter' && !(e.target.closest && e.target.closest('button'))) { e.preventDefault(); fire('landNext'); return; }
   }
   if (R.ui.nav === 'story' && !typing && /^Arrow(Left|Right)$/.test(e.key)) {
-    const n = STORIES[R.ui.arg].pages.length, i = (R.ui.storyPage || 0) + (e.key === 'ArrowRight' ? 1 : -1);
+    const n = storyById(R.ui.arg).pages.length, i = (R.ui.storyPage || 0) + (e.key === 'ArrowRight' ? 1 : -1);
     if (i >= 0 && i < n) { e.preventDefault(); fire('storyPage', String(i)); }
     return;
   }
@@ -816,7 +816,7 @@ let stX = null;
 root.addEventListener('pointerdown', (e) => { stX = R.ui.nav === 'story' && e.target.closest('.st-art') ? e.clientX : null; });
 root.addEventListener('pointerup', (e) => {
   if (stX == null) return; const d = e.clientX - stX; stX = null; if (Math.abs(d) < 50) return;
-  const i = (R.ui.storyPage || 0) + (d < 0 ? 1 : -1); if (i >= 0 && i < STORIES[R.ui.arg].pages.length) fire('storyPage', String(i));
+  const i = (R.ui.storyPage || 0) + (d < 0 ? 1 : -1); if (i >= 0 && i < storyById(R.ui.arg).pages.length) fire('storyPage', String(i));
 });
 /* avatar grid: arrow keys move through the faces */
 /* the theme picker is a radio group: arrows move the choice and apply it */

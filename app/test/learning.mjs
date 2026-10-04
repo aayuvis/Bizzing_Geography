@@ -107,6 +107,53 @@ ok(search('where on').some((x) => x.kind === 'Library'), 'search finds a Library
     ok(st.pages.at(-1)[1].includes(stopsIn(w.id)[0].title), `${w.id}: the last page names the world's first stop, "${stopsIn(w.id)[0].title}"`);
   }
 }
+/* I1/I2/I3/I5: a SECOND story per world, a painted place behind every page, and three creature
+   friends who turn up across both sets. The second tale ends at a different stop of the same world;
+   no number appears in it that the world's own stops do not teach; every scene and every friend's
+   pose resolves to a file the app actually ships. */
+{
+  const { existsSync } = await import('node:fs');
+  const { STORIES, STORIES_MORE, storyById } = await import('../src/data/stories.js');
+  const { FRIENDS } = await import('../src/data/friends.js');
+  const { WORLDS, stopsIn } = await import('../src/stops.js');
+  const { POSES } = await import('../src/mascot.js');
+  const pub = (f) => new URL('../public/' + f, import.meta.url);
+  ok(Object.keys(STORIES_MORE).length === WORLDS.length && WORLDS.every((w) => STORIES[w.id] && STORIES_MORE[w.id]), `every world has two stories (${Object.keys(STORIES_MORE).length} second stories for ${WORLDS.length} worlds)`);
+  ok(Object.keys(FRIENDS).length === 3 && FRIENDS.ama && /albatross/.test(FRIENDS.ama.kind), 'three friends, and Ama is the wandering albatross');
+  for (const [id, F] of Object.entries(FRIENDS)) {
+    ok(F.name && F.kind && F.line && F.line.length >= 40 && F.poses.length === 3, `${id}: a name, a kind, a line and three poses`);
+    ok(!/\b(man|woman|boy|girl|person|god|goddess)\b/i.test(F.kind), `${id}: a creature, never a person or a deity`);
+    for (const p of F.poses) ok(existsSync(pub(`friends/${id}-${p}.webp`)), `${id}: the ${p} sprite exists (public/friends/${id}-${p}.webp)`);
+  }
+  const used = new Set(), scenes = new Set();
+  for (const w of WORLDS) for (const [tag, st] of [['1', STORIES[w.id]], ['2', STORIES_MORE[w.id]]]) {
+    if (!st) continue;
+    const taught = new Set(stopsIn(w.id).map((s) => [s.title, s.hook, ...(s.idea || [])].join(' ')).join(' ').replace(/<[^>]*>/g, ' ').match(/\d+/g) || []);
+    st.pages.forEach(([pose, text, scene, friend], j) => {
+      const at = `${w.id} story ${tag} page ${j + 1}`;
+      ok(POSES.includes(pose) && text.length >= 40 && text.length <= 240 && !/</.test(text), `${at}: a pose and a few plain sentences`);
+      ok(typeof scene === 'string' && existsSync(pub(`art/${scene}.webp`)), `${at}: its painted scene exists (public/art/${scene}.webp)`);
+      ok(!scenes.has(scene), `${at}: its scene is its own (${scene})`); scenes.add(scene);
+      if (friend != null) {
+        const F = FRIENDS[friend.id];
+        ok(F && F.poses.includes(friend.pose) && existsSync(pub(`friends/${friend.id}-${friend.pose}.webp`)), `${at}: friend ${friend.id}/${friend.pose} resolves to a sprite`);
+        ok(F && st.pages.some((p) => p[1].includes(F.name)), `${at}: ${friend.id} is drawn, so the story names ${F ? F.name : friend.id}`);
+        used.add(friend.id);
+      }
+      for (const d of text.match(/\d+/g) || []) ok(taught.has(d), `${at}: the number ${d} is one the world's stops teach`);
+    });
+    if (tag === '2') {
+      const stop = stopsIn(w.id).find((s) => s.id === st.stop);
+      ok(stop && stop.id !== stopsIn(w.id)[0].id, `${w.id}: the second story ends at a different stop of its own world (${st.stop})`);
+      ok(stop && st.pages.at(-1)[1].includes(stop.title), `${w.id}: the second story's last page names its stop, "${stop ? stop.title : st.stop}"`);
+      ok(st.pages.length >= 5 && st.pages.length <= 6, `${w.id}: the second story is five or six pages`);
+      ok(storyById(w.id + '-2') === st && storyById(w.id) === STORIES[w.id], `${w.id}: #/story/${w.id}-2 and #/story/${w.id} each find their story`);
+    }
+  }
+  ok(['ama', 'dunya', 'miro'].every((f) => used.has(f)), `every friend appears in a story (${[...used].join(', ')})`);
+  ok(WORLDS.filter((w) => STORIES[w.id].pages.some((p) => p[3])).length >= 5, 'the first stories meet the friends too');
+  ok(storyById('nowhere') === null && storyById('home-3') === null && storyById('') === null, 'a bad story id finds nothing (and lands on the Atlas)');
+}
 ok(search('x').length === 0, 'one letter searches nothing (no wall of results)');
 
 if (fails) { console.error(`✗ learning: ${fails} of ${n} failed`); process.exit(1); }

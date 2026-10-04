@@ -5,6 +5,8 @@
 
     python3 tools/art/process.py             # the plates
     python3 tools/art/process.py --avatars   # raw/av-<id>.png -> app/public/avatars/<id>.webp
+    python3 tools/art/process.py --friends   # raw/fr-<id>-<pose>.png -> app/public/friends/ (keyed, 320px)
+    python3 tools/art/process.py --prefix=st-   # Shelly's story scenes, 1024 wide (shown in a card)
 
 Avatars are keyed off their flat magenta ground to alpha, trimmed, centred on a
 square with a little room, and saved 384px RGBA WebP — the size and shape of
@@ -85,6 +87,16 @@ if '--medals' in sys.argv:          # raw/md-<id>.png -> app/public/medals/<id>.
     print(f'medals: total {total // 1024} KB')
     if GHOSTS: print('GHOSTS — repaint these (their ground was not pure magenta):', ', '.join(GHOSTS)); sys.exit(1)
     sys.exit(0)
+if '--friends' in sys.argv:         # raw/fr-<id>-<pose>.png -> app/public/friends/<id>-<pose>.webp (data/friends.js)
+    FROUT = os.path.join(HERE, '..', '..', 'app', 'public', 'friends'); os.makedirs(FROUT, exist_ok=True)
+    total = 0
+    for f in sorted(os.listdir(RAW)):
+        if not (f.startswith('fr-') and f.endswith('.png')): continue
+        n = f[3:-4]; b = avatar(os.path.join(RAW, f), os.path.join(FROUT, n + '.webp'), 320); total += b
+        print(f'friend {n}: 320x320 {b // 1024} KB')
+    print(f'friends: total {total // 1024} KB')
+    if GHOSTS: print('GHOSTS — repaint these (their ground was not pure magenta):', ', '.join(GHOSTS)); sys.exit(1)
+    sys.exit(0)
 if '--avatars' in sys.argv:
     total = 0
     for f in sorted(os.listdir(RAW)):
@@ -119,10 +131,11 @@ def trim(im):
 total = 0
 PREFIX = next((a.split('=', 1)[1] for a in sys.argv if a.startswith('--prefix=')), '')   # e.g. --prefix=game- : only those
 for f in sorted(os.listdir(RAW)):
-    if not f.endswith('.png') or f.startswith(('av-', 'mascot-')) or not f.startswith(PREFIX): continue
-    n = f[:-4]; im = trim(Image.open(os.path.join(RAW, f)).convert('RGB'))
-    w = 1280 if n.startswith(('pc-', 'era-', 'hist-')) else 960 if n.startswith('lm-') else 640 if n.startswith('lib-') else 1600 if n == 'game-tradewinds' else 800 if n.startswith('game-') else 1920
+    if not f.endswith('.png') or f.startswith(('av-', 'mascot-', 'md-', 'fr-')) or not f.startswith(PREFIX): continue
+    n = f[:-4]; im = Image.open(os.path.join(RAW, f)).convert('RGB')
+    if not n.startswith('st-'): im = trim(im)   # a story scene's pale sand or snow is its ground, not a mat (each is looked at)
+    w = 1024 if n.startswith('st-') else 1280 if n.startswith(('pc-', 'era-', 'hist-')) else 960 if n.startswith('lm-') else 640 if n.startswith('lib-') else 1600 if n == 'game-tradewinds' else 800 if n.startswith('game-') else 1920
     im = im.resize((w, round(w * im.height / im.width)), Image.LANCZOS)
-    p = os.path.join(OUT, n + '.webp'); im.save(p, 'WEBP', quality=78, method=6)
+    p = os.path.join(OUT, n + '.webp'); im.save(p, 'WEBP', quality=72 if n.startswith('st-') else 78, method=6)
     total += os.path.getsize(p); print(f'{n}: {im.width}x{im.height} {os.path.getsize(p)//1024} KB')
 print(f'total {total//1024} KB')

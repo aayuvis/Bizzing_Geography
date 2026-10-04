@@ -1,0 +1,33 @@
+/* stories.css — Shelly's picture-book pages (views.js viewStory) and the two doors on a world page.
+   A page is a painted place (art/st-*.webp) with Shelly and a friend composited in front of it,
+   in the lower third the painting leaves calm for them; the words sit below the picture. */
+
+.story-doors{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-top:12px}
+.story-doors .story-door{margin:0}
+.story-door img.sd-friend{width:64px;height:64px;object-fit:contain}
+
+.story-card.st-book{display:flex;flex-direction:column;gap:14px;align-items:stretch;min-height:0;padding:12px}
+.story-card.st-book .st-stage{position:relative;display:block;aspect-ratio:16/9;width:100%;border-radius:14px;overflow:hidden;
+  background:color-mix(in srgb,var(--wt,var(--accent)) 30%,var(--card))}
+.story-card.st-book .st-stage img.st-scene{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;animation:none;display:block}
+:root[data-mode=dark] .story-card.st-book .st-stage img.st-scene{filter:brightness(.66)}
+
+/* the cast stands in the lower part of the picture: Shelly on the left, a friend beside her */
+.story-card.st-book .st-cast{position:absolute;left:4%;right:4%;bottom:3%;height:52%;display:flex;align-items:flex-end;gap:3%;pointer-events:none}
+.story-card.st-book .st-cast img{height:100%;width:auto;max-width:46%;object-fit:contain;filter:drop-shadow(0 4px 6px rgb(0 0 0 / .28));animation:stIn .35s ease-out}
+.story-card.st-book .st-cast img.friend{height:88%}
+.story-card.st-book .st-cast img.fp-glide{height:66%;align-self:flex-start}
+.story-card.st-book .st-cast img.fp-swim{height:72%}
+
+.story-card.st-book .st-words{padding:0 6px 4px}
+.story-card.st-book .st-nav{flex-wrap:wrap}
+.story-card.st-book .st-nav .st-more{white-space:normal;text-align:left}
+
+@media (prefers-reduced-motion:reduce){.story-card.st-book .st-cast img{animation:none}}
+@media (max-width:560px){
+  .story-card.st-book{padding:8px;gap:8px}
+  .story-card.st-book .st-stage{aspect-ratio:4/3}
+  .story-card.st-book .st-cast{height:50%}
+  .story-card.st-book .st-nav .btn{flex:1 1 auto}
+  .story-door img.sd-friend{width:48px;height:48px}
+}

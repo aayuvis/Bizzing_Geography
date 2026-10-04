@@ -34,7 +34,8 @@ import { missDue, missCount } from './mistakes.js';
 import { home as famHome } from './bizzing-shell.js';
 import { FOOT } from './chrome.js';
 import { certificatesOf } from './certificate.js';
-import { STORIES, STORY_NOTE } from './data/stories.js';
+import { STORIES, STORIES_MORE, STORY_NOTE, storyById, storyWorld } from './data/stories.js';
+import { friendSprite } from './data/friends.js';
 
 /* ------------------------------------------------------------- helpers */
 
@@ -351,26 +352,36 @@ export function viewWorld(wid) {
       <p class="lead">${esc(s.hook)}</p>
       <div class="row gap">${open ? btn('Open this stop', 'openStop', s.id, 'primary big') : `<span class="muted">This stop is on the Level ${firstLevel(sel)} road. Keep going on your own road — it will open.</span>`}</div>
     </div>
-    ${STORIES[wid] ? `<button class="card story-door" data-act="openStory" data-arg="${wid}">${shelly('wave', 64)}<span><b>Shelly’s story</b><em>${esc(STORIES[wid].title)}</em></span><span class="sd-go">Read ›</span></button>` : ''}
+    ${STORIES[wid] ? `<div class="story-doors">
+      <button class="card story-door" data-act="openStory" data-arg="${wid}">${shelly('wave', 64)}<span><b>Shelly’s story</b><em>${esc(STORIES[wid].title)}</em></span><span class="sd-go">Read ›</span></button>
+      ${STORIES_MORE[wid] ? `<button class="card story-door sd-2" data-act="openStory" data-arg="${wid}-2">${storyFriend(STORIES_MORE[wid]) ? friendSprite(storyFriend(STORIES_MORE[wid]), 'sd-friend') : shelly('think', 64)}<span><b>Another story</b><em>${esc(STORIES_MORE[wid].title)}</em></span><span class="sd-go">Read ›</span></button>` : ''}
+    </div>` : ''}
   </section>`;
 }
 
-/* ------------------------------------------------------------- Shelly's story (one per world) */
+/* ------------------------------------------------------------- Shelly's stories (two per world) */
 
-export function viewStory(wid) {
-  const w = worldOf(wid), st = STORIES[wid], n = st.pages.length;
-  const i = Math.max(0, Math.min(n - 1, R.ui.storyPage || 0)), [pose, text] = st.pages[i], last = i === n - 1;
-  const first = stopsIn(wid)[0];
+/* the first friend a story meets: the second door's picture */
+const storyFriend = (st) => (st.pages.find((p) => p[3]) || [])[3] || null;
+/* a page's picture: its painted place, with Shelly and a friend composited in front, in the lower third */
+const storyStage = (scene, pose, friend) => `${scene ? `<img class="st-scene" src="art/${esc(scene)}.webp" alt="" decoding="async">` : ''}
+      <div class="st-cast">${shelly(pose, 180, 'st-shelly')}${friendSprite(friend, 'st-friend')}</div>`;
+
+export function viewStory(id) {
+  const wid = storyWorld(id), w = worldOf(wid), st = storyById(id), n = st.pages.length;
+  const i = Math.max(0, Math.min(n - 1, R.ui.storyPage || 0)), [pose, text, scene, friend] = st.pages[i], last = i === n - 1;
+  const first = byId[st.stop] || stopsIn(wid)[0], more = id === wid && STORIES_MORE[wid] ? wid + '-2' : null;
   return `<section class="story-page narrow" id="story" style="--wt:${w.tint};--wi:${w.ink}">
     ${pageHead(`${gi(w.glyph)} ${esc(st.title)}`, esc(w.name), back('openWorld', w.short, w.id))}
-    <div class="card story-card" data-story-keys>
-      <div class="st-art">${shelly(pose, 180)}</div>
+    <div class="card story-card st-book" data-story-keys>
+      <div class="st-art st-stage${friend ? ' with-friend' : ''}">${storyStage(scene, pose, friend)}</div>
       <div class="st-words">
         <div class="q-head"><p class="st-text" aria-live="polite">${esc(text)}</p>${readBtn('#story .st-text', 'Read this page to me')}</div>
         <p class="st-dots" aria-label="Page ${i + 1} of ${n}">${st.pages.map((_, j) => `<i class="${j === i ? 'on' : ''}"></i>`).join('')}</p>
         <div class="row gap st-nav">
           ${i ? btn('‹ Back', 'storyPage', String(i - 1)) : ''}
           ${last ? (first ? btn(`Open ${esc(first.title)}`, 'openStop', first.id, 'primary big') : '') : btn('Next ›', 'storyPage', String(i + 1), 'primary big')}
+          ${last && more ? btn(`Another story: ${esc(STORIES_MORE[wid].title)} ›`, 'openStory', more, 'st-more') : ''}
         </div>
       </div>
     </div>

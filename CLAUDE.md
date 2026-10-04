@@ -262,10 +262,15 @@ The shared spec every Bizzing app follows. Here it lives in five files:
   default 40%, ducks under effects and read-aloud, paused when hidden, off in Calm mode. No narration.
   Each Atlas world has its own five-note **entry sting** (`WORLD_STINGS`), once on entering, not again
   from its own stops or story.
-- **Shelly's stories** (`data/stories.js`, `#/story/<world>`): one picture-book tale per world, five to eight
-  pages in her six poses, labelled "the adventure is made up — every fact in it is true", turned by ← →,
-  a tap or a swipe, read aloud for the youngest; a door with Shelly on each world page; the last page
-  names and opens the world's first stop (`test/learning.mjs`).
+- **Shelly's stories** (`data/stories.js`, `#/story/<world>` and `#/story/<world>-2`): two picture-book tales
+  per world, in her six poses, labelled "the adventure is made up — every fact in it is true", turned by ← →,
+  a tap or a swipe, read aloud for the youngest; two doors on each world page. The first ends at the world's
+  first stop and offers the second; the second (5–6 pages, a problem the geography solves) ends at another
+  stop of the same world. Every page has its own **painted place** (`art/st-<world>-<1|2>-<page>.webp`, `gen.py`
+  `STORY_SCENES`: no people, lettering, map, turtle or friend — the lower third left calm), with Shelly and a
+  **friend** composited in front (`styles/stories.css`). The friends (`data/friends.js`, creatures only):
+  **Ama** the wandering albatross, **Dunya** the Bactrian camel, **Miro** the river otter — three poses each,
+  `public/friends/`, keyed by `process.py --friends`. `test/learning.mjs` holds every scene and sprite to a file.
 - **Learning** (family audit E4/E6/F3/C4): typed and put-in-order items beside multiple choice; one hint per
   question (`src/hints.js`; a hinted right answer pays no coin); the mistakes deck (`src/mistakes.js`) brings
   a miss back after a gap; one search over stops, places, countries, every state and state capital of the eight State Capitals countries, 2,600 cities (loaded on the first search; a city opens the Map Explorer with a pin), landmarks and words (`src/search.js`) — accents, case and punctuation never decide a match ("washington dc").
