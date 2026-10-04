@@ -1672,3 +1672,6 @@ img.medal.dim{filter:grayscale(.75) opacity(.62) contrast(1.05)}
 .avc-fact-h{font:800 10.5px var(--ui);text-transform:uppercase;letter-spacing:.06em;color:var(--c1)}
 .avc-pack{position:relative;z-index:1;display:flex;align-items:center;gap:6px;margin-top:7px;font:700 11px var(--ui);color:#6b6176}
 .avc-dot{width:9px;height:9px;border-radius:50%;background:linear-gradient(135deg,var(--c1),var(--c2))}
+.avc-ov{z-index:300;background:rgba(20,15,38,.86);padding:16px 12px max(16px,env(safe-area-inset-bottom))}
+.avd-bar .btn.ghost{color:#fff;border-color:rgb(255 255 255 / .6)}
+.avd-bar .btn.ghost kbd{color:#241e33}
