@@ -1,28 +1,35 @@
-/* Shelly's Trade Winds — the screen. The rules are in tw-engine.js; the facts in tw-data.js.
+/* tradewinds.js — Shelly's Trade Winds: The Long Voyage. The screen; the rules are tw-voyage.js.
 
-   One big map: this month's winds as faint arrows (the monsoon turns round with the season),
-   the season's storm and ice bands, the lanes the world has woken, ships at sea, and ports —
-   asleep (grey) or awake (a lit lantern). A side panel: what this month brought, the port or
-   the voyage being planned, the asks for help, the ships, the log.
+   The owner's story, made a game: Shelby, fifteen, one small boat, a bosun and a stowaway — and
+   Shelly — in Mumbai in 1800, sixty dark lights, and a century of sea. Sail, meet the sea, go ashore,
+   grow: until every port is lit, all ten expeditions are sealed, every invention is fitted and ten
+   ships sail together.
 
-   Keyboard and touch, both all the way: tap a port or pick it from a list; N = next month,
-   Enter = set sail, Esc = cancel. Nothing moves until "Next month" (Sabhyata's Sochna). */
+   The chart is DRAWN, never painted (a model never draws a real map). People in the story are never
+   drawn either — names and roles only, until the owner signs off a human cast (CLAUDE.md, Art).
+   Keyboard: N next month · Enter set sail · Esc cancel · 1–4 a danger's choice · Enter to go on. */
 import { GAME_META } from './meta.js';
 import { worldSVG, worldPath, project, countryAt, viewFor } from '../map.js';
-import { geoArea, geoGraticule10 } from 'd3-geo';
+import { geoArea, geoGraticule10, geoCircle } from 'd3-geo';
 import { haversine, fmtKm } from '../geo.js';
 import { shelly } from '../mascot.js';
 import { esc, ico, readBtn } from './kit.js';
 import { shipVars } from '../rewards.js';
-import { PORTS, HOMES, OCEANS, GOODS, newGame, plan, sail, nextMonth, wants, awakeCount, portFact, windAt } from './tw-engine.js';
+import { OCEANS, windAt } from './tw-engine.js';
+import * as V from './tw-voyage.js';
+import { PORTS, GOODS } from './tw-voyage.js';
 import { ERAS, BANDS, MONTHS, STRAITS, CANALS, HAZARDS, MONSOON, TRADEWINDS_NEEDS_REVIEW, PORT_SRC, STRAITS_SRC, ERAS_SRC, WIND_SRC } from './tw-data.js';
+import { RANKS, MARKS, CLASSES, INVENTIONS, EARNED, CREW, GIFTS, EXPEDITIONS, BOOKS, BEATS, LOG, LOG_SRC } from './tw-story.js';
+import { seeded, shuffle } from '../rand.js';
 
 export const TOOL = GAME_META.tradewinds;
 export { PORTS };
-const S_ = (ctx) => ctx.data.save || null;
+const S_ = (ctx) => (ctx.data.save && ctx.data.save.v === 2 ? ctx.data.save : null);
 const goodTag = (g) => (g ? `${GOODS[g].glyph} ${esc(GOODS[g].goodName)}` : 'nothing');
 const PASS = { ...Object.fromEntries(STRAITS.map((s) => [s.id, s])), ...Object.fromEntries(Object.entries(CANALS).map(([id, c]) => [id, c])) };
 const WINDNAME = { trades: 'the trade winds', westerlies: 'the westerlies', polar: 'the polar easterlies', monsoon: 'the monsoon' };
+const cash = (n) => `<span class="tw-cash" title="Trade coin: the game’s own money — never real money, never Bizzing coins">◈ ${Math.round(n).toLocaleString('en-US')}</span>`;
+const L = (a) => `data-act="lib" data-arg="tradewinds|${a}"`;
 
 /* ------------------------------------------------------------------ the chart
    Drawn, never painted: a sea chart in SVG. Under the land go the sea (a deep gradient
@@ -109,40 +116,7 @@ function compass(K, vb) {            // a drawn compass rose in the chart's corn
     ${[-90, 0, 90, 180].map((a, i) => `<path class="${i % 2 ? 'ma2' : 'ma'}" d="${pts(a, r + 2, 8)}"/>`).join('')}
     <circle r="2.6" class="hub"/><text y="${-r - 9}">N</text><text x="${r + 11}" y="1">E</text><text y="${r + 12}">S</text><text x="${-r - 11}" y="1">W</text></g>`;
 }
-const portPin = (P, st, cls, label, K, sc) => { const xy = project(P.at); if (!xy) return '';
-  return `<g class="pin tw-port ${cls}" transform="translate(${f1(xy[0])} ${f1(xy[1])}) scale(${sc})"><g transform="scale(${K})">
-    ${st.awake ? '<circle class="halo" r="14"/>' : ''}<circle class="ring" r="9"/><circle class="core" r="${st.awake ? 4.6 : 3.4}"/>
-    ${label ? `<text y="-12">${esc(label)}</text>` : ''}</g></g>`; };
 
-function layers(S, ui, K, vb) {
-  const sc = vb ? vb[2] / 1000 : 1, KS = K * sc;
-  const under = [DEFS, `<path class="tw-sea" d="${worldPath({ type: 'Sphere' })}"/>`, `<path class="tw-waves" d="${worldPath({ type: 'Sphere' })}"/>`,
-    `<path class="tw-grat" d="${worldPath(geoGraticule10())}"/>`, bandLayer(), hazardLayer(S.month, KS), `<g class="tw-winds">${windLayer(S.month, KS)}</g>`].join('');
-  const out = [];
-  for (const sh of S.ships) if (sh.voyage) out.push(`<path class="tw-voy" d="${worldPath(ll(sh.voyage.path))}"/>`);
-  if (ui.plan) out.push(`<path class="tw-plan-glow" d="${worldPath(ll(ui.plan.path))}"/><path class="tw-plan" d="${worldPath(ll(ui.plan.path))}"/>`);
-  PORTS.forEach((P, i) => {
-    const st = S.ports[i], cls = [st.awake ? 'awake' : 'sleep', i === S.home ? 'home' : '', i === ui.sel ? 'sel' : '', i === ui.dest ? 'dest' : '', S.asks.some((x) => x.port === i && !x.done) ? 'asks' : ''].join(' ');
-    out.push(portPin(P, st, cls, (st.awake && KS < 1.5) || i === ui.sel || i === ui.dest || i === S.home ? P.n : '', K, sc));
-  });
-  const docked = {}, sym = S.era >= 1 ? 'tw-steam' : 'tw-sail';
-  for (const sh of S.ships) {
-    let pos, west = false, dx = 0, dy = 0;
-    if (sh.voyage) {
-      const v = sh.voyage, f = (v.months - v.left + 0.5) / v.months; pos = alongPath(v.path, f);
-      const a = project(alongPath(v.path, Math.max(0, f - 0.04))), b = project(alongPath(v.path, Math.min(1, f + 0.04))); west = a && b && b[0] < a[0];
-    } else {          // ships in one port are drawn as one, with a count
-      if (docked[sh.at] != null) continue;
-      docked[sh.at] = S.ships.filter((x) => !x.voyage && x.at === sh.at).length; pos = PORTS[sh.at].at; dx = 13 * K * sc; dy = 8 * K * sc;
-    }
-    const xy = project(pos); if (!xy) continue;
-    const cargo = sh.voyage ? sh.voyage.cargo : sh.cargo;
-    out.push(`<g class="pin tw-ship${sh.voyage ? ' sea' : ' dock'}${ui.ship === sh.id ? ' on' : ''}" transform="translate(${f1(xy[0] + dx)} ${f1(xy[1] + dy)}) scale(${sc})"><g transform="scale(${(K * 1.3).toFixed(2)})"><g class="bob"><g transform="scale(${west ? -1 : 1} 1)">
-      ${sh.voyage ? '<path class="wake" d="M-11 5L-22 2.5M-11 6.5L-21 9"/>' : ''}<use href="#${sym}" x="-13" y="-19" width="26" height="27" style="color:${cargo ? CARGO[cargo] : '#d64535'}"/></g>${!sh.voyage && docked[sh.at] > 1 ? `<g class="tw-count" transform="translate(11 -15)"><circle r="6.5"/><text>${docked[sh.at]}</text></g>` : ''}</g></g></g>`);
-  }
-  out.push(compass(K, vb));
-  return { under, extra: out.join('') };
-}
 function alongPath(path, f) {
   let total = 0; const seg = path.map((p, i) => (i ? haversine(path[i - 1], p) : 0)); total = seg.reduce((a, b) => a + b, 0);
   let want = total * Math.max(0, Math.min(1, f));
@@ -163,60 +137,206 @@ function markScale() {
   return Math.max(1, Math.min(2.4, (1000 / px) * 0.85));
 }
 
-/* ------------------------------------------------------------------ the side panel */
-function newsCard(news) {
-  if (!news || !news.length) return '';
-  const line = (n) => n.k === 'wake' ? `<li class="tw-n wake"><img class="tw-thumb" src="art/game-tw-port-${PORTS[n.port].band}.webp" alt="" loading="lazy"><span><b>${esc(PORTS[n.port].n)} wakes!</b> ${esc(portFact(n.port))}</span></li>`
-    : n.k === 'helped' ? `<li class="tw-n help">❤️ <b>${esc(PORTS[n.port].n)}</b> got the ${esc(GOODS[n.good].goodName)} it asked for. +4 goodwill.</li>`
-    : n.k === 'trade' ? `<li class="tw-n">🤝 ${esc(PORTS[n.port].n)} traded for your ${esc(GOODS[n.good].goodName)}.</li>`
-    : n.k === 'arrive' ? `<li class="tw-n">⚓ A ship reached ${esc(PORTS[n.port].n)}${n.cargo ? ` — but ${esc(PORTS[n.port].n)} grows its own ${esc(GOODS[n.cargo].goodName)}, so the ship keeps it` : ''}.</li>`
-    : n.k === 'ask' ? `<li class="tw-n ask">🙏 A lean season in <b>${esc(PORTS[n.port].n)}</b>: they ask for ${goodTag(n.good)} within six months.</li>`
-    : n.k === 'ship' ? `<li class="tw-n">⛵ A new ship is ready at home.</li>`
-    : n.k === 'pass' ? `<li class="tw-n pass">🧭 You sailed through the <b>${esc(PASS[n.id].name)}</b>, which joins ${esc(PASS[n.id].joins)}.</li>`
-    : n.k === 'era' ? `<li class="tw-n era"><img class="tw-thumb" src="art/game-tw-era-${ERAS[n.era].id}.webp" alt="" loading="lazy"><span><b>${esc(ERAS[n.era].name)}</b> — ${esc(ERAS[n.era].card)}</span></li>` : '';
-  const big = news.some((n) => n.k === 'wake' || n.k === 'era');
-  return `<div class="card tw-news">${big ? `<div class="tw-shelly">${shelly(news.some((n) => n.k === 'era') ? 'cheer' : 'wave', 64)}</div>` : ''}<p class="kicker">This month</p><ul>${news.map(line).join('')}</ul></div>`;
+const portPin = (P, lit, cls, label, K, sc) => { const xy = project(P.at); if (!xy) return '';
+  return `<g class="pin tw-port ${cls}" transform="translate(${f1(xy[0])} ${f1(xy[1])}) scale(${sc})"><g transform="scale(${K})">
+    ${lit ? '<circle class="halo" r="14"/>' : ''}<circle class="ring" r="9"/><circle class="core" r="${lit ? 4.6 : 3.4}"/>
+    ${label ? `<text y="-12">${esc(label)}</text>` : ''}</g></g>`; };
+const firstGood = (sh) => (sh.hold && sh.hold[0] ? sh.hold[0].g : null);
+
+/* the chart's layers: under the land the sea, bands, seasons, winds — and, once the whales speak, the
+   light round every lit port (the dark water beyond is where the Grey Gulls hunt) */
+function layers(S, ui, K, vb) {
+  const sc = vb ? vb[2] / 1000 : 1, KS = K * sc;
+  const zones = V.hasGift(S, 'deepspeech') ? `<g class="tw-litzones">${PORTS.filter((P) => S.ports[P.i].lit).map((P) => `<path d="${worldPath(geoCircle().center([P.at[1], P.at[0]]).radius(9)())}"/>`).join('')}</g>` : '';
+  const under = [DEFS, `<path class="tw-sea" d="${worldPath({ type: 'Sphere' })}"/>`, `<path class="tw-waves" d="${worldPath({ type: 'Sphere' })}"/>`, zones,
+    `<path class="tw-grat" d="${worldPath(geoGraticule10())}"/>`, bandLayer(), hazardLayer(S.month, KS), `<g class="tw-winds">${windLayer(S.month, KS)}</g>`].join('');
+  const out = [];
+  for (const sh of S.ships) if (sh.voyage) out.push(`<path class="tw-voy" d="${worldPath(ll(sh.voyage.path))}"/>`);
+  if (ui.plan) out.push(`<path class="tw-plan-glow" d="${worldPath(ll(ui.plan.path))}"/><path class="tw-plan" d="${worldPath(ll(ui.plan.path))}"/>`);
+  if (S.war && S.war.until > S.turn) out.push(at(S.war.at[0], S.war.at[1], KS, '<circle r="11" class="tw-war"/><path d="M-6 -6L6 6M6 -6L-6 6" class="tw-war-x"/>', 'tw-warmark'));
+  PORTS.forEach((P, i) => {
+    const st = S.ports[i], cls = [st.lit ? 'awake' : 'sleep', i === S.home ? 'home' : '', i === ui.sel ? 'sel' : '', i === ui.dest ? 'dest' : '', S.asks.some((x) => x.port === i && !x.done) ? 'asks' : '', V.isYard(i) ? 'yard' : ''].join(' ');
+    out.push(portPin(P, st.lit, cls, (st.lit && KS < 1.5) || i === ui.sel || i === ui.dest || i === S.home ? P.n : '', K, sc));
+  });
+  const docked = {};
+  for (const sh of S.ships) {
+    let pos, west = false, dx = 0, dy = 0;
+    if (sh.voyage) {
+      const v = sh.voyage, f = Math.min(1, (v.months - v.left + 0.5) / v.months); pos = alongPath(v.path, f);
+      const a = project(alongPath(v.path, Math.max(0, f - 0.04))), b = project(alongPath(v.path, Math.min(1, f + 0.04))); west = a && b && b[0] < a[0];
+    } else { if (docked[sh.at] != null) continue; docked[sh.at] = S.ships.filter((x) => !x.voyage && x.at === sh.at).length; pos = PORTS[sh.at].at; dx = 13 * K * sc; dy = 8 * K * sc; }
+    const xy = project(pos); if (!xy) continue;
+    const g = firstGood(sh), sym = V.classOf(sh).era >= 1 || sh.ups.includes('engine') ? 'tw-steam' : 'tw-sail';
+    out.push(`<g class="pin tw-ship${sh.voyage ? ' sea' : ' dock'}${ui.ship === sh.id ? ' on' : ''}${sh.id === 1 ? ' flag' : ''}" transform="translate(${f1(xy[0] + dx)} ${f1(xy[1] + dy)}) scale(${sc})"><g transform="scale(${(K * 1.3).toFixed(2)})"><g class="bob"><g transform="scale(${west ? -1 : 1} 1)">
+      ${sh.voyage ? '<path class="wake" d="M-11 5L-22 2.5M-11 6.5L-21 9"/>' : ''}<use href="#${sym}" x="-13" y="-19" width="26" height="27" style="color:${g ? CARGO[g] : '#d64535'}"/></g>${!sh.voyage && docked[sh.at] > 1 ? `<g class="tw-count" transform="translate(11 -15)"><circle r="6.5"/><text>${docked[sh.at]}</text></g>` : ''}</g></g></g>`);
+  }
+  out.push(compass(K, vb));
+  return { under, extra: out.join('') };
 }
-function portCard(S, ui) {
-  const i = ui.sel; if (i == null) return `<div class="card tw-help"><p>${shelly('point', 64)} <b>Tap a lit port</b> to send a ship. A sleeping port wakes when a ship brings it something its own climate cannot grow.</p></div>`;
-  const P = PORTS[i], st = S.ports[i], docked = S.ships.filter((x) => x.at === i && !x.voyage), band = BANDS.find((b) => b.id === P.band);
+
+/* ------------------------------------------------------------------ the side: this month */
+const NEWS = (S, n) => {
+  const Pn = (i) => esc(PORTS[i].n);
+  switch (n.k) {
+    case 'wake': return `<li class="tw-n wake"><img class="tw-thumb" src="art/game-tw-port-${PORTS[n.port].band}.webp" alt="" loading="lazy"><span><b>${Pn(n.port)} is lit!</b> ${esc(V.sightsOf(n.port)[0].say)}</span></li>`;
+    case 'helped': return `<li class="tw-n help">❤️ <b>${Pn(n.port)}</b> got the ${esc(GOODS[n.good].goodName)} it asked for.</li>`;
+    case 'ask': return `<li class="tw-n ask">🙏 A lean season in <b>${Pn(n.port)}</b>: ten crates of ${goodTag(n.good)} within six months.</li>`;
+    case 'arrive': return `<li class="tw-n">⚓ The ${esc(S.ships.find((s) => s.id === n.ship).name)} reached ${Pn(n.port)}.</li>`;
+    case 'job': return `<li class="tw-n help">📜 A job done in ${Pn(n.job.to)}: ${cash(n.job.coin)}${n.job.forged ? '' : ` · +${n.job.xp} XP`}.</li>`;
+    case 'jobfail': return `<li class="tw-n">⌛ A job for ${Pn(n.job.to)} ran out of time.</li>`;
+    case 'forged': return `<li class="tw-n">🕯️ That letter was a forgery. Both crowns are angry.</li>`;
+    case 'gift': { const g = GIFTS.find((x) => x.id === n.id); return `<li class="tw-n era">${g.glyph} <b>A Keeper’s Gift: ${esc(g.name)}.</b> ${esc(g.does)}</li>`; }
+    case 'earned': { const e = EARNED.find((x) => x.id === n.id); return `<li class="tw-n era">🎖️ <b>Earned: ${esc(e.name)}</b> (${esc(MARKS.find((m) => m.id === e.mark).name)} +${e.plus}).</li>`; }
+    case 'crew': return `<li class="tw-n">${CREW[n.id].glyph} ${n.away ? `<b>${esc(CREW[n.id].name)}</b> has gone home for a while.` : `<b>${esc(CREW[n.id].name)}</b> is aboard.`}</li>`;
+    case 'invention': return `<li class="tw-n">🔧 New on the fleet: ${esc(INVENTIONS.find((u) => u.id === n.id).name)}.</li>`;
+    case 'ship': return `<li class="tw-n">⛵ A new ship: the ${esc(S.ships.find((s) => s.id === n.id).name)}.</li>`;
+    case 'towed': return `<li class="tw-n">🛟 The ${esc(S.ships.find((s) => s.id === n.ship).name)} was towed into ${Pn(n.port)}. Every sailor is safe.</li>`;
+    case 'war': return `<li class="tw-n ask">🚫 War between Varn and Ostery: the Gate of Grief is closed. It cannot be joined — only talked to an end.</li>`;
+    case 'peace': return `<li class="tw-n help">🕊️ The war at the Gate is over.</li>`;
+    case 'sealed': return `<li class="tw-n era">🏅 <b>Expedition sealed:</b> ${esc(EXPEDITIONS.find((e) => e.id === n.id).name)}.</li>`;
+    case 'rank': return `<li class="tw-n era">⭐ Shelby is now <b>${esc(RANKS.find((r) => r.id === n.id).name)}</b>.</li>`;
+    case 'log': return `<li class="tw-n">📖 A Ship’s Log card: <b>${esc(LOG[n.id].t)}</b>.</li>`;
+    case 'years': return `<li class="tw-n">⏳ Years pass at sea: ${n.from} … ${n.to}.</li>`;
+    case 'era': return `<li class="tw-n era"><img class="tw-thumb" src="art/game-tw-era-${ERAS[n.era].id}.webp" alt="" loading="lazy"><span><b>${esc(ERAS[n.era].name)}</b> — ${esc(ERAS[n.era].card)}</span></li>`;
+    default: return '';
+  }
+};
+function newsCard(S) {
+  const items = (S.news || []).filter((n) => n.k !== 'xp' && n.k !== 'beat').map((n) => NEWS(S, n)).filter(Boolean);
+  if (!items.length) return '';
+  return `<div class="card tw-news"><p class="kicker">This month</p><ul>${items.slice(0, 8).join('')}</ul></div>`;
+}
+
+/* ------------------------------------------------------------------ ashore: the port card */
+const markBar = (m, v) => `<span class="tw-mk" title="${esc(m.name)}: ${esc(m.says)}"><i>${m.glyph}</i><b>${esc(m.name)}</b><span class="tw-mk-bar"><span style="width:${v * 10}%"></span></span><em>${v}</em></span>`;
+const holdLine = (S, sh) => { const parts = Object.keys(GOODS).map((g) => [g, V.holdOf(sh, g)]).filter(([, n]) => n).map(([g, n]) => `${GOODS[g].glyph} ${n}`); const jobs = sh.jobs.filter((j) => j.n).reduce((a, j) => a + j.n, 0);
+  return `${parts.join(' · ') || 'empty'}${jobs ? ` · 📜 ${jobs} for jobs` : ''} <span class="muted">(${V.holdCount(sh)}/${V.capacity(S, sh)} crates)</span>`; };
+function jobLine(S, j) {
+  const to = esc(PORTS[j.to].n), left = Math.max(0, j.due - S.turn);
+  const what = j.kind === 'cargo' ? `${j.n} crates of ${goodTag(j.g)} to <b>${to}</b>` : j.kind === 'letter' ? `A letter for <b>${to}</b>` : j.kind === 'passenger' ? `A passenger to <b>${to}</b>`
+    : j.kind === 'peace' ? `<b>The true letter</b> — Queen Isolde’s own — to the fleets at <b>${to}</b>. It ends the war.` : j.kind === 'whales' ? `🐋 The Long Singers ask: carry word of the grey boats to the keeper at <b>${to}</b>` : `🛳️ Lead ten merchant ships to <b>${to}</b> through dark water (guard 6 and the wireless)`;
+  return `${what} · ${left} months · ${j.coin ? cash(j.coin) + ' · ' : ''}+${j.xp} XP`;
+}
+function quizCard(S) {
+  const id = S.quiz; if (!id || !LOG[id]) return '';
+  const c = LOG[id], opts = shuffle([c.a, ...c.w], seeded(S.seed + id + S.turn));
+  return `<div class="tw-sec tw-quiz"><p class="kicker">📖 From your Ship’s Log</p><p><b>${esc(c.q)}</b></p><div class="tw-opts">${opts.map((o) => `<button class="btn small" ${L('quiz|' + encodeURIComponent(o))}>${esc(o)}</button>`).join('')}</div></div>`;
+}
+function portPanel(S, ui) {
+  const i = ui.sel != null ? ui.sel : (S.ships[0].at != null ? S.ships[0].at : S.home), Pt = PORTS[i], st = S.ports[i], band = BANDS.find((b) => b.id === Pt.band);
+  const docked = S.ships.filter((x) => x.at === i && !x.voyage), sh = docked.find((x) => x.id === ui.ship) || docked[0] || null;
   const ask = S.asks.find((x) => x.port === i && !x.done);
-  return `<div class="card tw-port-card${st.awake ? ' lit' : ' dim'}">
-    <div class="tw-banner" style="background-image:url(art/game-tw-port-${P.band}.webp)"><div><p class="kicker">${esc(OCEANS[P.ocean])} · ${esc(P.country)}</p><h3>${ico(st.awake ? 'sun' : 'moon')} ${esc(P.n)}${i === S.home ? ' <span class="chip">home</span>' : ''}</h3></div></div>
-    <p class="small">${band.glyph} ${esc(band.name)}: grows <b>${esc(band.goodName)}</b>. ${st.awake ? `In store: <b>${st.stock}</b>.` : `Asleep — wants anything <b>but</b> ${esc(band.goodName)}.`}</p>
-    ${ask ? `<p class="small tw-askline">🙏 Asks for ${goodTag(ask.good)} — ${ask.until - S.turn} months left.</p>` : ''}
-    ${docked.length ? `<div class="tw-docked">${docked.map((sh) => `<button class="btn${ui.ship === sh.id ? ' primary-o' : ''}" data-act="lib" data-arg="tradewinds|ship|${sh.id}">${ico('ship')} Ship ${sh.id} · ${sh.cargo ? goodTag(sh.cargo) : st.awake && st.stock ? `will load ${goodTag(P.good)}` : 'empty'}</button>`).join('')}</div>
-      <p class="muted small">${ui.ship ? 'Now tap where to sail — or choose below.' : 'Choose a ship, then where to send it.'}</p>` : st.awake ? '<p class="muted small">No ship in port.</p>' : ''}
-  </div>`;
+  let h = `<div class="card tw-port-card${st.lit ? ' lit' : ' dim'}">
+    <div class="tw-banner" style="background-image:url(art/game-tw-port-${Pt.band}.webp)"><div><p class="kicker">${esc(OCEANS[Pt.ocean])} · ${esc(Pt.country)}${V.isYard(i) ? ' · shipyard' : ''}</p><h3>${ico(st.lit ? 'sun' : 'moon')} ${esc(Pt.n)}${i === S.home ? ' <span class="chip">home</span>' : ''}</h3></div></div>
+    <p class="small">${band.glyph} ${esc(band.name)}: grows <b>${esc(band.goodName)}</b>. ${st.lit ? `Its lamp is lit.` : `<b>Dark.</b> Sell it anything but ${esc(band.goodName)} and its lamp is lit again.`}</p>
+    ${ask ? `<p class="small tw-askline">🙏 Asks for ten crates of ${goodTag(ask.good)} — ${ask.until - S.turn} months left.</p>` : ''}`;
+  if (!sh) { h += `<p class="muted small">No ship of yours is here. ${S.ships.some((x) => !x.voyage) ? 'Choose a ship in the Fleet tab, or tap a port where one is waiting.' : ''}</p></div>`; return h; }
+  if (docked.length > 1) h += `<div class="tw-docked">${docked.map((x) => `<button class="btn small${x.id === sh.id ? ' primary-o' : ''}" ${L('ship|' + x.id)}>${ico('ship')} ${esc(x.name)}</button>`).join('')}</div>`;
+  const m = V.marks(S, sh);
+  h += `<p class="small"><b>${esc(sh.name)}</b> · ${esc(V.classOf(sh).name)}${sh.hull < 10 ? ` · hull ${sh.hull}/10` : ''}${sh.mast ? ' · a mast down' : ''}</p>
+    <div class="tw-marks">${MARKS.map((x) => markBar(x, m[x.id])).join('')}</div>
+    <p class="small">Hold: ${holdLine(S, sh)}</p>
+    <div class="row gap wrap"><button class="btn primary" ${L('plan|' + sh.id)}>${ico('ship')} Plan a voyage</button></div>`;
+  /* the market */
+  const g = Pt.good, bp = V.buyPrice(S, i), sells = Object.keys(GOODS).filter((x) => V.holdOf(sh, x));
+  h += `<div class="tw-sec"><p class="kicker">🏪 Market</p>
+    ${st.lit ? `<p class="small">Buy ${goodTag(g)} at ${cash(bp)} a crate · ${st.stock} in the market.</p><div class="tw-opts">${[1, 4].map((n) => `<button class="btn small" ${L('buy|' + n)}>Buy ${n}</button>`).join('')}<button class="btn small" ${L('buy|999')}>Fill the hold</button></div>` : '<p class="small muted">A dark port sells nothing — but it will buy.</p>'}
+    ${sells.map((x) => `<p class="small">${goodTag(x)} ×${V.holdOf(sh, x)} sells here at ${cash(V.sellPrice(S, i, x))}${x === g ? ' (they grow it here — cheap)' : !st.lit ? ' — <b>and lights the port</b>' : ''}. <button class="btn small" ${L('sell|' + x)}>Sell all</button></p>`).join('')}
+    <p class="tiny muted">A crate of what a port cannot grow is worth more the farther its climate — until many ships bring the same.</p></div>`;
+  /* sights */
+  const sights = V.sightsOf(i).filter((s) => (s.era || 0) <= S.era);
+  h += `<div class="tw-sec"><p class="kicker">🧭 Ashore</p>${sights.map((s) => st.seen[s.id] != null ? `<details class="tw-sight"><summary>✓ ${esc(s.t)}</summary><p class="small">${esc(s.say)}</p></details>` : `<button class="btn small tw-sight-b" ${L('sight|' + s.id)}>${esc(s.t)} · +15 XP</button>`).join('')}</div>`;
+  /* the board */
+  const jobs = V.board(S, i);
+  if (jobs.length) h += `<div class="tw-sec"><p class="kicker">📜 Assignment board</p><ul class="tw-jobs">${jobs.map((j) => `<li${(S.lit || {})[j.key] && j.forged ? ' class="glow"' : ''}><span class="small">${jobLine(S, j)}${(S.lit || {})[j.key] ? (j.forged ? ' — <b>it glows: a forgery</b>' : ' — true') : ''}</span>
+      <span class="tw-opts"><button class="btn small" ${L('sign|' + j.key)}>Sign</button>${j.kind === 'letter' && V.hasGift(S, 'truthlight') && !(S.lit || {})[j.key] ? `<button class="btn small" ${L('truth|' + j.key)}>🔦 Truthlight</button>` : ''}${(S.lit || {})[j.key] && j.forged ? `<button class="btn small" ${L('refuse|' + j.key)}>Refuse it</button>` : ''}</span></li>`).join('')}</ul></div>`;
+  if (sh.jobs.length) h += `<p class="small">Signed: ${sh.jobs.map((j) => jobLine(S, j)).join('<br>')}</p>`;
+  if (V.canRelight(S) && Pt.n === 'Aden') h += `<div class="tw-sec"><p class="kicker">🕯️ Saltreach</p><p class="small">The bare rock in the strait has been dark for twenty-five years. Lamp, glass and oil: ${cash(150)}.</p><button class="btn small primary-o" ${L('relight')}>Relight Saltreach</button></div>`;
+  /* the shipyard */
+  if (V.isYard(i)) {
+    const ups = INVENTIONS.filter((u) => u.era <= S.era), cls = CLASSES.filter((c) => c.era <= S.era), rc = V.repairCost(sh);
+    h += `<div class="tw-sec"><p class="kicker">🔨 Shipyard</p>${rc ? `<p class="small">Mend the ${esc(sh.name)}: ${cash(rc)} <button class="btn small" ${L('repair')}>Mend</button></p>` : ''}
+      <p class="small"><b>Inventions</b> for the ${esc(sh.name)}:</p><ul class="tw-buy">${ups.map((u) => { const no = V.canUpgrade(S, sh, u.id); return `<li><span class="small"><b>${esc(u.name)}</b> — ${esc(MARKS.find((x) => x.id === u.mark).name)} +${u.plus}. ${esc(u.says)}</span>${sh.ups.includes(u.id) ? '<span class="chip">fitted</span>' : `<button class="btn small" ${L('upgrade|' + u.id)} ${no ? `aria-disabled="true" title="${esc(no)}"` : ''}>${cash(u.price)}</button>`}</li>`; }).join('')}</ul>
+      <p class="small"><b>Ships</b> (${S.ships.length} of 10):</p><ul class="tw-buy">${cls.map((c) => { const no = V.canBuyShip(S, i, c.id); return `<li><span class="small"><b>${esc(c.name)}</b> — ${MARKS.map((x) => `${x.glyph}${c.m[x.id]}`).join(' ')}. ${esc(c.says)}</span><button class="btn small" ${L('buyship|' + c.id)} ${no ? `aria-disabled="true" title="${esc(no)}"` : ''}>${cash(c.price)}</button></li>`; }).join('')}</ul></div>`;
+  }
+  h += quizCard(S) + '</div>';
+  return h;
 }
 function planCard(S, ui) {
   const sh = S.ships.find((x) => x.id === ui.ship); if (!sh || sh.at == null) return '';
-  const from = sh.at, st = S.ports[from], cargo = sh.cargo || (st.awake && st.stock > 0 ? PORTS[from].good : null);
-  /* destinations, quickest first, with what would happen there */
-  const opts = PORTS.map((P) => P.i).filter((j) => j !== from).map((j) => ({ j, p: plan(S, from, j) })).filter((x) => x.p).map((x) => {
-    const sleep = !S.ports[x.j].awake, wantIt = cargo && wants(x.j, cargo), ask = cargo && S.asks.some((a) => a.port === x.j && a.good === cargo && !a.done);
-    return { ...x, sleep, wantIt, ask, rank: (ask ? 0 : sleep && wantIt ? 1 : wantIt ? 2 : 3) * 100 + x.p.months };
+  const from = sh.at, cargo = firstGood(sh), jobsTo = new Set(sh.jobs.map((j) => j.to));
+  const cands = PORTS.map((P) => P.i).filter((j) => j !== from).map((j) => ({ j, km: haversine(PORTS[from].at, PORTS[j].at) })).sort((a, b) => a.km - b.km).slice(0, 30);
+  const opts = cands.map((x) => ({ ...x, p: V.planFor(S, sh.id, from, x.j) })).filter((x) => x.p).map((x) => {
+    const dark = !S.ports[x.j].lit, lightIt = dark && cargo && PORTS[x.j].good !== cargo, ask = S.asks.some((a) => a.port === x.j && !a.done && cargo === a.good), job = jobsTo.has(x.j);
+    return { ...x, dark, lightIt, ask, job, rank: (job ? 0 : ask ? 1 : lightIt ? 2 : dark ? 4 : 3) * 100 + x.p.months };
   }).sort((a, b) => a.rank - b.rank).slice(0, 12);
-  const P = ui.plan, D = ui.dest != null ? PORTS[ui.dest] : null;
-  const outcome = !D ? '' : !cargo ? `Sails empty — at ${esc(D.n)} it can load ${goodTag(D.good)}${S.ports[D.i].awake ? '' : ' once the port is awake'}.`
-    : !wants(D.i, cargo) ? `${esc(D.n)} grows its own ${esc(GOODS[cargo].goodName)} — no one there will want it.`
-    : !S.ports[D.i].awake ? `<b>${esc(D.n)} will wake</b> when the ${esc(GOODS[cargo].goodName)} arrives!`
-    : S.asks.some((a) => a.port === D.i && a.good === cargo && !a.done) ? `<b>${esc(D.n)} asked for this</b> — the best thing you can do.` : `${esc(D.n)} will trade for it, and give you its ${esc(GOODS[D.good].goodName)}.`;
+  const P = ui.plan, D = ui.dest != null ? PORTS[ui.dest] : null, r = P && P.risk;
+  const tavi = S.crew.tavi === 'aboard';
   return `<div class="card tw-plan-card">
-    <p class="kicker">Ship ${sh.id} from ${esc(PORTS[from].n)} · carrying ${goodTag(cargo)}</p>
+    <p class="kicker">The ${esc(sh.name)} from ${esc(PORTS[from].n)} · ${holdLine(S, sh)}</p>
     ${P ? `<h3>To ${esc(D.n)}: ${P.months} ${P.months === 1 ? 'month' : 'months'}</h3>
       <p class="small">${fmtKm(P.km)}${P.via.length ? ` · by way of ${P.via.map((v) => esc(PORTS[v].n)).join(', ')}` : ''}.</p>
       ${Object.keys(P.help).length ? `<p class="small tw-good">💨 With ${Object.keys(P.help).map((k) => WINDNAME[k]).join(' and ')} behind you.</p>` : ''}
-      ${Object.keys(P.against).length ? `<p class="small tw-bad">🌬️ Against ${Object.keys(P.against).map((k) => WINDNAME[k]).join(' and ')} — slower.</p>` : ''}
-      ${P.cyclone ? `<p class="small tw-bad">🌀 Cyclone season on the way: the ship waits a month in port to be safe.</p>` : ''}
+      ${Object.keys(P.against).length ? `<p class="small tw-bad">🌬️ Against ${Object.keys(P.against).map((k) => WINDNAME[k]).join(' and ')}.</p>` : ''}
       ${P.pass.length ? `<p class="small">🧭 Through ${P.pass.map((id) => esc(PASS[id].name)).join(', ')}.</p>` : ''}
-      <p class="small">${outcome}</p>
-      <div class="row gap wrap"><button class="btn primary" data-act="lib" data-arg="tradewinds|go">${ico('ship')} Set sail <kbd>Enter</kbd></button><button class="btn ghost" data-act="lib" data-arg="tradewinds|cancel">Cancel <kbd>Esc</kbd></button></div>` : '<p class="small">Where to? Tap a port on the map, or pick one:</p>'}
-    <ul class="tw-dests">${opts.map((o) => `<li><button class="${o.j === ui.dest ? 'on' : ''}" data-act="lib" data-arg="tradewinds|dest|${o.j}">${ico(o.ask ? 'heart' : o.sleep ? (o.wantIt ? 'sparkle' : 'moon') : 'sun')} <b>${esc(PORTS[o.j].n)}</b> <span>${o.p.months} mo${o.ask ? ' · asked for it' : o.sleep && o.wantIt ? ' · will wake' : ''}</span></button></li>`).join('')}</ul>
+      <ul class="tw-risks small">${tavi ? `<li>🏴 Dark water: ${Math.round(r.dark * 100)}% of the way · pirates ${Math.round(r.pirates * 100)}% likely <span class="muted">(Tavi’s gossip)</span></li>` : ''}
+        ${r.cyclone ? `<li>🌀 Cyclone season on the way${S.crew.farida === 'aboard' ? ' — Farida says: wait' : ''}</li>` : ''}${r.mega.length ? '<li>🌊 Great-wave waters</li>' : ''}${r.bergs ? '<li>🧊 Spring icebergs</li>' : ''}${r.fog.length ? '<li>🌫️ Fog likely</li>' : ''}
+        ${!r.cyclone && !r.mega.length && !r.bergs && !r.fog.length && r.pirates < 0.1 ? '<li>☀️ A quiet sea, as far as anyone can tell</li>' : ''}</ul>
+      <p class="small">${!cargo ? 'You sail empty — buy before you go, or carry jobs.' : PORTS[D.i].good === cargo ? `${esc(D.n)} grows its own ${esc(GOODS[cargo].goodName)} — it will pay little.` : !S.ports[D.i].lit ? `<b>Sell your ${esc(GOODS[cargo].goodName)} there and ${esc(D.n)} is lit.</b>` : `${esc(D.n)} will pay ${cash(V.sellPrice(S, D.i, cargo))} a crate today.`}</p>
+      ${V.rankAt(S, 'commodore') && sh.id !== 1 ? `<label class="small tw-route"><input type="checkbox" ${L('routeset')} ${ui.route ? 'checked' : ''}> Make it a standing route: buy, sail, sell, and back — by itself</label>` : ''}
+      <div class="row gap wrap"><button class="btn primary" ${L('go')}>${ico('ship')} Set sail <kbd>Enter</kbd></button><button class="btn ghost" ${L('cancel')}>Cancel <kbd>Esc</kbd></button></div>`
+    : '<p class="small">Where to? Tap a port on the chart, or pick one:</p>'}
+    <ul class="tw-dests">${opts.map((o) => `<li><button class="${o.j === ui.dest ? 'on' : ''}" ${L('dest|' + o.j)}>${ico(o.job ? 'flag' : o.ask ? 'heart' : o.lightIt ? 'sparkle' : o.dark ? 'moon' : 'sun')} <b>${esc(PORTS[o.j].n)}</b> <span>${o.p.months} mo${o.job ? ' · your job' : o.ask ? ' · asked for it' : o.lightIt ? ' · will light' : ''}</span></button></li>`).join('')}</ul>
   </div>`;
 }
-const shipsCard = (S) => `<details class="card tw-ships" open><summary><b>Your ships</b> (${S.ships.length})</summary><ul>${S.ships.map((sh) => `<li>⛵ ${sh.id}: ${sh.voyage ? `to ${esc(PORTS[sh.voyage.to].n)} with ${goodTag(sh.voyage.cargo)} — ${sh.voyage.left} ${sh.voyage.left === 1 ? 'month' : 'months'}` : `in <button class="linkish" data-act="lib" data-arg="tradewinds|sel|${sh.at}">${esc(PORTS[sh.at].n)}</button>${sh.cargo ? ` with ${goodTag(sh.cargo)}` : ''}`}</li>`).join('')}</ul></details>`;
-const asksCard = (S) => { const a = S.asks.filter((x) => !x.done); return a.length ? `<div class="card tw-asks"><p class="kicker">Asking for help</p><ul>${a.map((x) => `<li><button class="linkish" data-act="lib" data-arg="tradewinds|sel|${x.port}">${esc(PORTS[x.port].n)}</button> needs ${goodTag(x.good)} · ${x.until - S.turn} months</li>`).join('')}</ul></div>` : ''; };
+
+/* ------------------------------------------------------------------ the fleet, the captain, the log */
+function fleetPanel(S, ui) {
+  return `<div class="card tw-fleet-card"><p class="kicker">The fleet · ${S.ships.length} of 10</p>${S.ships.map((sh) => { const m = V.marks(S, sh);
+    return `<div class="tw-shiprow${ui.ship === sh.id ? ' on' : ''}"><p><b>${sh.id === 1 ? '🐢 ' : ''}${esc(sh.name)}</b> · ${esc(V.classOf(sh).name)}${sh.route ? ` · ⇄ ${esc(PORTS[sh.route[0]].n)}–${esc(PORTS[sh.route[1]].n)}` : ''}</p>
+      <p class="small">${sh.voyage ? `At sea for ${esc(PORTS[sh.voyage.to].n)} — ${sh.voyage.left} ${sh.voyage.left === 1 ? 'month' : 'months'}` : `In <button class="linkish" ${L('sel|' + sh.at)}>${esc(PORTS[sh.at].n)}</button>`} · ${holdLine(S, sh)}${sh.hull < 10 ? ` · hull ${sh.hull}/10` : ''}</p>
+      <div class="tw-marks">${MARKS.map((x) => markBar(x, m[x.id])).join('')}</div>${sh.ups.length ? `<p class="tiny muted">${sh.ups.map((u) => esc(INVENTIONS.find((x) => x.id === u).name)).join(' · ')}</p>` : ''}</div>`; }).join('')}
+    <p class="tiny muted">Shelly sails in the ${esc(S.ships[0].name)} (🐢): her gifts work on that ship.</p></div>`;
+}
+function captainPanel(S) {
+  const rk = V.rankOf(S), ri = RANKS.indexOf(rk), nx = RANKS[ri + 1], pr = V.progress(S), book = BOOKS[Math.max(0, ...Object.keys(S.beats).map((b) => (BEATS[b] ? BEATS[b].book : 1))) - 1];
+  const done = (a, b) => (a >= b ? '✓' : `${a}/${b}`);
+  return `<div class="card tw-cap"><p class="kicker">${esc(book.name)} · Book ${book.n} of 5</p><h3>Shelby, ${esc(rk.name)}</h3>
+    <p class="small">${S.xp.toLocaleString('en-US')} XP${nx ? ` · next: <b>${esc(nx.name)}</b> at ${nx.xp.toLocaleString('en-US')} XP and ${nx.ships} ${nx.ships === 1 ? 'ship' : 'ships'}` : ''}.</p>
+    ${nx ? `<span class="tw-meter"><i style="width:${Math.min(100, Math.round((S.xp / nx.xp) * 100))}%"></i></span>` : ''}
+    <ul class="tw-goal small"><li>🏮 Ports lit ${done(pr.lit, pr.ports)}</li><li>🏅 Expeditions ${done(pr.sealed, 10)}</li><li>🔧 Inventions ${done(pr.inv, pr.invAll)}</li><li>⛵ Ships ${done(pr.ships, 10)}</li></ul>
+    <p class="kicker">Keeper’s Gifts</p><ul class="tw-gifts">${GIFTS.map((g) => `<li class="${S.gifts[g.id] != null ? 'on' : ''}"><span>${g.glyph}</span><span class="small"><b>${esc(g.name)}</b> — ${S.gifts[g.id] != null ? `${esc(g.does)} <i>${esc(g.cost)}</i>` : `wakes: ${esc(g.when)}`}</span></li>`).join('')}</ul>
+    ${S.rest > S.turn ? '<p class="small tw-bad">Shelly is resting: no gift works until next month.</p>' : ''}
+    <p class="kicker">The crew</p><ul class="tw-crew">${Object.entries(CREW).map(([id, c]) => `<li class="${S.crew[id] === 'aboard' ? 'on' : ''}"><span>${c.glyph}</span><span class="small"><b>${esc(c.name)}</b> · ${esc(c.role)} — ${S.crew[id] === 'aboard' ? esc(c.does) : S.crew[id] === 'away' ? 'gone home for a while' : S.crew[id] === 'ashore' ? 'ashore now; the knot stays with Shelby' : 'not met yet'}</span></li>`).join('')}</ul>
+    <p class="kicker">Expeditions ${V.rankAt(S, 'captain') ? '' : '<span class="muted">— they open when Shelby is a Captain</span>'}</p>
+    <ul class="tw-exps">${EXPEDITIONS.map((e) => { const [a, b] = V.expProgress(S, e.id); return `<li class="${S.ex[e.id] != null ? 'on' : ''}"><span class="small"><b>${S.ex[e.id] != null ? '🏅' : '○'} ${esc(e.name)}</b> — ${esc(e.goal)}${b > 1 && S.ex[e.id] == null ? ` (${a}/${b})` : ''}</span></li>`; }).join('')}</ul>
+    <p class="kicker">Earned, never sold</p><ul class="tw-earned small">${EARNED.map((e) => `<li class="${S.earned[e.id] != null ? 'on' : ''}">${S.earned[e.id] != null ? '🎖️' : '○'} <b>${esc(e.name)}</b> — ${esc(MARKS.find((m) => m.id === e.mark).name)} +${e.plus}. ${esc(e.how)}</li>`).join('')}</ul></div>`;
+}
+function logPanel(S) {
+  const ids = Object.keys(S.logs);
+  return `<div class="card tw-logs"><p class="kicker">The Ship’s Log · ${ids.length} of ${Object.keys(LOG).length} cards</p>
+    ${ids.length ? `<ul>${ids.map((id) => `<li><b>${esc(LOG[id].t)}</b><p class="small">${esc(LOG[id].fact)}</p><p class="tiny muted">${esc(LOG[id].src)}</p></li>`).join('')}</ul>` : '<p class="small muted">A card is written when the thing happens at sea or ashore.</p>'}
+    <details class="tw-log"><summary>What happened</summary><ul>${S.log.slice(0, 20).map((l) => `<li class="small">${esc(l)}</li>`).join('')}</ul></details></div>`;
+}
+
+/* ------------------------------------------------------------------ cards over the chart */
+function dangerPop(S) {
+  const c = V.dangerCard(S); if (!c) return '';
+  const sh = S.ships.find((x) => x.id === S.pending[0].ship);
+  return `<div class="tw-pop" role="dialog" aria-label="${esc(c.title)}"><div class="tw-pop-card tw-danger"><div class="tw-pop-body">
+    <p class="kicker">Danger · the ${esc(sh.name)} · the clock has stopped</p><h2>${esc(c.title)}</h2><p id="tw-d-t">${esc(c.text)}</p>
+    ${c.log ? `<p class="small tw-logline">📖 ${esc(LOG[c.log].fact)}</p>` : ''}
+    <ol class="tw-choices">${c.choices.map((x, k) => `<li><button class="btn${k ? '' : ' primary-o'}" ${L('choose|' + x.id)}><kbd>${k + 1}</kbd> <b>${esc(x.label)}</b><span class="small">${esc(x.cost)}</span></button></li>`).join('')}</ol>
+    <p class="tiny muted">The crew always comes home. A ship can lose cargo, time, a mast or coin — never a sailor.</p>${readBtn('#tw-d-t')}</div></div></div>`;
+}
+function beatPop(id) {
+  const b = BEATS[id]; if (!b) return '';
+  return `<div class="tw-pop" role="dialog" aria-label="${esc(b.title)}"><div class="tw-pop-card tw-beat"><div class="tw-pop-shelly">${shelly(id === 'longlight' ? 'cheer' : 'wave', 96)}</div><div class="tw-pop-body">
+    <p class="kicker">Book ${b.book} · ${esc(BOOKS[b.book - 1].name)}</p><h2>${esc(b.title)}</h2><p id="tw-b-t">${esc(b.text)}</p>
+    ${b.log ? `<p class="small tw-logline">📖 <b>${esc(LOG[b.log].t)}:</b> ${esc(LOG[b.log].fact)}</p>` : ''}
+    <div class="row gap wrap">${readBtn('#tw-b-t')}<button class="btn primary big" ${L('beatok')}>Sail on ${ico('next')} <kbd>Enter</kbd></button></div>
+    <p class="tiny muted">A story: the people, the crowns, Saltreach and the Grey Gulls are made up. The places and every Ship’s Log card are real.</p></div></div></div>`;
+}
 
 /* ------------------------------------------------------------------ the screen */
 export function view(ctx) {
@@ -224,116 +344,139 @@ export function view(ctx) {
   if (!S || ui.title) {
     return `<div class="gm-title card tw-title">
       <div class="gm-art" style="background-image:url(art/${TOOL.art}.webp)"><span class="gm-glyph" aria-hidden="true">${ico('ship')}</span></div>
-      <div class="gm-body"><h2>${esc(TOOL.name)}</h2>
-        <ol class="gm-how" id="gm-how"><li><b>1</b><span>Sixty real ports sleep round the world. Each grows what its <b>climate</b> grows — fruit in the tropics, grain in temperate lands…</span></li>
-          <li><b>2</b><span>Send ships. A sleeping port <b>wakes</b> when a ship brings it something its own climate cannot grow.</span></li>
-          <li><b>3</b><span>Ride the <b>winds</b> — trade winds, westerlies, the monsoon — keep out of storm season, and help ports that ask. Light every port.</span></li></ol>
+      <div class="gm-body"><h2>${esc(TOOL.name)}: The Long Voyage</h2>
+        <ol class="gm-how" id="gm-how"><li><b>1</b><span>Mumbai, 1800. Shelby has one small boat, a bosun, a stowaway — and Shelly. Sixty lights on the Lantern Road are dark.</span></li>
+          <li><b>2</b><span>Go ashore: buy what a port grows, sell it where the climate cannot grow it. A dark port you sell to is <b>lit</b>. See the sights, sign assignments.</span></li>
+          <li><b>3</b><span>Meet the sea: winds and monsoons, cyclones, great waves, ice, fog — and the Grey Gulls in the dark water. Choose well; the crew always comes home.</span></li>
+          <li><b>4</b><span>Grow: inventions for your ships, Keeper’s Gifts for Shelly, ten expeditions, ten ships — across a century, from sail to steam to the canals.</span></li></ol>
         ${readBtn('#gm-how', 'Read how to play')}
         <ul class="tw-ages" aria-label="Four ages to sail through">${ERAS.map((e) => `<li><img src="art/game-tw-era-${e.id}.webp" alt=""><b>${esc(e.name.replace(/^The /, ''))}</b><small>${e.year}</small></li>`).join('')}</ul>
-        ${S && !S.won ? `<div class="row gap wrap gm-starts"><button class="btn big primary" data-act="lib" data-arg="tradewinds|resume">${ico('ship')} Carry on — ${MONTHS[S.month]} ${S.year}, ${awakeCount(S)} of ${PORTS.length} ports lit</button></div><p class="muted small">Or start again from:</p>` : '<p class="muted small">Where does your voyage begin?</p>'}
-        <div class="row gap wrap gm-starts">${HOMES.map((h, j) => `<button class="btn big${!S || S.won ? (j ? '' : ' primary') : ''}" data-act="lib" data-arg="tradewinds|new|${h.id}">${esc(h.say[0].toUpperCase() + h.say.slice(1))}</button>`).join('')}</div>
-        ${d.best ? `<p class="muted small">Best: every port lit in ${esc(d.best)}.</p>` : ''}
+        ${S && !S.won ? `<div class="row gap wrap gm-starts"><button class="btn big primary" ${L('resume')}>${ico('ship')} Carry on — ${MONTHS[S.month]} ${S.year}, ${V.litCount(S)} of ${PORTS.length} lit</button></div><p class="muted small">Or begin again:</p>` : ''}
+        <div class="row gap wrap gm-starts"><button class="btn big${S && !S.won ? '' : ' primary'}" ${L('new')}>Begin the voyage from Mumbai</button></div>
+        ${d.best ? `<p class="muted small">Your best voyage: ${esc(d.best)}.</p>` : ''}
         <details class="src"><summary>How this game is made — and where it simplifies</summary>
-          <p class="small">The sea lanes were measured from this app’s own map: the shortest way round the land, through the straits. Winds, storms and ice are simplified to bands of latitude and months; each port trades one cargo for its climate band; a turn is a month. Where it says a fact, it comes from the map’s data or the sources below.</p>
-          <ul>${[...PORT_SRC, ...STRAITS_SRC, ...ERAS_SRC, ...WIND_SRC].map((s) => `<li>${esc(s)}</li>`).join('')}</ul></details>
-        ${TRADEWINDS_NEEDS_REVIEW ? '<p class="t-review">✎ Awaiting a second reader: the winds, seasons and dates are checked against the sources, but not yet by a second person.</p>' : ''}
+          <p class="small">The sea lanes were measured from this app’s own map. Winds, storms, ice and fog are simplified to bands of latitude, boxes of sea and months; each port trades one cargo for its climate band; a turn is a month, and when a new age opens the calendar jumps to the year it really began. Which ports have shipyards is a game simplification. The story’s people, its two crowns, Saltreach and the Grey Gulls are invented; the places, the ages and every Ship’s Log card are real, with their sources below.</p>
+          <ul>${[...PORT_SRC, ...STRAITS_SRC, ...ERAS_SRC, ...WIND_SRC, ...LOG_SRC].map((s) => `<li>${esc(s)}</li>`).join('')}</ul></details>
+        ${TRADEWINDS_NEEDS_REVIEW ? '<p class="t-review">✎ Awaiting a second reader: the winds, seasons, dates and Ship’s Log are checked against the sources, but not yet by a second person.</p>' : ''}
       </div></div>`;
   }
   if (S.won && !ui.stay) {
-    const w = S.stats.wind, top = Object.entries(w).sort((a, b) => b[1] - a[1]).map(([k]) => WINDNAME[k]);
-    return `<div class="card end-card gm-end tw-end">${shelly('cheer', 120)}<p class="kicker">The world is connected</p>
-      <h2>Every port lit in <span data-count="${S.turn}">${S.turn}</span> months</h2>
-      <p>${S.stats.voyages} voyages · ${fmtKm(S.stats.km)} sailed · ${S.stats.helped} ports helped in a lean season.</p>
-      <p>The winds that helped you most: ${top.slice(0, 3).join(', ') || 'none — you sailed by engine'}. You passed through ${Object.keys(S.stats.pass).map((id) => esc(PASS[id].name)).join(', ') || 'no strait'}.</p>
-      <p>You practised: oceans and straits, climate bands, the planet’s wind belts and the monsoon — and why trade happens at all.</p>
-      <div class="row gap center"><button class="btn primary big" data-act="lib" data-arg="tradewinds|title">Sail again</button><button class="btn big" data-act="lib" data-arg="tradewinds|stay">Look at my world</button></div></div>`;
+    return `<div class="card end-card gm-end tw-end">${shelly('cheer', 120)}<p class="kicker">Sixty lights · the Long Light</p>
+      <h2>Captain of the Fleet</h2>
+      <p>Every port lit, all ten expeditions sealed, every invention fitted, ten ships — from ${ERAS[0].year} to ${S.year}.</p>
+      <p>${S.stats.voyages} voyages · ${fmtKm(S.stats.km)} sailed · ${S.stats.dangers} dangers met well · ${Object.keys(S.logs).length} Ship’s Log cards.</p>
+      <div class="row gap center"><button class="btn primary big" ${L('title')}>Sail again</button><button class="btn big" ${L('stay')}>Look at my world</button></div></div>`;
   }
-  const E = ERAS[S.era], nx = ERAS[S.era + 1], pv = ERAS[S.era], K = markScale(), vb = phoneView(S, ui), L = layers(S, ui, K, vb), lit = awakeCount(S);
-  const toNext = nx ? Math.min(100, Math.round(((S.goodwill - pv.need) / (nx.need - pv.need)) * 100)) : 100;
-  const fill = {}; PORTS.forEach((P, i) => { if (S.ports[i].awake) fill[P.cc] = 'twlit'; });
+  const E = ERAS[S.era], nx = ERAS[S.era + 1], K = markScale(), vb = phoneView(S, ui), Ly = layers(S, ui, K, vb), lit = V.litCount(S), rk = V.rankOf(S);
+  const toNext = nx ? Math.min(100, Math.round(((S.goodwill - E.need) / (nx.need - E.need)) * 100)) : 100;
+  const fill = {}; PORTS.forEach((P, i) => { if (S.ports[i].lit) fill[P.cc] = 'twlit'; });
   const season = HAZARDS.cyclones.north.includes(S.month) || HAZARDS.cyclones.south.includes(S.month);
-  const pop = ui.eraShow != null ? ERAS[ui.eraShow] : null;
+  const tab = ui.tab || 'port', beat = (ui.beats || [])[0];
+  const pop = S.pending.length ? dangerPop(S) : beat ? beatPop(beat) : ui.eraShow != null ? `<div class="tw-pop" role="dialog" aria-label="${esc(ERAS[ui.eraShow].name)}"><div class="tw-pop-card"><div class="tw-pop-art" style="background-image:url(art/game-tw-era-${ERAS[ui.eraShow].id}.webp)"></div>
+      <div class="tw-pop-body"><p class="kicker">A new age · ${ERAS[ui.eraShow].year}</p><h2>${esc(ERAS[ui.eraShow].name)}</h2><p id="tw-pop-t">${esc(ERAS[ui.eraShow].card)}</p>
+      <div class="row gap wrap">${readBtn('#tw-pop-t')}<button class="btn primary big" ${L('eraok')}>Sail on ${ico('next')} <kbd>Enter</kbd></button></div></div></div></div>` : '';
   return `<div class="tw tw-e-${E.id}">
     <div class="tw-bar">
       <div class="tw-when"><span class="tw-m">${MONTHS[S.month]}</span><span class="tw-y">${S.year}</span></div>
       <div class="tw-era"><img src="art/game-tw-era-${E.id}.webp" alt=""><div><b>${esc(E.name)}</b>
-        <span class="tw-meter" title="Goodwill: from waking ports, trading and helping" role="img" aria-label="Goodwill ${S.goodwill}${nx ? ` of ${nx.need} for ${esc(nx.name)}` : ''}"><i style="width:${toNext}%"></i></span>
+        <span class="tw-meter" title="Goodwill: from lighting ports, trading, jobs and helping" role="img" aria-label="Goodwill ${S.goodwill}${nx ? ` of ${nx.need} for ${esc(nx.name)}` : ''}"><i style="width:${toNext}%"></i></span>
         <small>${ico('hands')} ${S.goodwill}${nx ? ` · ${nx.need} for ${esc(nx.name)}` : ' goodwill'}</small></div></div>
-      <div class="tw-lit"><b>${lit}</b><small>of ${PORTS.length} ports lit</small><span class="tw-meter gold"><i style="width:${Math.round((lit / PORTS.length) * 100)}%"></i></span></div>
-      <div class="tw-fleet">${ico('ship')} <b>${S.ships.filter((x) => !x.voyage).length}</b> in port · <b>${S.ships.filter((x) => x.voyage).length}</b> at sea</div>
+      <div class="tw-lit"><b>${lit}</b><small>of ${PORTS.length} lit</small><span class="tw-meter gold"><i style="width:${Math.round((lit / PORTS.length) * 100)}%"></i></span></div>
+      <div class="tw-fleet">${cash(S.coin)} · ⭐ ${esc(rk.name)} · ${S.xp.toLocaleString('en-US')} XP</div>
     </div>
     <div class="tw-main">
-      <div class="tw-map" style="${shipVars(ctx.kid)}">${worldSVG({ key: 'tw', tap: true, grat: false, fill, view: vb, under: L.under, extra: L.extra, label: 'Trade Winds world map: tap a port' })}
+      <div class="tw-map" style="${shipVars(ctx.kid)}">${worldSVG({ key: 'tw', tap: true, grat: false, fill, view: vb, under: Ly.under, extra: Ly.extra, label: 'Trade Winds chart: tap a port' })}
         <div class="tw-zoom">${[['in', 'plus', 'Zoom in'], ['out', 'minus', 'Zoom out'], ['home', 'reset', 'Back to the start view']].map(([h, i, l]) => `<button class="btn small" data-act="mapZoom" data-arg="tw|${h}" aria-label="${l}">${ico(i)}</button>`).join('')}</div>
-        <p class="tw-legend small"><span class="tw-lg w"><svg viewBox="-18 -6 34 12" width="30" height="11"><path d="M-16 0C-10 -3.5 -4 3.5 2 0S10 -2.5 13 0M9 -3.2L13.5 0L9 3.2" fill="none" stroke="currentColor" stroke-width="2"/></svg> this month’s winds</span>${MONSOON.sw.includes(S.month) ? '<span class="tw-lg m">summer monsoon blows north-east</span>' : MONSOON.ne.includes(S.month) ? '<span class="tw-lg m">winter monsoon blows south-west</span>' : ''}${season ? '<span class="tw-lg s">cyclone season</span>' : ''}${HAZARDS.ice.north.includes(S.month) || HAZARDS.ice.south.includes(S.month) ? '<span class="tw-lg i">sea ice</span>' : ''}<span class="tw-lg p">lit port</span></p>
-        ${pop ? `<div class="tw-pop" role="dialog" aria-label="${esc(pop.name)}"><div class="tw-pop-card"><div class="tw-pop-art" style="background-image:url(art/game-tw-era-${pop.id}.webp)"></div>
-          <div class="tw-pop-body"><p class="kicker">${ui.eraShow ? 'A new age' : 'Your voyage begins'} · ${pop.year}</p><h2>${esc(pop.name)}</h2><p id="tw-pop-t">${esc(pop.card)}</p>
-          ${ui.eraShow ? '' : '<p class="small muted">Tap a sleeping port that does not grow what your ship carries. Then press <b>Next month</b> and watch the winds carry you.</p>'}
-          <div class="row gap wrap">${readBtn('#tw-pop-t')}<button class="btn primary big" data-act="lib" data-arg="tradewinds|eraok">Sail on ${ico('next')} <kbd>Enter</kbd></button></div></div></div></div>` : ''}</div>
+        <p class="tw-legend small"><span class="tw-lg w"><svg viewBox="-18 -6 34 12" width="30" height="11"><path d="M-16 0C-10 -3.5 -4 3.5 2 0S10 -2.5 13 0M9 -3.2L13.5 0L9 3.2" fill="none" stroke="currentColor" stroke-width="2"/></svg> this month’s winds</span>${MONSOON.sw.includes(S.month) ? '<span class="tw-lg m">summer monsoon blows north-east</span>' : MONSOON.ne.includes(S.month) ? '<span class="tw-lg m">winter monsoon blows south-west</span>' : ''}${season ? '<span class="tw-lg s">cyclone season</span>' : ''}${HAZARDS.ice.north.includes(S.month) || HAZARDS.ice.south.includes(S.month) ? '<span class="tw-lg i">sea ice</span>' : ''}<span class="tw-lg p">lit port</span>${V.hasGift(S, 'deepspeech') ? '<span class="tw-lg z">light round the lit ports — beyond it, dark water</span>' : ''}</p>
+        ${pop}</div>
       <aside class="tw-side">
-        ${newsCard(S.news)}
-        ${ui.ship ? planCard(S, ui) : portCard(S, ui)}
-        ${asksCard(S)}
-        ${shipsCard(S)}
-        <div class="row gap wrap tw-actions"><button class="btn ${ui.ship ? '' : 'primary '}big" data-act="lib" data-arg="tradewinds|next">Next month ${ico('next')} <kbd>N</kbd></button><button class="btn ghost" data-act="lib" data-arg="tradewinds|title">${ico('menu')} Menu</button></div>
-        <details class="tw-log"><summary>The ship’s log</summary><ul>${S.log.slice(0, 12).map((l) => `<li>${esc(l)}</li>`).join('')}</ul></details>
+        ${newsCard(S)}
+        <div class="seg tw-tabs" role="tablist" aria-label="Trade Winds">${[['port', 'Ashore', 'anchor'], ['fleet', 'Fleet', 'ship'], ['captain', 'Captain', 'star'], ['log', 'Log', 'book']].map(([id, l, i]) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? 'on' : ''}" ${L('tab|' + id)}>${ico(i)} ${l}</button>`).join('')}</div>
+        ${tab === 'port' ? (ui.planning && ui.ship ? planCard(S, ui) : portPanel(S, ui)) : tab === 'fleet' ? fleetPanel(S, ui) : tab === 'captain' ? captainPanel(S) : logPanel(S)}
+        <div class="row gap wrap tw-actions"><button class="btn ${ui.planning ? '' : 'primary '}big" ${L('next')} ${S.pending.length ? 'disabled' : ''}>Next month ${ico('next')} <kbd>N</kbd></button><button class="btn ghost" ${L('title')}>${ico('menu')} Menu</button></div>
       </aside></div></div>`;
 }
 
 /* ------------------------------------------------------------------ actions */
 function nearestPort(at) { let best = null, bd = 700; for (const P of PORTS) { const k = haversine(at, P.at); if (k < bd) { bd = k; best = P.i; } } return best; }
-function setDest(S, ui, j) { const sh = S.ships.find((x) => x.id === ui.ship); if (!sh || sh.at == null || j === sh.at) return; ui.dest = j; ui.plan = plan(S, sh.at, j); }
-export function act(name, arg, ctx) {
-  const ui = ctx.ui, d = ctx.data;
-  /* a new game starts with a ship ready in the home port: the first tap picks where to send it */
-  if (name === 'new') { d.save = newGame(arg, 'tw' + Date.now()); d.plays = (d.plays || 0) + 1; Object.assign(ui, { title: false, sel: d.save.home, ship: d.save.ships[0].id, dest: null, plan: null, stay: false, eraShow: 0 }); ctx.sfx.click(); ctx.save(); return; }
-  if (name === 'resume') { ui.title = false; ui.eraShow = null; return; }
-  if (name === 'title') { ui.title = true; ui.ship = null; ui.plan = null; ui.dest = null; return; }
-  if (name === 'stay') { ui.stay = true; return; }
-  if (name === 'eraok') { ui.eraShow = null; ctx.sfx.click(); return; }
-  const S = S_(ctx); if (!S) return;
-  if (name === 'sel') { ui.sel = +arg; ui.dest = null; ui.plan = null; const first = S.ships.find((x) => x.at === +arg && !x.voyage); ui.ship = first ? first.id : null; }
-  else if (name === 'ship') { ui.ship = +arg; ui.dest = null; ui.plan = null; }
-  else if (name === 'dest') setDest(S, ui, +arg);
-  else if (name === 'cancel') { ui.ship = null; ui.dest = null; ui.plan = null; }
-  else if (name === 'tap') {
-    const t = JSON.parse(arg); if (t.lat == null || ui.eraShow != null) return;
-    const j = nearestPort([t.lat, t.lng]); if (j == null) return;
-    /* first tap: a port (a lit one with a ship in it goes straight to planning); second tap: where to */
-    if (ui.ship) setDest(S, ui, j);
-    else { ui.sel = j; ui.dest = null; ui.plan = null; const first = S.ships.find((x) => x.at === j && !x.voyage); ui.ship = first ? first.id : null; }
-  } else if (name === 'go' && ui.ship && ui.dest != null) {
-    const r = sail(S, ui.ship, ui.dest);
-    if (r.error) { ctx.toast(r.error); return; }
-    ctx.sfx.click(); ui.ship = null; ui.plan = null; ui.dest = null; ctx.save();
-  } else if (name === 'next') {
-    const prevEra = S.era, news = nextMonth(S);
-    ui.plan = null; ui.ship = null; ui.dest = null;
-    for (const n of news) {
-      if (n.k === 'wake') { ctx.tick(true); if (ctx.earn) ctx.earn('stop'); d.woke = (d.woke || 0) + 1; }
-      if (n.k === 'helped') { ctx.tick(true); if (ctx.earn) ctx.earn('stop'); d.helped = (d.helped || 0) + 1; }
-      if (n.k === 'trade') ctx.tick(true);
-    }
-    if (news.some((n) => n.k === 'wake' || n.k === 'helped')) { ctx.sfx.good(); ctx.confetti(14); } else ctx.sfx.click();
-    if (S.era > prevEra) { ui.eraShow = S.era; ctx.sfx.level(); ctx.confetti(40); d.era = Math.max(d.era || 0, S.era); if (ctx.earn) ctx.earn('mastered'); }
-    /* an ocean lit: every port of it awake */
-    d.oceans = d.oceans || {};
-    for (const o of Object.keys(OCEANS)) if (!d.oceans[o] && PORTS.filter((P) => P.ocean === o).every((P) => S.ports[P.i].awake)) { d.oceans[o] = S.turn; ctx.confetti(30); }
-    if (S.won && !d.wonAt) d.wonAt = S.turn;
-    if (S.won) { d.wins = (d.wins || 0) + 1; if (!d.bestMonths || S.turn < d.bestMonths) { d.bestMonths = S.turn; d.best = `${S.turn} months`; } if (ctx.session) ctx.session(); if (ctx.earn) ctx.earn('contest'); }
-    ctx.save();
+function setDest(S, ui, j) { const sh = S.ships.find((x) => x.id === ui.ship); if (!sh || sh.at == null || j === sh.at) return; ui.dest = j; ui.plan = V.planFor(S, sh.id, sh.at, j); }
+function selPort(S, ui, j) { ui.sel = j; ui.dest = null; ui.plan = null; ui.planning = false; ui.tab = 'port'; const f = S.ships.find((x) => x.at === j && !x.voyage); ui.ship = f ? f.id : ui.ship; }
+/* what the month (or a sale) brought: the family's rewards, and the story's cards, once each */
+function take(S, ctx, from) {
+  const ui = ctx.ui, d = ctx.data, fresh = S.news.slice(from);
+  for (const n of fresh) {
+    if (n.k === 'wake') { ctx.tick(true); if (ctx.earn) ctx.earn('stop'); d.lit = Math.max(d.lit || 0, V.litCount(S)); ctx.confetti(14); ctx.sfx.good(); }
+    if (n.k === 'job' && !n.job.forged) ctx.tick(true);
+    if (n.k === 'sealed') { if (ctx.earn) ctx.earn('mastered'); ctx.confetti(40); ctx.sfx.level(); d.sealed = Object.keys(S.ex).length; }
+    if (n.k === 'era') { ui.eraShow = n.era; ctx.sfx.level(); ctx.confetti(30); d.era = Math.max(d.era || 0, S.era); if (ctx.earn) ctx.earn('mastered'); }
+    if (n.k === 'beat') (ui.beats = ui.beats || []).push(n.id);
+    if (n.k === 'won') { d.wins = (d.wins || 0) + 1; d.best = `${S.year} — every light lit`; if (ctx.session) ctx.session(); if (ctx.earn) ctx.earn('contest'); }
   }
 }
+export function act(name, arg, ctx) {
+  const ui = ctx.ui, d = ctx.data;
+  if (name === 'new') { d.save = V.newGame('lv' + Date.now()); d.plays = (d.plays || 0) + 1; const S = d.save; Object.assign(ui, { title: false, sel: S.home, ship: 1, dest: null, plan: null, planning: false, stay: false, eraShow: null, tab: 'port', beats: [] }); take(S, ctx, 0); ctx.sfx.click(); ctx.save(); return; }
+  if (name === 'resume') { ui.title = false; ui.eraShow = null; return; }
+  if (name === 'title') { ui.title = true; ui.ship = null; ui.plan = null; ui.dest = null; ui.planning = false; return; }
+  if (name === 'stay') { ui.stay = true; return; }
+  if (name === 'eraok') { ui.eraShow = null; ctx.sfx.click(); return; }
+  if (name === 'beatok') { (ui.beats || []).shift(); ctx.sfx.click(); return; }
+  if (name === 'tab') { ui.tab = arg; ui.planning = false; ui.plan = null; ui.dest = null; return; }
+  const S = S_(ctx); if (!S) return;
+  const n0 = S.news.length, fail = (r) => { if (r && r.error) { ctx.toast(r.error); return true; } return false; };
+  const shNow = () => S.ships.find((x) => x.id === ui.ship && !x.voyage) || S.ships.find((x) => x.at === ui.sel && !x.voyage);
+  if (name === 'sel') selPort(S, ui, +arg);
+  else if (name === 'ship') { ui.ship = +arg; ui.dest = null; ui.plan = null; }
+  else if (name === 'plan') { ui.ship = +arg; ui.planning = true; ui.dest = null; ui.plan = null; ui.route = false; }
+  else if (name === 'dest') setDest(S, ui, +arg);
+  else if (name === 'cancel') { ui.planning = false; ui.dest = null; ui.plan = null; }
+  else if (name === 'routeset') ui.route = !ui.route;
+  else if (name === 'tap') {
+    const t = JSON.parse(arg); if (t.lat == null || ui.eraShow != null || S.pending.length || (ui.beats || []).length) return;
+    const j = nearestPort([t.lat, t.lng]); if (j == null) return;
+    if (ui.planning && ui.ship) setDest(S, ui, j); else selPort(S, ui, j);
+  } else if (name === 'go' && ui.ship && ui.dest != null) {
+    const sh = S.ships.find((x) => x.id === ui.ship), from = sh && sh.at, to = ui.dest;
+    const r = V.sail(S, ui.ship, to); if (fail(r)) return;
+    if (ui.route && from != null) { sh.voyage = sh.voyage; sh.route = [from, to]; }
+    ctx.sfx.click(); ui.planning = false; ui.plan = null; ui.dest = null; d.voyages = (d.voyages || 0) + 1;
+  } else if (name === 'next') {
+    S.news = []; const r = V.nextMonth(S); if (fail(r)) return;
+    ui.plan = null; ui.dest = null; ui.planning = false;
+    take(S, ctx, 0); if (!S.news.some((n) => n.k === 'wake')) ctx.sfx.click();
+    if (ui.sel == null || !S.ships.some((x) => x.at === ui.sel)) { const a = S.news.find((n) => n.k === 'arrive'); if (a) selPort(S, ui, a.port); }
+    ctx.save(); return;
+  } else if (name === 'buy') { const sh = shNow(); if (!sh) return; const r = V.buy(S, sh.id, +arg); if (!fail(r)) ctx.sfx.coin ? ctx.sfx.coin() : ctx.sfx.click(); }
+  else if (name === 'sell') { const sh = shNow(); if (!sh) return; const r = V.sell(S, sh.id, arg); if (!fail(r)) ctx.sfx.click(); }
+  else if (name === 'sight') { const r = V.visitSight(S, ui.sel, arg); if (!fail(r)) { ctx.tick(true); ctx.sfx.good(); } }
+  else if (name === 'sign') { const sh = shNow(); if (!sh) return; const r = V.accept(S, sh.id, arg); if (!fail(r)) { ctx.sfx.click(); ctx.toast('Signed. The job sails with the ' + sh.name + '.'); } }
+  else if (name === 'truth') { const r = V.truthlight(S, ui.sel, arg); if (!fail(r)) ctx.toast(r.forged ? 'It glows: a forgery.' : 'The letter is true.'); }
+  else if (name === 'refuse') { V.decline(S, ui.sel, arg, 'forged'); ctx.toast('You refuse the forged letter — and both crowns hear of it.'); }
+  else if (name === 'upgrade') { const sh = shNow(); if (!sh) return; if (!fail(V.upgrade(S, sh.id, arg))) ctx.sfx.good(); }
+  else if (name === 'buyship') { const r = V.buyShip(S, ui.sel, arg); if (!fail(r)) { ctx.sfx.level(); ctx.confetti(20); ui.ship = r.ship.id; } }
+  else if (name === 'repair') { const sh = shNow(); if (sh) fail(V.repair(S, sh.id)); }
+  else if (name === 'relight') { fail(V.relight(S)); }
+  else if (name === 'quiz') { const right = V.answerQuiz(S, S.quiz, decodeURIComponent(arg)); if (right) { ctx.tick(true); ctx.sfx.good(); ctx.toast('Right — +10 XP.'); } else { ctx.sfx.bad(); ctx.toast('Not this time — it is in your Log.'); } }
+  else if (name === 'choose') { const r = V.resolve(S, arg); if (fail(r)) return; r.averted ? ctx.sfx.good() : ctx.sfx.bad(); if (r.out) ctx.toast(r.out); }
+  take(S, ctx, n0);
+  ctx.save();
+}
 export function key(e, ctx) {
-  const S = S_(ctx), ui = ctx.ui; if (!S || ui.title || S.won) return false;
+  const S = S_(ctx), ui = ctx.ui; if (!S || ui.title || (S.won && !ui.stay)) return false;
+  if (S.pending.length) { const c = V.dangerCard(S), k = +e.key; if (k >= 1 && k <= c.choices.length) { act('choose', c.choices[k - 1].id, ctx); return true; } return false; }
+  if ((ui.beats || []).length) { if (e.key === 'Enter' || e.key === 'Escape') { act('beatok', '', ctx); return true; } return false; }
   if (ui.eraShow != null) { if (e.key === 'Enter' || e.key === 'Escape') { act('eraok', '', ctx); return true; } return false; }
   if (e.key === 'n' || e.key === 'N') { act('next', '', ctx); return true; }
-  if (e.key === 'Escape' && ui.ship) { act('cancel', '', ctx); return true; }
+  if (e.key === 'Escape' && ui.planning) { act('cancel', '', ctx); return true; }
   if (e.key === 'Enter' && ui.plan) { act('go', '', ctx); return true; }
   return false;
 }
-/* the live game is "in play" for the top bar (inGame) only while a voyage is open on screen */
 export function selftest(ok) {
   ok(PORTS.length === 60 && PORTS.every((P) => P.at && P.good), `sixty ports, each with a place and a cargo (${PORTS.length})`);
   ok(new Set(PORTS.map((P) => P.band)).size === 4, 'all four climate bands have ports');
+  const S = V.newGame('selftest');
+  ok(S.ships.length === 1 && S.ships[0].name === 'Small Hope' && V.marks(S, S.ships[0]).cargo === 2 && V.capacity(S, S.ships[0]) === 8, 'the voyage begins with the Small Hope: cargo 2, eight crates');
+  ok(Object.values(BEATS).every((b) => b.book >= 1 && b.book <= 5 && b.text.length > 40 && (!b.log || LOG[b.log])), 'every story beat has its book, its words, and a real Log card');
+  ok(Object.values(LOG).every((c) => c.src && c.w.length >= 3 && !c.w.includes(c.a) && !c.q.toLowerCase().includes(c.a.toLowerCase())), 'every Log card has a source, and a question that does not give its answer');
+  ok(!/\b(dies|died|killed|drowned|blood)\b/i.test(JSON.stringify(BEATS)), 'the story beats keep harm elliptical');
 }

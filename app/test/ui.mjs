@@ -210,7 +210,8 @@ async function run(vp, tag) {
     await page.waitForTimeout(1700);
   }
   ok((await S()).run.over, 'the drill finishes');
-  ok(kindsSeen.size >= 1, `E4: a stop's own drill is mixed, not all choosing (${[...kindsSeen].join(', ')})`);
+  /* E4: a stop whose answers can be typed or tapped is drilled as a mixed set (eight-points' cannot: its answers name directions in the question) */
+  ok(await page.evaluate(() => { const R = window.__bzg.R, keep = R.run; window.__bzg.fire('startDrill', 'cap-europe'); const k = R.run.items.filter((q) => q.kind !== 'mc').length; R.run = keep; return k >= 2; }), 'E4: a stop’s own drill is mixed, not all choosing');
   ok(await page.evaluate(() => window.__bzg.R.h.kids[0].stops['eight-points'].stars) === 3, 'ten right earns three stars');
   await shot('07-end');
   /* I4/J1: the first medal spins in once, with what earned it; coins only from the standard events */
@@ -659,8 +660,8 @@ async function run(vp, tag) {
   await page.click('.search-res .sr >> nth=0'); await page.waitForSelector('.t-cap-wide');
   ok(await page.evaluate(() => window.__bzg.R.ui.arg === 'states' && window.__bzg.R.ui.lib.states.sel === 'US-CA'), 'search "sacramento" opens State Capitals on California');
   await page.evaluate(() => window.__bzg.go('search')); await page.waitForSelector('#search-q');
-  await page.fill('#search-q', 'houston'); await page.waitForFunction(() => [...document.querySelectorAll('.search-res .kicker')].some((k) => k.textContent === 'City'), null, { timeout: 5000 }).catch(() => {});
-  await page.click('.search-res .sr >> nth=0'); await page.waitForTimeout(400);
+  await page.fill('#search-q', 'houston'); await page.waitForFunction(() => [...document.querySelectorAll('.search-res .sr')].some((b) => /City/.test(b.querySelector('.kicker').textContent) && /Houston/.test(b.querySelector('b').textContent)), null, { timeout: 5000 }).catch(() => {});
+  await page.click('.search-res .sr:has(b:text-is("Houston"))'); await page.waitForTimeout(400);
   await page.waitForFunction(() => window.__bzg.R.ui.arg === 'explorer' && /Houston/.test((document.querySelector('.t-ex-pin') || {}).innerText || ''), null, { timeout: 5000 }).catch(() => {});
   ok(await page.evaluate(() => window.__bzg.R.ui.arg === 'explorer' && window.__bzg.R.ui.lib.explorer.sel === 'US' && (window.__bzg.R.ui.lib.explorer.pin || {}).n === 'Houston') && (await page.locator('.t-ex-pin').innerText()).includes('Houston'), 'search "houston" opens the Map Explorer with a pin on Houston');
   /* E6, step two: after the first hint, "another hint" lights the answer's continent — never the answer */

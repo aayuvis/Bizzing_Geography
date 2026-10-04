@@ -235,6 +235,15 @@ POSES = {
     'sleep': "She is asleep sitting down, eyes closed in two gentle curves, head tilted, a peaceful smile, a tiny bubble near her mouth.",
     'oops':  "She looks a little surprised and sheepish, one flipper scratching the back of her head, a small embarrassed smile, a single sweat drop.",
 }
+# the browser tab's icon (the owner: "like Bizzing Bee's — the bee has no background square"): Shelly's
+# face alone, as a round sticker, keyed to alpha by process.py --favicon
+JOBS['favicon'] = ("A single cute round face icon of Shelly, the cheerful young green sea turtle mascot in the attached picture: "
+                   "ONLY her head, seen from the front, filling the frame, with a small curve of her blue globe shell behind the top of the head "
+                   "(the shell carries only curved latitude and longitude lines — no land shapes, no continents). Big glossy dark eyes with white "
+                   "highlights, rosy cheeks, a happy smile, bold clean dark outline, flat bright colours, simple enough to read at 16 pixels. "
+                   "No body, no flippers, no scarf. THE ENTIRE BACKGROUND IS FLAT PURE MAGENTA (hex FF00FF), one solid uniform field with nothing "
+                   "in it: no shadow, no border, no glow, no tile, no square. No magenta or hot pink on the turtle. ABSOLUTELY NO TEXT, no letters.",
+                   '1:1', 'mascot-wave')
 for k, v in POSES.items(): JOBS['mascot-' + k] = (SHELLY + v + ' ' + MASCOT_STYLE, '1:1', 'mascot-wave' if k != 'wave' else None)
 JOBS['icon'] = ("Square mobile app icon, full-bleed square tile, Shelly the mascot large and centred, her head and upper body filling "
                 "70% of the tile, on a solid deep teal (#0E6E74) background with a subtle tone-on-tone pattern of TOPOGRAPHIC CONTOUR "

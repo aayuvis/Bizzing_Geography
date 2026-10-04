@@ -75,7 +75,7 @@ export function feedOpts(h, k, items, now = Date.now()) {
 export const LIMIT = 20, MAX_TOPIC = 2, MAX_KIND = 4, MAX_TF = 1, MAX_WORLD = 3;
 export const topicOf = (it) => (it.stop ? 'stop:' + it.stop : (it.topics || []).find((t) => /^(stop|cc|exp|dict|world):/.test(t)) || (it.topics || [])[0] || it.kind);
 export function capSession(ranked, items) {
-  const byId = new Map(items.map((x) => [x.id, x])), out = [], n = { topic: {}, kind: {}, tier: {} };
+  const byId = new Map(items.map((x) => [x.id, x])), out = [], n = { topic: {}, kind: {}, tier: {}, why: {} };
   const cap = { review: Math.floor(LIMIT * 0.25), any: Math.floor(LIMIT * 0.25), next: 2 };
   let tf = 0;
   for (const x of ranked) {
@@ -86,9 +86,10 @@ export function capSession(ranked, items) {
     const w = (it.topics || []).find((z) => z.startsWith('world:'));
     if ((n.topic[t] || 0) >= MAX_TOPIC || (n.kind[x.kind] || 0) >= MAX_KIND || (two && tf >= MAX_TF) || (w && (n.topic[w] || 0) >= MAX_WORLD)) continue;
     if (cap[x.tier] != null && (n.tier[x.tier] || 0) >= cap[x.tier]) continue;
+    if ((n.why[x.why] || 0) >= 6) continue;                                   // one reason is not the whole feed (the engine's own rule)
     if (L >= 2 && out[L - 1].kind === x.kind && out[L - 2].kind === x.kind) continue;
     if (w) n.topic[w] = (n.topic[w] || 0) + 1;
-    n.topic[t] = (n.topic[t] || 0) + 1; n.kind[x.kind] = (n.kind[x.kind] || 0) + 1; n.tier[x.tier] = (n.tier[x.tier] || 0) + 1; if (two) tf++;
+    n.topic[t] = (n.topic[t] || 0) + 1; n.kind[x.kind] = (n.kind[x.kind] || 0) + 1; n.tier[x.tier] = (n.tier[x.tier] || 0) + 1; n.why[x.why] = (n.why[x.why] || 0) + 1; if (two) tf++;
     out.push(x);
   }
   return out;
@@ -99,7 +100,7 @@ export function feedSession(h, k, items, now = Date.now()) {
   const o = feedOpts(h, k, items, now), f = feedRec(k);
   const key = [o._today, (k.last || {}).at || 0, k.road.level, Object.keys(o.due).length, k.band].join('|');
   if (f.sess && f.sess.key === key && f.sess.list.every((x) => items.some((i) => i.id === x.id))) return f.sess.list;
-  const list = capSession(feedFor({ ...o, limit: 60, maxKind: MAX_KIND }), items);
+  const list = capSession(feedFor({ ...o, limit: 150, maxKind: 99, maxWhy: 99 }), items);
   for (const x of list) f.seen[x.id] = o._today;
   for (const id of Object.keys(f.seen)) if (o._today - f.seen[id] > 14) delete f.seen[id];
   f.sess = { key, list };

@@ -1536,7 +1536,7 @@ h1,h2,h3,.tab,.tb,.set-head h1,.set-sec h2,.shop-page h1,.dr-i{font-family:var(-
 .hourq-tile .hourq-b{width:100%;min-width:0} .hourq-tile .bz-kicker,.hourq-tile h3{display:block;max-width:62%}
 .hourq-tile h3{font-size:20px;margin:2px 0 8px}
 .hourq-tile .choice-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);justify-content:stretch;gap:6px}
-.hourq-tile .choice-row .opt{min-width:0;max-width:none;width:100%;box-sizing:border-box;flex:none;padding:6px 8px;font-size:13.5px;min-height:38px;line-height:1.15}
+.hourq-tile .choice-row .opt{min-width:0;max-width:none;width:100%;box-sizing:border-box;flex:none;padding:6px 8px;font-size:13.5px;min-height:44px;line-height:1.15}
 .hourq-tile .fb{margin:0 0 6px;font-size:13.5px;padding:4px 8px}
 .hourq-pin{display:inline-block;margin-top:8px;font-weight:700;font-size:14px}
 
