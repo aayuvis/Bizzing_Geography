@@ -375,7 +375,175 @@ MEDAL_ART = {
 }
 for k, (tier, subject) in MEDAL_ART.items(): JOBS['md-' + k] = (MD_STYLE.format(metal=METAL[tier], subject=subject), '1:1')
 
-GROUPS = {'medals': 'md-', 'games': 'game-', 'mascot': 'mascot-', 'day': 'wd-', 'night': 'wn-', 'postcards': 'pc-', 'landmarks': 'lm-', 'eras': 'era-', 'history': 'hist-', 'avatars': 'av-', 'courses': 'crs-', 'worlds': 'w-', 'library': 'lib-'}
+# Shelly's stories (app/src/data/stories.js): one painted PLACE behind every page, both sets.
+# Shelly and her friends are composited by the app (views.js viewStory), so a plate has no
+# turtle and no creature friend in it — and, as everywhere, no people, no lettering and never
+# a real map or a continent's outline. The lower third is left calm for the cast to stand in.
+SCENE = ("A picture-book page background for a children's geography story. The LOWER THIRD of the picture is calm, open, "
+         "simple ground, sand, grass or water with nothing important in it, where characters will be added later; the "
+         "interest is in the middle and the sky. No animal characters at all: no turtle, no tortoise, no albatross, no "
+         "camel, no otter, no crab (tiny distant birds are fine). No map, no globe, no chart, no continent or coastline "
+         "outlines, no signs. " + STYLE + " Landscape composition.")
+STORY_SCENES = {
+    # Home Street — 1: Shelly and the Map of the Garden
+    'st-home-1-1': "A sunny back garden in the morning: a green lawn, a small wooden shed, a round pond, a few round trees, a picket fence, a little table with a blank sheet of paper and coloured pencils on it.",
+    'st-home-1-2': "The same kind of garden seen from a little higher up, as a bird would start to see it: the lawn, the pond, the shed roof, trees, a soft blue sky with one small white bird far away.",
+    'st-home-1-3': "A garden seen straight from above, a true bird's-eye view: a square brown shed roof, a round blue pond, round green tree tops, a lawn, a path. Painted landscape, not a drawing of a map.",
+    'st-home-1-4': "A cosy garden table under a tree, with a blank sheet of paper, coloured pencils, a ruler and a cup, the garden softly behind. The paper is completely blank.",
+    'st-home-1-5': "A garden at midday with a weathervane on the shed roof: just a single plain metal arrow on a pole, with no cross-arms and no letters, blue sky with soft clouds.",
+    'st-home-1-6': "A joyful sunny garden with bunting of plain coloured triangles strung between two trees, the pond sparkling, flowers in bloom.",
+    # Home Street — 2: Miro and the Picnic Map
+    'st-home-2-1': "A sunny riverbank at the edge of a small town, a footpath leading off along the river, reeds and wild flowers, a picnic basket on the grass.",
+    'st-home-2-2': "A view across a valley from a low hill: a little wood of round trees, a river winding through fields, a railway line on an embankment, a small town far off.",
+    'st-home-2-3': "A country path beside a sparkling blue river, with a railway running alongside on the far bank, a small stone bridge ahead, gentle morning light.",
+    'st-home-2-4': "A small stone bridge where a footpath crosses a railway line, a wood of round trees beyond, a river glinting to one side, warm afternoon.",
+    'st-home-2-5': "A calm round lake in a meadow with a red-and-white checked picnic blanket laid out on the grass by the shore, a basket, fruit and sandwiches, willow trees.",
+    # Land & Water Valley — 1: Shelly Floats Down the Valley
+    'st-landwater-1-1': "High in green mountains, a tiny clear stream bubbling between mossy stones and wild flowers, snowy peaks behind.",
+    'st-landwater-1-2': "A river curling through a wide, flat green plain of farm fields and hedges, low hills far away, a big sky.",
+    'st-landwater-1-3': "A calm lake with land all the way round it, a river flowing out of it at one end, hills and trees reflected in the still water.",
+    'st-landwater-1-4': "A curving bay of turquoise sea reaching into green land, a sandy beach, and a small green island out in the water.",
+    'st-landwater-1-5': "A wide joyful view of many landforms together: a mountain, a plain, a lake, a bay and an island, in bright clear light.",
+    # Land & Water Valley — 2: Ama Looks for an Island
+    'st-landwater-2-1': "A rocky shore with a large flat grey rock by the sea, wind-blown grass, white-capped waves, a breezy sky with long streaky clouds.",
+    'st-landwater-2-2': "A calm blue lake surrounded on every side by green hills and pine trees, still water, no sea anywhere.",
+    'st-landwater-2-3': "A long narrow finger of green land with a few trees poking out into a blue sea, water on three sides of it, seen from a low cliff.",
+    'st-landwater-2-4': "A wide curving bay where the sea reaches into the land, a crescent of sandy beach, cliffs at each end, calm water.",
+    'st-landwater-2-5': "A small round green island with a few low bushes and grass, sea all the way round it, calm evening light, the sky turning gold.",
+    # Continent Harbour — 1: Shelly Sails Round the World
+    'st-continents-1-1': "A busy little harbour at sunrise: a quay with crates and barrels, small boats, a lighthouse, calm water leading out to the open sea.",
+    'st-continents-1-2': "The open sea under a bright sky, a far coastline of dry golden hills on the horizon, small waves, gulls far away.",
+    'st-continents-1-3': "A vast, endless open ocean of deep blue, gentle swells to every horizon, huge white clouds, nothing but water and sky.",
+    'st-continents-1-4': "A cold southern sea with floating icebergs and a white ice shelf on the horizon, a few distant penguins on the ice.",
+    'st-continents-1-5': "A calm sea at night under a big starry sky and a crescent moon, gentle moonlit waves, peaceful and quiet.",
+    'st-continents-1-6': "A bright harbour at golden hour, sailing boats moored, a lighthouse, warm light on the water, welcoming and cheerful.",
+    # Continent Harbour — 2: Ama and the One Big Ocean
+    'st-continents-2-1': "A windswept sea cliff above the open ocean, white waves below, long streaks of wind clouds across a bright sky, endless water.",
+    'st-continents-2-2': "The deep blue open Pacific seen from just above the waves, enormous rolling swells, a tiny far-off coral island with palm trees.",
+    'st-continents-2-3': "Open ocean where calm green-blue water meets darker blue water in a soft line, warm sunlight, flying fish, no land.",
+    'st-continents-2-4': "A cold grey-blue polar sea with drifting sea ice and icebergs, a pale sun low on the horizon.",
+    'st-continents-2-5': "A calm ocean at dusk, soft gentle waves, the first stars appearing in a violet sky, peaceful and sleepy.",
+    'st-continents-2-6': "A sparkling sunlit ocean with a bright rainbow over the waves, puffy clouds, joyful.",
+    # Compass Tower — 1: Shelly and the Lost Lighthouse Key
+    'st-compass-1-1': "A white-and-red lighthouse on a grassy headland by the sea, its little wooden door closed, a big rock in the grass, a breezy day.",
+    'st-compass-1-2': "A grassy headland with a big grey rock in the foreground middle and an old twisted tree some way off, the sea beyond.",
+    'st-compass-1-3': "An old twisted tree on a green clifftop at the end of a faint path through the grass, the sea and sky behind.",
+    'st-compass-1-4': "A sandy path leading away from an old tree towards the sea, small stones along the way, gentle afternoon light.",
+    'st-compass-1-5': "A freshly dug little hole in the sand by the path with an old brass key glinting in it, the lighthouse behind in sunshine.",
+    # Compass Tower — 2: Meet Me at C3
+    'st-compass-2-1': "A wide dry landscape at the edge of a desert, sandy ground, a few rocks, distant palm trees on the horizon, a clear sky.",
+    'st-compass-2-2': "A patchwork of square fields in neat rows seen from a hill, divided by straight hedges into a tidy grid, green and gold squares.",
+    'st-compass-2-3': "A straight sandy track running along the bottom of a hill and then a path climbing straight up it, simple and clear.",
+    'st-compass-2-4': "A small round stone well with a wooden bucket in the shade of a palm tree at an oasis, warm afternoon light.",
+    'st-compass-2-5': "An oasis at golden hour: palm trees, a blue pool, the stone well, sand dunes glowing behind.",
+    # Capital Bazaar — 1: Shelly at the Capital Bazaar
+    'st-capitals-1-1': "A busy bazaar under a great glass dome, stalls with striped awnings, many plain coloured pennants with simple stripes and NO symbols flapping above.",
+    'st-capitals-1-2': "A bakery stall in a bazaar piled with long loaves and round breads in baskets, warm lamplight, a striped awning.",
+    'st-capitals-1-3': "A row of colourful bazaar stalls with spices, fruit and lanterns, warm and friendly, plain striped pennants above.",
+    'st-capitals-1-4': "Two neighbouring gardens with a low wooden fence between them, different flowers on each side, a gate in the fence.",
+    'st-capitals-1-5': "A bazaar stall with a neat display of small plain striped pennants on sticks in a jar, warm evening lamplight.",
+    # Capital Bazaar — 2: Miro's Flag Muddle
+    'st-capitals-2-1': "A market stall by a river with a big tumbled heap of plain coloured cloth pennants and flags (simple stripes only, no symbols) blown together by the wind.",
+    'st-capitals-2-2': "A line of plain striped pennants in many colours fluttering against a blue sky over a market, no symbols or emblems.",
+    'st-capitals-2-3': "A market stall table with folded cloth flags and, on top, one white flag with a single plain red circle in the middle, warm light.",
+    'st-capitals-2-4': "Two pairs of similar-looking plain flags hanging side by side on a stall: one pair blue-yellow-red vertical stripes, one pair red-over-white horizontal halves.",
+    'st-capitals-2-5': "A tidy market stall with many plain flags hung neatly in a long row on a rail, the wind calm, cheerful afternoon light.",
+    # Weather Ridge — 1: Shelly and the Rain Cloud
+    'st-weather-1-1': "A hot sunny day by a sparkling blue sea, a bright sun high in the sky, a sandy beach, heat shimmer.",
+    'st-weather-1-2': "Warm sunlight on the sea with faint wisps of vapour rising gently from the water's surface into the air.",
+    'st-weather-1-3': "Fluffy white clouds building high in a blue sky above the sea, catching the light, beginning to grow.",
+    'st-weather-1-4': "A big grey rain cloud pouring rain over the sea and the shore, rain streaks, puddles, a cosy grey light.",
+    'st-weather-1-5': "After the rain: a rainbow over a river flowing down green hills into the sea, the sun coming out.",
+    # Weather Ridge — 2: Shelly Packs for a Long Trip
+    'st-weather-2-1': "A cosy beach hut porch with a small open suitcase, a straw sun hat and a woolly striped scarf laid beside it, sea view behind.",
+    'st-weather-2-2': "A hot steamy tropical rainforest edge by a river, the sun high overhead, huge leaves, warm rain clouds gathering.",
+    'st-weather-2-3': "A wide dry desert of sand and rock under a clear sky, very few plants, a lone dry bush, distant dunes.",
+    'st-weather-2-4': "A temperate woodland in autumn, trees with orange, red and gold leaves, leaves drifting down onto a path, a mild grey-blue sky.",
+    'st-weather-2-5': "A polar landscape of snow and ice, the sun very low on the horizon, long blue shadows, a frozen sea.",
+    'st-weather-2-6': "A sunny seaside path at the start of a journey, a small packed suitcase with a sun hat and a woolly scarf tied to it, cheerful sky.",
+    # River Delta — 1: Shelly's Long River Journey
+    'st-rivers-1-1': "A spring of clear water bubbling out of a grassy hillside between stones, a tiny stream starting downhill, ferns.",
+    'st-rivers-1-2': "A small river being joined by a smaller stream from the side, the river growing wider, green valley, trees.",
+    'st-rivers-1-3': "A wide river with a small town on its banks: houses, a stone bridge, boats moored, farm fields beyond.",
+    'st-rivers-1-4': "A river spreading into many small channels as it reaches the sea, green islands of land between the channels, low and flat.",
+    'st-rivers-1-5': "A wide river mouth meeting the sea at sunset, golden light on the water, reeds and birds far away.",
+    # River Delta — 2: Dunya Looks for Water
+    'st-rivers-2-1': "A vast hot sand desert of golden dunes under a blazing sun, wind ripples in the sand, nothing growing.",
+    'st-rivers-2-2': "A desert of dunes seen from a little higher, heat haze, a pale hot sky, one tiny far bird circling.",
+    'st-rivers-2-3': "A high view of a great river winding through a desert, a long ribbon of bright green farms and palms along both banks, golden sand beyond.",
+    'st-rivers-2-4': "A wide river with sailing boats with tall white sails, palm trees on the bank, and ancient stone pyramids and a city far on the other side.",
+    'st-rivers-2-5': "A peaceful riverbank at sunset with palm trees, reeds and green fields, the water calm and golden.",
+    # Latitude Lighthouse — 1: Shelly and the Invisible Lines
+    'st-globe-1-1': "The middle of a calm open ocean, no land anywhere, gentle waves to every horizon, a wide sky.",
+    'st-globe-1-2': "A lighthouse on a rocky point at twilight, its beam sweeping out over a calm sea, the first stars. Full-bleed painting to every edge, no white border, no rounded corners.",
+    'st-globe-1-3': "A calm sea under a twilight sky where a few long faint glowing lines curve gently across the sky like ribbons of light, magical and soft.",
+    'st-globe-1-4': "A seascape split softly between day and night: bright morning sky over the sea on one side, a starry night sky on the other.",
+    'st-globe-1-5': "A lighthouse on a rocky point at sunrise, the sea calm and golden, a cheerful clear sky.",
+    # Latitude Lighthouse — 2: Why Is Ama Asleep?
+    'st-globe-2-1': "A sunny beach at noon, the sun high overhead, short shadows, a bright blue sea, a lunch picnic laid on a towel.",
+    'st-globe-2-2': "A lighthouse on a rocky point in bright midday sun, the sea sparkling, its lamp room glinting.",
+    'st-globe-2-3': "The sun rising over the sea on the horizon, the eastern sky glowing orange and gold, calm water.",
+    'st-globe-2-4': "A quiet harbour at night under a starry sky, warm windows glowing in a few houses, boats asleep on calm water.",
+    'st-globe-2-5': "A fresh early morning by the sea, pink and gold dawn sky, gentle waves, the lighthouse far off.",
+    # The Restless Earth — 1: Shelly and the Rumbling Island
+    'st-restless-1-1': "A small rocky island with a sandy beach, the ground cracked a little, a few pebbles bouncing, a dramatic sky.",
+    'st-restless-1-2': "A beach of black sand and rock pools on a volcanic island, a wide view, waves gently washing in.",
+    'st-restless-1-3': "A volcano in the distance puffing a column of grey smoke, a glow of orange lava at its top, green land in front.",
+    'st-restless-1-4': "A wide sea between two distant lands under a big sky, as if they once fitted together, calm and grand. Seen at eye level; no map. Full-bleed painting to every edge, no white border, no rounded corners.",
+    'st-restless-1-5': "A volcanic island at sunset, the volcano quiet with a wisp of steam, palm trees, calm sea.",
+    # The Restless Earth — 2: Dunya and the Stone Seashell
+    'st-restless-2-1': "A dry rocky cliff in a desert, with a spiral stone fossil seashell set in the rock face at the centre, warm light.",
+    'st-restless-2-2': "A tall cliff of many coloured horizontal rock layers, like stripes of cream, red, brown and gold, a dry valley below.",
+    'st-restless-2-3': "A close view of layered sandstone rock with small stone shells and fossils pressed in between the layers.",
+    'st-restless-2-4': "A rocky hillside of speckled grey and pink granite boulders, a distant volcano with a little steam on the horizon.",
+    'st-restless-2-5': "A desert canyon at golden hour, layered rock walls glowing red and gold, a few smooth boulders on the sandy floor.",
+    # Crossroads City — 1: Shelly Visits the Big City
+    'st-people-1-1': "A small village of a few houses among green fields, a little shop with a striped awning, a dirt road, morning.",
+    'st-people-1-2': "A town street with a school building with a bell tower and a playground, a small market with fruit stalls, trees, and a city of tall buildings far off. Every shop board and building front is BLANK: no words, no signs, no clock numbers.",
+    'st-people-1-3': "A huge city of tall towers seen from a hill, bridges, trains and roads, stretching to the horizon, late afternoon light. No people visible.",
+    'st-people-1-4': "Wind turbines and a field of solar panels on green hills outside a city, a river and a reservoir, bright sunny sky.",
+    'st-people-1-5': "A road leading from a village past a town to a far city at golden hour, fields in between, cheerful.",
+    # Crossroads City — 2: Ama and the Country with No Coast
+    'st-people-2-1': "High snowy mountains with green alpine meadows and pine forests, a small wooden chalet far off, no sea anywhere.",
+    'st-people-2-2': "A clear blue mountain lake ringed by green slopes and snowy peaks, calm water, a small boat jetty.",
+    'st-people-2-3': "Steep green mountain slopes with terraced fields climbing up them, high peaks behind, far from any sea.",
+    'st-people-2-4': "A freight train crossing a valley on a stone viaduct, heading down from the mountains towards distant lowlands.",
+    'st-people-2-5': "A busy sea port where a railway line reaches the coast: cargo ships, cranes, containers, the open sea beyond. No people visible.",
+}
+for k, v in STORY_SCENES.items(): JOBS[k] = (v + ' ' + SCENE, '16:9')
+
+# Shelly's three creature friends (app/src/data/friends.js): a sticker each in three poses,
+# on pure magenta like the avatars and Shelly herself — process.py --friends keys them and
+# fails on a ghost. The first pose is painted first, and the rest from it, so it is one creature.
+FRIEND_LOOK = {
+    'ama': ("Ama, a wandering albatross: a large seabird, a white body and head, very long narrow wings that are dark grey-brown "
+            "on top and white beneath, a big pale-pink-and-yellow hooked beak (not magenta), dark gentle eyes, calm and wise. "),
+    'dunya': ("Dunya, a Bactrian camel with TWO humps: a shaggy sandy-brown woolly coat, long legs, a long curved neck, soft "
+              "dark eyes with long eyelashes, a woven saddle blanket in teal and orange stripes, calm and kind. "),
+    'miro': ("Miro, a river otter: glossy chocolate-brown fur, a cream chin and chest, small round ears, whiskers, webbed "
+             "paws, a long thick tapering tail, bright curious dark eyes, cheerful. "),
+}
+FRIEND_POSES = {
+    'ama': {'glide': "She is gliding with her long wings spread and raised in a gentle V, drawn small enough that BOTH wing tips sit well inside the frame with a wide margin of magenta beyond them.",
+            'stand': "She is standing on her pink-grey webbed feet with her wings folded neatly at her sides, looking at the viewer.",
+            'point': "She is standing, with one long wing held out to the side as if pointing the way, looking that way."},
+    'dunya': {'stand': "She is standing side-on on all four legs, head turned to look at the viewer, both humps clearly visible.",
+              'walk': "She is walking along side-on with one front leg lifted mid-stride, head held forward, both humps visible.",
+              'rest': "She is resting lying down on the ground with her legs folded under her, head up, content, both humps visible."},
+    'miro': {'swim': "He is floating on his back as if on water, paws on his tummy, tail curled, a few small water droplets around him (no water surface drawn).",
+             'stand': "He is standing upright on his back legs, paws held together in front, tail behind him for balance.",
+             'point': "He is standing upright on his back legs, one front paw stretched out to the side pointing the way, looking that way."},
+}
+FR_STYLE = MASCOT_STYLE.replace("ONE single character", "ONE single animal character, never a person, NOT a die-cut sticker: no white outline border around it").replace(
+    "no magenta or hot pink on the character", "no magenta or hot pink on the character, no turtle, no other animals")
+# the pose every other pose is painted from (the cleanest first painting: no die-cut white rim)
+FRIEND_REF = {'ama': 'stand', 'dunya': 'walk', 'miro': 'swim'}
+for fid, poses in FRIEND_POSES.items():
+    first = 'fr-' + fid + '-' + FRIEND_REF[fid]
+    for pose, how in poses.items():
+        JOBS['fr-' + fid + '-' + pose] = (FRIEND_LOOK[fid] + how + ' ' + FR_STYLE, '1:1', None if 'fr-' + fid + '-' + pose == first else first)
+
+GROUPS = {'stories': 'st-', 'friends': 'fr-', 'medals': 'md-', 'games': 'game-', 'mascot': 'mascot-', 'day': 'wd-', 'night': 'wn-', 'postcards': 'pc-', 'landmarks': 'lm-', 'eras': 'era-', 'history': 'hist-', 'avatars': 'av-', 'courses': 'crs-', 'worlds': 'w-', 'library': 'lib-'}
 
 
 def call(model, prompt, ratio, ref=None):
