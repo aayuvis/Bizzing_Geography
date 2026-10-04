@@ -10,7 +10,7 @@ import { QUIZ, byCc, capOf, haversine, bearing, fmtKm } from '../geo.js';
 import { worldSVG, countryAt } from '../map.js';
 import { FAMOUS } from '../chapters/kit.js';
 import { seeded, shuffle, dayKey } from '../rand.js';
-import { readBtn, ico, titleCard, finishCard, hud, esc, POINTS, ARROWS, pointOf } from './kit.js';
+import { readBtn, ico, titleCard, finishCard, hud, esc, POINTS, ARROWS, pointOf, todaySeed, todayStart, keepToday } from './kit.js';
 
 export const TOOL = GAME_META.compass;
 const ROUND = 5, MAX = 8;
@@ -18,7 +18,7 @@ const ROUND = 5, MAX = 8;
 const pool = (band) => QUIZ.filter((c) => c.area >= 20000 && (band !== '6-7' || FAMOUS.has(c.cc)));
 export const pointsFor = (n) => Math.max(1, MAX + 1 - n);           // found on guess n
 function newRound(ctx, daily) {
-  const r = seeded(daily ? 'compass' + dayKey() : 'compass' + Date.now());
+  const r = seeded(daily ? todaySeed('compass') : 'compass' + Date.now());
   const list = shuffle(pool(daily ? '8-10' : ctx.band), r).slice(0, daily ? 1 : ROUND).map((c) => c.cc);
   ctx.ui.g = { list, i: 0, guesses: [], done: [], daily };
 }
@@ -32,12 +32,12 @@ export function view(ctx) {
   const g = ctx.ui.g, d = ctx.data;
   if (!g) return titleCard(TOOL, {
     how: ['A capital city is hidden somewhere in the world.', 'Tap the map. You are told <b>how far</b> it is and <b>which way</b> — north, south-east…', 'Find its country in as few guesses as you can. Eight at most.'],
-    starts: [['compass|start', `Hunt ${ROUND} capitals`], ['compass|daily', (d.daily || {})[dayKey()] != null ? 'Today’s hunt ✓' : 'Today’s hunt']],
+    starts: [['compass|start', `Hunt ${ROUND} capitals`], todayStart('compass', d)],
     best: d.best ? `Best round: ${d.best} points · ${d.plays || 0} played` : '',
   });
   if (g.over) {
     const tot = g.done.reduce((a, x) => a + x.pts, 0);
-    return finishCard({ kicker: g.daily ? 'Today’s hunt' : 'Hunt complete', count: tot, title: 'points',
+    return finishCard({ kicker: g.daily ? 'Today’s round' : 'Hunt complete', count: tot, title: 'points',
       lines: [g.done.map((x, j) => `<b>${esc(capOf(byCc[g.list[j]]))}, ${esc(byCc[g.list[j]].name)}</b> — ${x.found ? `found in ${x.n} ${x.n === 1 ? 'guess' : 'guesses'}` : 'not found this time'}`).join('<br>'),
         'You practised: the eight compass points, and how far apart places really are.'],
       again: ['compass|start', 'Play again'], home: 'compass|home' });
@@ -75,7 +75,7 @@ export function act(name, arg, ctx) {
     if (g.i >= g.list.length) {
       g.over = true; const d = ctx.data, tot = g.done.reduce((a, x) => a + x.pts, 0);
       d.plays = (d.plays || 0) + 1;
-      if (g.daily) { d.daily = d.daily || {}; d.daily[dayKey()] = tot; } else if (tot > (d.best || 0)) d.best = tot;
+      if (g.daily) keepToday(d, tot); else if (tot > (d.best || 0)) d.best = tot;
       d.quick = Math.max(d.quick || 0, ...g.done.filter((x) => x.found).map((x) => MAX + 1 - x.n));
       if (ctx.session) ctx.session(); if (ctx.earn) ctx.earn('stop'); ctx.save();
     }

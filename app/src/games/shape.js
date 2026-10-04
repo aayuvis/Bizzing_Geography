@@ -10,7 +10,7 @@ import { QUIZ, byCc } from '../geo.js';
 import { shapeSVG, hasShape } from '../map.js';
 import { FAMOUS } from '../chapters/kit.js';
 import { seeded, shuffle, dayKey } from '../rand.js';
-import { readBtn, ico, titleCard, finishCard, hud, esc } from './kit.js';
+import { readBtn, ico, titleCard, finishCard, hud, esc, todaySeed, todayStart, keepToday } from './kit.js';
 import { NB } from './chain.js';
 
 export const TOOL = GAME_META.shape;
@@ -31,7 +31,7 @@ export function choices(c, r, band) {
   return shuffle([c.cc, ...near.map((x) => x.cc)], r);
 }
 function newRound(ctx, daily) {
-  const r = seeded(daily ? 'shape' + dayKey() : 'shape' + Date.now()), band = daily ? '8-10' : ctx.band;
+  const r = seeded(daily ? todaySeed('shape') : 'shape' + Date.now()), band = daily ? '8-10' : ctx.band;
   const list = shuffle(pool(band), r).slice(0, daily ? 3 : ROUND).map((c) => ({ cc: c.cc, opts: choices(c, r, band) }));
   ctx.ui.g = { list, i: 0, shown: 0, wrong: [], done: [], daily };
 }
@@ -40,12 +40,12 @@ export function view(ctx) {
   const g = ctx.ui.g, d = ctx.data;
   if (!g) return titleCard(TOOL, {
     how: ['A country’s outline, drawn true — not stretched.', 'Pick its name from six. Stuck? Ask for a clue: its continent, its coast, its neighbours.', `Every clue or wrong guess costs a point — start with ${START}.`],
-    starts: [['shape|start', `Solve ${ROUND} shapes`], ['shape|daily', (d.daily || {})[dayKey()] != null ? 'Today’s three ✓' : 'Today’s three']],
+    starts: [['shape|start', `Solve ${ROUND} shapes`], todayStart('shape', d)],
     best: d.best ? `Best round: ${d.best} points · ${d.plays || 0} played` : '',
   });
   if (g.over) {
     const tot = g.done.reduce((a, x) => a + x.pts, 0);
-    return finishCard({ kicker: g.daily ? 'Today’s three' : 'Case closed', count: tot, title: `of ${g.list.length * START} points`,
+    return finishCard({ kicker: g.daily ? 'Today’s round' : 'Case closed', count: tot, title: `of ${g.list.length * START} points`,
       lines: [`You named ${g.done.filter((x) => x.pts === START).length} with no clue at all.`, 'You practised: the shapes of countries, and reasoning from clues.'],
       again: ['shape|start', 'Play again'], home: 'shape|home' });
   }
@@ -80,7 +80,7 @@ export function act(name, arg, ctx) {
     if (g.i >= g.list.length) {
       g.over = true; const d = ctx.data, tot = g.done.reduce((a, x) => a + x.pts, 0);
       d.plays = (d.plays || 0) + 1;
-      if (g.daily) { d.daily = d.daily || {}; d.daily[dayKey()] = tot; } else if (tot > (d.best || 0)) d.best = tot;
+      if (g.daily) keepToday(d, tot); else if (tot > (d.best || 0)) d.best = tot;
       d.noClue = (d.noClue || 0) + g.done.filter((x) => x.pts === START).length;
       if (ctx.session) ctx.session(); if (ctx.earn) ctx.earn('stop'); ctx.save();
     }

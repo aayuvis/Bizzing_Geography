@@ -9,7 +9,7 @@ import { GAME_META } from './meta.js';
 import { QUIZ, byCc, capOf } from '../geo.js';
 import { worldSVG, viewFor } from '../map.js';
 import { seeded, shuffle, dayKey } from '../rand.js';
-import { readBtn, ico, titleCard, finishCard, hud, esc } from './kit.js';
+import { readBtn, ico, titleCard, finishCard, hud, esc, todaySeed, todayStart, keepToday } from './kit.js';
 
 export const TOOL = GAME_META.chain;
 const ROUND = 5;
@@ -39,7 +39,7 @@ export function makePuzzle(r, band) {
   return null;
 }
 function newRound(ctx, daily) {
-  const r = seeded(daily ? 'chain' + dayKey() : 'chain' + Date.now());
+  const r = seeded(daily ? todaySeed('chain') : 'chain' + Date.now());
   const n = daily ? 1 : ROUND, list = [];
   while (list.length < n) { const p = makePuzzle(r, daily ? '8-10' : ctx.band); if (p && !list.some((x) => x.a === p.a && x.b === p.b)) list.push(p); }
   ctx.ui.g = { list, i: 0, chain: [list[0].a], done: [], msg: '', daily, hint: false };
@@ -57,12 +57,12 @@ export function view(ctx) {
   const g = ctx.ui.g, d = ctx.data;
   if (!g) return titleCard(TOOL, {
     how: ['You start in one country. Your goal is another.', 'Tap a country that shares a <b>land border</b> with the last one in your chain.', 'Reach the goal in as few steps as you can — ★★★ for the shortest chain.'],
-    starts: [['chain|start', `Play ${ROUND} chains`], ['chain|daily', (d.daily || {})[dayKey()] != null ? 'Today’s chain ✓' : 'Today’s chain']],
+    starts: [['chain|start', `Play ${ROUND} chains`], todayStart('chain', d)],
     best: d.best ? `Best round: ${d.best} of ${ROUND * 3} stars · ${d.plays || 0} played` : '',
   });
   if (g.over) {
     const tot = g.done.reduce((a, x) => a + x.stars, 0);
-    return finishCard({ kicker: g.daily ? 'Today’s chain' : 'Chains complete', count: tot, title: `of ${g.list.length * 3} stars`,
+    return finishCard({ kicker: g.daily ? 'Today’s round' : 'Chains complete', count: tot, title: `of ${g.list.length * 3} stars`,
       lines: [g.done.map((x, j) => `<b>${esc(name(g.list[j].a))} → ${esc(name(g.list[j].b))}</b>: you took ${x.steps}, the shortest is ${g.list[j].best} — ${g.list[j].path.map(name).map(esc).join(' → ')}`).join('<br>'),
         'You practised: which countries touch, and finding a way across a continent.'],
       again: ['chain|start', 'Play again'], home: 'chain|home' });
@@ -109,7 +109,7 @@ export function act(name_, arg, ctx) {
     if (g.i >= g.list.length) {
       g.over = true; const d = ctx.data, tot = g.done.reduce((a, x) => a + x.stars, 0);
       d.plays = (d.plays || 0) + 1;
-      if (g.daily) { d.daily = d.daily || {}; d.daily[dayKey()] = tot; } else if (tot > (d.best || 0)) d.best = tot;
+      if (g.daily) keepToday(d, tot); else if (tot > (d.best || 0)) d.best = tot;
       d.perfect = (d.perfect || 0) + g.done.filter((x) => x.stars === 3).length;
       if (ctx.session) ctx.session(); if (ctx.earn) ctx.earn('stop'); ctx.save();
     } else g.chain = [g.list[g.i].a];

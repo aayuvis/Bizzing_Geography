@@ -21,6 +21,7 @@ const LAZY = {
   time: () => import('./time.js'), geoguess: () => import('./geoguess.js'),
   tradewinds: () => import('../games/tradewinds.js'), chain: () => import('../games/chain.js'), compass: () => import('../games/compass.js'),
   bigger: () => import('../games/bigger.js'), shape: () => import('../games/shape.js'), sunclock: () => import('../games/sunclock.js'),
+  geobee: () => import('../games/geobee.js'), flagsprint: () => import('../games/flagsprint.js'),
 };
 const META = { time: TIME, ...GAME_META };
 export const toolById = { ...EAGER };
