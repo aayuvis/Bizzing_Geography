@@ -1675,3 +1675,35 @@ img.medal.dim{filter:grayscale(.75) opacity(.62) contrast(1.05)}
 .avc-ov{z-index:300;background:rgba(20,15,38,.86);padding:16px 12px max(16px,env(safe-area-inset-bottom))}
 .avd-bar .btn.ghost{color:#fff;border-color:rgb(255 255 255 / .6)}
 .avd-bar .btn.ghost kbd{color:#241e33}
+
+/* ---- the Collection, Bizzing Bee's shape (the owner, 5 Oct 2026) ---- */
+.col-head .col-back{justify-self:start;border-radius:99px;min-height:40px;padding:0 16px}
+.col-coins{font-weight:800;gap:4px}
+.col-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 14px}
+.col-tabs button{min-height:48px;border-radius:14px;border:2px solid var(--line,rgba(0,0,0,.12));background:var(--card);color:var(--ink);font:800 15px var(--ui);cursor:pointer}
+.col-tabs button.on{background:var(--action);border-color:var(--action);color:#fff}
+.col-tabs .col-n{font-weight:600;opacity:.8;margin-left:4px}
+.collection .col-intro{max-width:none;margin:0 0 14px;color:var(--muted)}
+.col-pack{margin:0 0 14px;padding:14px}
+.col-pack-h{display:flex;align-items:center;gap:12px}
+.col-sw{flex:none;width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--c1),var(--c2));box-shadow:inset 0 0 0 2px rgb(255 255 255 / .35)}
+.col-pack-t{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.col-pack-t b{font-size:17px}
+.col-pack-t .col-n{color:var(--muted);font-weight:700;font-size:14px;margin-left:6px}
+.col-app{flex:none;font:700 12px var(--ui);padding:4px 10px;border-radius:99px;background:color-mix(in srgb,var(--c1) 16%,transparent);color:var(--ink);border:1px solid color-mix(in srgb,var(--c1) 40%,transparent)}
+.col-bar{height:6px;border-radius:99px;background:color-mix(in srgb,var(--ink) 10%,transparent);margin:10px 0 4px;overflow:hidden}
+.col-bar i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--c1),var(--c2))}
+.collection .bz-av{border:2px solid var(--tier);border-radius:16px;padding:8px;background:var(--card)}
+.collection .bz-av .av-cardbtn{position:relative;width:100%;aspect-ratio:1;border-radius:12px;background:linear-gradient(160deg,color-mix(in srgb,var(--c1) 55%,#5a3d22),color-mix(in srgb,var(--c1) 30%,#2b1d10));display:grid;place-items:center;overflow:hidden}
+.collection .bz-av .av-cardbtn img{width:84%}
+.av-ovr{position:absolute;top:5px;left:5px;font:800 12px var(--ui);color:#fff;background:rgb(0 0 0 / .45);border-radius:8px;padding:1px 6px}
+.collection .bz-av[data-state="world"] .av-cardbtn,.collection .bz-av[data-state="milestone"] .av-cardbtn{filter:saturate(.4)}
+.av-worn{background:var(--action);color:#fff}
+.col-worlds{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.col-w{margin:0;padding:0;overflow:hidden;display:flex;flex-direction:column}
+.col-w .wt-art{border-radius:0}
+.col-w:not(.open) .wt-art{filter:grayscale(.6) brightness(.85)}
+.col-w.on{outline:3px solid var(--action);outline-offset:-3px}
+.col-w-b{display:flex;flex-direction:column;gap:6px;padding:12px;align-items:flex-start}
+@media (max-width:560px){.col-head{grid-template-columns:auto 1fr}.col-head .phead-t{text-align:left}.col-head .phead-r{grid-column:1/-1;justify-self:stretch;justify-content:space-between}
+  .col-tabs button{font-size:13px;padding:0 4px}.col-tabs .col-n{display:block;margin:0}.col-app{display:none}}

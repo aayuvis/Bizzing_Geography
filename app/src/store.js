@@ -16,7 +16,7 @@
 
 const KEY = 'bzg_household';
 const DEV = 'bzg_device';
-export const SCHEMA = 6;
+export const SCHEMA = 7;
 
 import { hash } from './rand.js';
 /* The PIN is kept hashed (family standard §15). It is a deterrent, not security: anyone who
@@ -52,6 +52,10 @@ const STEPS = {
     });
     return h;
   },
+  /* v7: Shelly, the app's mascot, becomes a free face (the owner) and takes Backpack Bear's Common
+         slot; a child who wore the bear now wears Shelly — Commons are everyone's, so nothing is lost
+         that was bought. */
+  6: (h) => { h.v = 7; (h.kids || []).forEach((k) => { if (k.avatar === 'backpackbear') k.avatar = 'shelly'; k.owned = (k.owned || []).filter((x) => x !== 'backpackbear'); }); return h; },
   4: (h) => { h.v = 5; (h.kids || []).forEach((k) => { k.shop = k.shop || { owned: ['pin:dot', 'frame:plain'], pin: 'dot', frame: 'plain' }; k.medals = k.medals || {}; k.medalsQuiet = true; }); return h; },
 };
 

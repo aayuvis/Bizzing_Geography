@@ -79,7 +79,7 @@ export const icon = (k) => ico(k);
    Five faces and two worlds to START — one from each pack, the two calmest worlds —
    so a six-year-old is not choosing from forty. The rest are on the child's own
    page from the first minute, all free: nothing here is locked or earned. */
-export const STARTER_AVATARS = ['compowl', 'savannalion', 'dolphin', 'volcadrake', 'toucan'];
+export const STARTER_AVATARS = ['shelly', 'compowl', 'savannalion', 'dolphin', 'volcadrake'];
 export const STARTER_THEMES = ['atlas', 'ocean'];
 const guide = (text, pose = 'wave') => `<div class="ob-say">${shelly(pose, 96)}<p>${text}</p></div>`;
 export function viewWelcome() {

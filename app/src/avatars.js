@@ -6,7 +6,8 @@
    Five packs were painted for this app first (Explorer's Kit … Forest & River); Big
    Beasts and Elements came over from Bizzing Bee; five more were painted for the
    worlds (Deep Sea, Canopy, Oasis, Ice Floe, High Peaks). Creatures only — never a
-   person or a deity — and no real map on any of them.
+   person or a deity — and no real map on any of them. Shelly, the app's own mascot and icon,
+   is the first face of the first pack and free to everyone, as Bizzy is in Bizzing Bee.
 
    A Legendary waits for a named piece of LEARNING (a medal id, from rewards.js), then
    its coins. Nothing is random, nothing is drawn blind. */
@@ -21,7 +22,7 @@ export const worldNo = (themeId) => WORLD_IDS.indexOf(themeId) + 1;
 const P = (pack, id, name, blurb, faces) => ({ pack, id, name, blurb, faces });
 /* faces: [id, name] × 8 in tier order: common, common, rare, rare, rare, epic, epic, legendary */
 export const PACKS = [
-  P(1, 'kit', 'Explorer’s Kit', 'Built from a geographer’s tools.', [['compowl', 'Compass Owl'], ['backpackbear', 'Backpack Bear'], ['scrollfox', 'Map-scroll Fox'], ['telescrane', 'Spyglass Crane'], ['binobat', 'Binocular Bat'], ['lanternbug', 'Lantern Firefly'], ['pinguin', 'Map-pin Penguin'], ['globetortle', 'Globe Turtle']]),
+  P(1, 'kit', 'Explorer’s Kit', 'Built from a geographer’s tools.', [['shelly', 'Shelly'], ['compowl', 'Compass Owl'], ['scrollfox', 'Map-scroll Fox'], ['telescrane', 'Spyglass Crane'], ['binobat', 'Binocular Bat'], ['lanternbug', 'Lantern Firefly'], ['pinguin', 'Map-pin Penguin'], ['globetortle', 'Globe Turtle']]),
   P(2, 'continents', 'Seven Continents', 'A friend from every continent — and the desert.', [['savannalion', 'Savanna Lion (Africa)'], ['hedgehog', 'Hedgehog (Europe)'], ['bison', 'Bison (North America)'], ['llama', 'Llama (South America)'], ['kangaroo', 'Kangaroo (Oceania)'], ['snowleopard', 'Snow Leopard (Asia)'], ['camel', 'Bactrian Camel (the desert)'], ['emperor', 'Emperor Penguin (Antarctica)']]),
   P(3, 'ocean', 'Ocean Crew', 'From the reef to the Arctic Ocean.', [['dolphin', 'Dolphin'], ['clownfish', 'Clownfish'], ['seaturtle', 'Sea Turtle'], ['octopus', 'Octopus'], ['seahorse', 'Seahorse'], ['manta', 'Manta Ray'], ['walrus', 'Walrus'], ['whale', 'Blue Whale Calf']]),
   P(4, 'deep', 'Deep Sea', 'Down where the light runs out.', [['seastar', 'Sea Star'], ['puffer', 'Pufferfish'], ['hermit', 'Hermit Crab'], ['jelly', 'Moon Jellyfish'], ['angler', 'Anglerfish'], ['squid', 'Squid'], ['seadragon', 'Leafy Seadragon'], ['orca', 'Orca']]),

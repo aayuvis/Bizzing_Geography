@@ -19,7 +19,7 @@ import { worldSVG } from './map.js';
 import { GKEY } from './photos.js';
 import { missDue, missCount } from './mistakes.js';
 import { shell as famShell } from './bizzing-shell.js';
-import { deckHTML } from './avatar-cards.js';
+import { deckHTML, cardHTML, card as avCardData, PACK_COL } from './avatar-cards.js';
 import { feedOn } from './feed.js';
 
 export const VERSION = '2.0';
@@ -148,23 +148,54 @@ export const autoReadOf = (k) => (k.prefs || {}).readAuto ?? k.band === '6-7';
 
 /* ------------------------------------------------------------------ the Collection (§8) */
 export function avCard(a, k, ctx) {
-  const st = stateOf(a.id, ctx), wearing = k.avatar === a.id;
-  const btn = st.state === 'owned' ? (wearing ? '<span class="chip">Wearing</span>' : `<button class="btn small" data-act="setAv" data-arg="${a.id}">Wear</button>`)
+  const st = stateOf(a.id, ctx), wearing = k.avatar === a.id, p = PACKS.find((x) => x.pack === a.pack), [c1, c2] = PACK_COL[p.id] || ['#6C4FE0', '#FFC23D'];
+  const btn = st.state === 'owned' ? (wearing ? '<span class="chip av-worn">✓ Wearing</span>' : `<button class="btn small" data-act="setAv" data-arg="${a.id}">Wear</button>`)
     : st.state === 'buy' ? `<button class="btn small${st.short ? '' : ' primary-o'}" data-act="buyAv" data-arg="${a.id}" ${st.short ? 'aria-disabled="true"' : ''}>${ico('coin')} ${TIERS[a.tier].price}</button>` : '';
-  return `<figure class="bz-av${wearing ? ' wearing' : ''}" data-tier="${a.tier}" data-state="${st.state}" id="av-${a.id}">
-    <button class="av-cardbtn" data-act="openCard" data-arg="${a.id}" aria-label="${esc(a.name)}: see its card">${st.state === 'owned' ? '' : ''}<img src="${a.art}" alt="" loading="lazy" decoding="async" width="96" height="96"></button>
+  return `<figure class="bz-av${wearing ? ' wearing' : ''}" data-tier="${a.tier}" data-state="${st.state}" id="av-${a.id}" style="--c1:${c1};--c2:${c2}">
+    <button class="av-cardbtn" data-act="openCard" data-arg="${a.id}" aria-label="${esc(a.name)}: see its card"><img src="${a.art}" alt="" loading="lazy" decoding="async" width="96" height="96"><span class="av-ovr" aria-hidden="true">${avCardData(a.id).overall}</span></button>
     <figcaption>${esc(a.name)} <b>${TIERS[a.tier].label}</b></figcaption><p class="av-say">${esc(st.say)}</p>${btn}</figure>`;
 }
+/* the Collection, Bizzing Bee's shape (the owner): three tabs — Medals · Avatars · Worlds — each with its
+   count; avatars pack by pack with a swatch, a tally and the app the pack comes from; Print my cards. */
 export function viewCollection() {
-  const k = kid(R.h), ctx = ctxOf(k), mine = CATALOGUE.filter((a) => stateOf(a.id, ctx).state === 'owned').length;
+  const k = kid(R.h), ctx = ctxOf(k), tab = R.ui.colTab || 'avatars', c = balance(k.name);
+  const ownedAv = CATALOGUE.filter((a) => stateOf(a.id, ctx).state === 'owned'), openW = THEMES.filter((t, i) => worldOpen(i + 1, ctx)).length;
+  const tb = (id, label, n, of) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? 'on' : ''}" data-act="colTab" data-arg="${id}">${label} <span class="col-n">${n}/${of}</span></button>`;
+  let body = '';
+  if (tab === 'medals') body = medalShelf(k);
+  else if (tab === 'worlds') {
+    const cur = themeOf(k);
+    body = `<p class="col-intro small">Two worlds are open to everyone; each of the others opens for ${WORLD_PRICE} Bizzing coins or with the family plan, and brings two packs of faces. <button class="linkish" data-act="nav" data-arg="shop">Open the Shop</button></p>
+      <div class="col-worlds">${THEMES.map((t, i) => { const n = i + 1, open = worldOpen(n, ctx), short = Math.max(0, WORLD_PRICE - c), use = cur === t.id;
+        const faces = CATALOGUE.filter((a) => Math.min(6, Math.ceil(a.pack / 2)) === n), mine = faces.filter((a) => ownedAv.includes(a)).length;
+        return `<div class="card col-w${open ? ' open' : ''}${use ? ' on' : ''}" data-world="${t.id}"><span class="wt-art" style="background-image:url(art/w${dark() ? 'n' : 'd'}-${t.id}-s.webp)"></span>
+          <div class="col-w-b"><b>${esc(t.name)}</b><span class="muted small">${esc(t.blurb)}</span><span class="small">${mine} of ${faces.length} faces yours</span>
+          ${use ? '<span class="chip">✓ In use</span>' : open ? `<button class="btn small" data-act="theme" data-arg="${t.id}">Use this world</button>`
+            : `<span class="muted small">${short ? `${WORLD_PRICE} coins · ${short} more to go` : `${WORLD_PRICE} coins`}</span><button class="btn small${short ? '' : ' primary-o'}" data-act="buyWorld" data-arg="${n}" ${short ? 'aria-disabled="true"' : ''}>${ico('unlock')} Open for ${WORLD_PRICE}</button>`}</div></div>`; }).join('')}</div>`;
+  } else {
+    body = `<p class="col-intro small">Commons are free to everyone. Rares are ${TIERS.rare.price} coins, Epics ${TIERS.epic.price}, Legendaries ${TIERS.legendary.price} — once their world is open, and each Legendary first asks for a piece of learning. Nothing is ever drawn by chance. Tap a face to see its card. <button class="linkish" data-act="nav" data-arg="shop">Open the Shop</button></p>
+      ${PACKS.map((p) => { const faces = CATALOGUE.filter((a) => a.pack === p.pack), got = faces.filter((a) => ownedAv.includes(a)).length, [c1, c2] = PACK_COL[p.id] || ['#6C4FE0', '#FFC23D'];
+        const w = THEMES[Math.min(6, Math.ceil(p.pack / 2)) - 1];
+        return `<div class="card col-pack" data-pack="${p.id}" style="--c1:${c1};--c2:${c2}">
+          <div class="col-pack-h"><span class="col-sw" aria-hidden="true"></span><div class="col-pack-t"><b>${esc(p.name)} <span class="col-n">${got}/${faces.length}</span></b><span class="muted small">${esc(p.blurb)} · ${esc(w.name)}</span></div>
+            <span class="col-app">${p.pack > 10 ? 'Bizzing Bee' : 'Bizzing Geography'}</span></div>
+          <div class="col-bar" role="progressbar" aria-label="${esc(p.name)}: ${got} of ${faces.length} collected" aria-valuenow="${got}" aria-valuemin="0" aria-valuemax="${faces.length}"><i style="width:${Math.round((got / faces.length) * 100)}%"></i></div>
+          <div class="bz-grid">${faces.map((a) => avCard(a, k, ctx)).join('')}</div></div>`; }).join('')}`;
+  }
   return `<section class="collection">
-    ${head('Collection', `${mine} of 96 yours`)}
-    <p class="card muted center-t small col-intro">Two packs live in each world. Commons are free to everyone; the others are bought with Bizzing coins once their world is open, and each Legendary first asks for a piece of learning. Nothing is ever drawn by chance.</p>
-    ${THEMES.map((t, i) => { const n = i + 1, open = worldOpen(n, ctx);
-      return `<div class="col-world card"><h2>${esc(t.name)} <span class="chip${open ? '' : ' locked'}">${open ? (n <= FREE_WORLDS ? 'Open to everyone' : 'Open') : `Opens with its world · ${WORLD_PRICE} coins`}</span></h2>
-        ${PACKS.filter((p) => Math.ceil(p.pack / 2) === n).map((p) => `<div class="col-pack"><p class="av-pack-h"><b>${esc(p.name)}</b> <span>${esc(p.blurb)}</span></p>
-          <div class="bz-grid">${CATALOGUE.filter((a) => a.pack === p.pack).map((a) => avCard(a, k, ctx)).join('')}</div></div>`).join('')}</div>`; }).join('')}
+    <header class="phead col-head"><button class="btn ghost col-back" data-act="nav" data-arg="home">‹ Home</button><div class="phead-t"><h1>Collection</h1></div>
+      <div class="phead-r">${tab === 'avatars' && ownedAv.length ? `<button class="btn small" data-act="printCards">${ico('print')} Print my cards</button>` : ''}<span class="chip col-coins">${ico('coin')} ${c.toLocaleString('en-US')}</span></div></header>
+    <div class="col-tabs" role="tablist" aria-label="Your collection">${tb('medals', 'Medals', earned(k).length, MEDALS.length)}${tb('avatars', 'Avatars', ownedAv.length, CATALOGUE.length)}${tb('worlds', 'Worlds', openW, THEMES.length)}</div>
+    <div class="col-body">${body}</div>
   </section>`;
+}
+/* Print my cards: the child's own cards, nine to a page, in a window of their own */
+export function printCardsDoc(k) {
+  const ctx = ctxOf(k), ids = CATALOGUE.filter((a) => stateOf(a.id, ctx).state === 'owned').map((a) => a.id);
+  const css = [...document.querySelectorAll('link[rel="stylesheet"], style')].map((n) => n.outerHTML).join('');
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><base href="${esc(document.baseURI)}"><title>${esc(k.name)}’s cards — Bizzing Geography</title>${css}
+    <style>body{background:#fff;margin:0;padding:12mm}.print-h{font:700 20px system-ui;margin:0 0 8mm}.print-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:6mm}.print-cards .avc-card{break-inside:avoid;page-break-inside:avoid;width:auto;max-width:none;box-shadow:none}@media print{body{padding:0}.print-h{display:none}}@page{margin:10mm}</style></head>
+    <body><h1 class="print-h">${esc(k.name)}’s ${ids.length} cards</h1><div class="print-cards">${ids.map((id) => cardHTML(id, { owned: true })).join('')}</div></body></html>`;
 }
 const head = (title, sub = '') => `<header class="phead"><span></span><div class="phead-t"><h1>${title}</h1>${sub ? `<p>${sub}</p>` : ''}</div><div class="phead-r"></div></header>`;
 

@@ -33,6 +33,7 @@ tick(a, false); ok(a.xp === 0, 'a wrong answer earns nothing'); tick(a, true, 2)
 ok(rankOf(0).n === RANKS[0].n && rankOf(RANKS[3].xp).i === 3, 'ranks follow xp');
 ok(migrate({ kids: [] }).v === SCHEMA, 'an unversioned household migrates');
 ok(migrate({ v: SCHEMA + 5, kids: [] }).v === SCHEMA + 5, 'a newer household is never downgraded');
+{ const m = migrate({ v: 6, kids: [{ avatar: 'backpackbear', owned: ['dolphin'] }, { avatar: 'compowl', owned: [] }] }); ok(m.v === 7 && m.kids[0].avatar === 'shelly' && m.kids[0].owned.join() === 'dolphin' && m.kids[1].avatar === 'compowl', 'v7: a child who wore Backpack Bear now wears Shelly, the free mascot; nothing bought is touched'); }
 /* E9: mastery is re-checked — weeks later a stop is due for review; a miss then drops ONE star and says so */
 { const c = newKid('Rev', '8-10', 'compowl'), st = road(c).steps[0], t0 = Date.UTC(2026, 0, 1);
   scoreRun(c, st.stop, st.lv, 10, 10, t0); const rr = stopRec(c, st.stop);

@@ -528,6 +528,13 @@ function focusIn(sel) { const f = root.querySelector(sel); if (f) f.focus(); }
 on('drawer', () => { R.ui.drawer = !R.ui.drawer; R.ui.menu = false; render(); if (R.ui.drawer) focusIn('.drawer .dr-x'); else focusIn('.burger'); });
 on('wallet', () => { R.ui.sheet = R.ui.sheet === 'wallet' ? null : 'wallet'; R.ui.drawer = false; render(); if (R.ui.sheet) focusIn('#wallet-sheet .tool'); else focusIn('.coin-chip'); });
 on('back', () => history.back());
+on('colTab', (t) => { if (!['medals', 'avatars', 'worlds'].includes(t)) return; R.ui.colTab = t; render(); focusIn('.col-tabs .on'); });
+on('printCards', () => {
+  const k = kid(R.h); if (!k) return;
+  const w = window.open('', '_blank'); if (!w) { toast('Allow pop-ups for this page to print your cards.'); return; }
+  w.document.open(); w.document.write(C.printCardsDoc(k)); w.document.close();
+  w.addEventListener('load', () => setTimeout(() => w.print(), 300));
+});
 on('shopTab', (t) => { R.ui.shopTab = t; render(); focusIn('.shop-tabs .on'); });
 on('buyAv', (id) => {
   const k = kid(R.h), a = byAvatar[id]; if (!k || !a) return;

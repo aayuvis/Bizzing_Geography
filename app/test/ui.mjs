@@ -589,7 +589,24 @@ async function run(vp, tag) {
   await page.evaluate(() => { window.__bzg.fire('calm'); window.__bzg.go('collection'); });
   /* §8: the Collection — all 96 by pack, each card says how it is got; a Rare bought with coins */
   await page.waitForSelector('.bz-av');
-  ok(await page.locator('.bz-av').count() === 96 && await page.locator('.col-world').count() === 6, 'the Collection shows all 96, world by world');
+  ok(await page.locator('.bz-av').count() === 96 && await page.locator('.col-pack').count() === 12, 'the Collection shows all 96, pack by pack');
+  ok(await page.evaluate(() => { const t = [...document.querySelectorAll('.col-tabs [role=tab]')].map((b) => b.innerText.replace(/\s+/g, ' ')); return t.length === 3 && /^Medals \d+\/\d+$/.test(t[0]) && /^Avatars \d+\/96$/.test(t[1]) && /^Worlds \d\/6$/.test(t[2]); }), 'Bee’s three tabs, each with its count: Medals · Avatars · Worlds');
+  ok(await page.evaluate(() => [...document.querySelectorAll('.col-pack')].every((p) => p.querySelector('.col-sw') && /^\d\/8$/.test(p.querySelector('.col-pack-t .col-n').innerText) && p.querySelector('.col-bar') && p.querySelectorAll('.bz-av').length === 8)
+    && document.querySelector('.col-pack[data-pack="beasts"] .col-app').innerText === 'Bizzing Bee' && document.querySelector('.col-pack[data-pack="kit"] .col-app').innerText === 'Bizzing Geography'), 'each pack: a swatch, n/8, a bar, eight faces, and the app it comes from');
+  ok(await page.evaluate(() => { const f = document.querySelector('.col-pack[data-pack="kit"] .bz-av'); return f && f.id === 'av-shelly' && f.dataset.tier === 'common' && f.dataset.state === 'owned'; }), 'Shelly, the app’s icon, is the first face of the first pack — and free');
+  ok(await page.evaluate(() => [...document.querySelectorAll('.collection .bz-av .av-ovr')].every((o) => +o.innerText >= 28 && +o.innerText <= 99)), 'every tile shows its card’s overall');
+  {
+    const [pop] = await Promise.all([page.waitForEvent('popup'), page.click('[data-act=printCards]')]);
+    await pop.waitForLoadState();
+    const own = await page.evaluate(() => document.querySelectorAll('.collection .bz-av[data-state=owned]').length);
+    ok(await pop.locator('.print-cards .avc-card').count() === own && own > 0, `Print my cards opens a page of the child’s own ${own} cards`);
+    await pop.close();
+  }
+  await page.click('[data-act=colTab][data-arg=worlds]'); await page.waitForTimeout(80);
+  ok(await page.locator('.col-w').count() === 6 && await page.locator('.col-w.on').count() === 1 && await page.locator('.col-w:not(.open) [data-act=buyWorld]').count() >= 1, 'Worlds: all six, the one in use marked, a shut one priced');
+  await page.click('[data-act=colTab][data-arg=medals]'); await page.waitForTimeout(80);
+  ok(await page.locator('.col-body .medal-shelf li').count() >= 30, 'Medals: the whole shelf');
+  await page.click('[data-act=colTab][data-arg=avatars]'); await page.waitForTimeout(80);
   ok(await page.evaluate(() => [...document.querySelectorAll('.bz-av')].every((f) => (f.querySelector('.av-say') || {}).innerText)), 'every card says how it is got, in plain words');
   ok(await page.evaluate(() => ['common', 'rare', 'epic', 'legendary'].every((t) => document.querySelector(`.bz-av[data-tier="${t}"]`))), 'Common · Rare · Epic · Legendary on the cards');
   await page.evaluate(() => { const w = JSON.parse(localStorage.getItem('bizzing.wallet')); w.kids.ahana.coins = 130; localStorage.setItem('bizzing.wallet', JSON.stringify(w)); window.__bzg.R.render(); });

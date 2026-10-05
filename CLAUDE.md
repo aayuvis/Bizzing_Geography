@@ -95,6 +95,8 @@ Inherited from the family, and it holds here:
   `AVATAR2`). Two packs to each world, 2 Common · 3 Rare · 2 Epic · 1 Legendary; a Legendary waits for a
   named MEDAL (learning), then coins. **The owner overrode "all free"**: Commons are free, the rest are
   bought with Bizzing coins. Store v6 grandfathers the face and world a child already had.
+  **Shelly, the app's icon, is a free face** (the owner; Bee's Bizzy): first of Explorer's Kit and of the welcome's five, her
+  art the mascot's own wave pose; she took Backpack Bear's Common slot and store v7 moves a child who wore the bear to her.
   Creatures only — never a person or a deity — and no real map on any of them.
   `process.py --avatars` **fails on a ghost**: a ground that was not pure magenta keys the
   creature half away; repaint anything it names.
@@ -145,7 +147,7 @@ Inherited from the family, and it holds here:
   stats from Bee's own arithmetic, its rank of all 96 and of the child's own, a title, a line of story, a power,
   one TRUE "Inspired by" fact (`CARDS_NEED_REVIEW`), and its story with this child (free from day one, bought on a
   date from the wallet ledger, waiting for a medal). ‹ › / ← → / a swipe flip it; Wear puts one on; "All 96
-  cards" and a tap on any face in the Collection open the whole set. The sixteen faces from Bee keep Bee's words
+  cards" and a tap on any face in the Collection open the whole set. **The Collection is Bee's** (the owner, `chrome.js viewCollection`): ‹ Home, Print my cards (the child's own cards in a print window, `printCardsDoc`) and the coin chip; three tabs with counts — Medals · Avatars n/96 · Worlds n/6 — and per pack a swatch, n/8, a bar, the app it came from (Bee's two packs say so) and tiles showing each card's overall. The sixteen faces from Bee keep Bee's words
   byte for byte (`test/family.mjs` reads Bee's file when it is checked out).
 - **Expeditions** (`data/expeditions.js`, `src/expeditions.js`, `src/projects.js`) are Bizzing
   India's **Paathshala**, laid out like the Atlas: a painted plate (`art/crs-<id>.webp`), a road,

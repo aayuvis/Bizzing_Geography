@@ -20,7 +20,7 @@ export const STATS = [['spark', '⚡', 'Stamina'], ['wisdom', '🧠', 'Wisdom'],
 const RANK = { common: 'Rookie', rare: 'Explorer', epic: 'Pathfinder', legendary: 'Legend' };
 const PACK_TITLE = { kit: 'of the Map Room', continents: 'of the Seven Continents', ocean: 'of the Open Ocean', deep: 'of the Deep', forest: 'of Forest and River',
   canopy: 'of the Canopy', oasis: 'of the Oasis', earth: 'of the Wild Earth', ice: 'of the Ice Floe', peaks: 'of the High Peaks', elements: 'of the Elements', beasts: 'of the Big Beasts' };
-const PACK_COL = { kit: ['#8a5a2b', '#f2c14e'], continents: ['#2f8f5b', '#f4a62a'], ocean: ['#1f6fa8', '#5ad1e6'], deep: ['#23305e', '#7f6cf0'], forest: ['#2f7a3d', '#a3d977'],
+export const PACK_COL = { kit: ['#8a5a2b', '#f2c14e'], continents: ['#2f8f5b', '#f4a62a'], ocean: ['#1f6fa8', '#5ad1e6'], deep: ['#23305e', '#7f6cf0'], forest: ['#2f7a3d', '#a3d977'],
   canopy: ['#1d6b4f', '#f05a5a'], oasis: ['#c0862d', '#f6d27a'], earth: ['#b2452c', '#f2a03d'], ice: ['#3a7bbf', '#cfe9ff'], peaks: ['#5b6b7a', '#e2c38b'], elements: ['#6c4fe0', '#ffc23d'], beasts: ['#4a3b2a', '#c9a227'] };
 const POWER_BY_TOP = { spark: ['Endless Engine', 'Second Wind', 'Power Core'], wisdom: ['Big Brain', 'Mind Palace', 'Deep Knowing'], speed: ['Quick Draw', 'Blink Step', 'Fast Forward'], grit: ['Ice Cool', 'Unflappable', 'Steady Nerve'] };
 

@@ -8,7 +8,7 @@
 export const CARDS_NEED_REVIEW = true;
 export const LORE = {
   compowl: {"lore": "Never lost, not even in the dark — her needle always finds north.", "fact": "A magnetic compass works because the Earth itself is a giant magnet: the needle lines up with its magnetic field."},
-  backpackbear: {"lore": "Packs for every weather, because a good explorer never knows.", "fact": "Explorers pack in layers because air gets colder as you climb — roughly 6 °C cooler for every kilometre up."},
+  shelly: {"lore": "The young sea turtle who carries the whole round world on her back — and lights it up, one port at a time.", "fact": "Green sea turtles swim thousands of kilometres across open ocean and still find their way back to the beach where they hatched."},
   scrollfox: {"lore": "Unrolls a new map wherever she goes, and always checks the key.", "fact": "A map's key (or legend) tells you what each symbol on the map stands for."},
   telescrane: {"lore": "Stands on one leg and spots a ship before anyone else.", "fact": "From a ship's mast you can see farther than from the deck, because the Earth's curve hides faraway things behind the horizon."},
   binobat: {"lore": "Sees by night and by day — with a little help from glass.", "fact": "Bats find their way in the dark by echolocation: they call out and listen for the echoes bouncing back."},
