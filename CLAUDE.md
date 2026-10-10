@@ -350,6 +350,12 @@ The shared spec every Bizzing app follows. Here it lives in five files:
   Port Sudan, Niger state, "South Africa: which way?"). A city card opens the Map Explorer on that city
   (`#/lib/explorer/<place id>`). Near-duplicates are found by **prefix filtering** (`nearIndex`) — exact, and
   `test/feed.mjs` proves it finds the same pairs as comparing every pair, at a fraction of the cost.
+- **The youngest roads (the owner): road 1 222 → 497 cards, road 2 168 → 284.** A Dictionary word sits on the
+  road whose stops first USE it (`wordLevel`: the stop's hook, ideas, why and that step's own questions) — one
+  no stop uses stays level-agnostic. Plus: which continent both ways round, and the odd one out of four, on the
+  which-continent step's own pool and road; each continent counted from the 195 (and its biggest); the biggest
+  of four in a continent; an ocean from its own words; Shelly's twenty picture books, a card each on the road of
+  the story's stop. The island cards now say their continent and size — fourteen, where the template kept one.
 - **Held back:** Landmarks, Earth Through Time and the continent histories while their review flags are up;
   Street View places (the feed makes no third-party request — `test/feed-ui.mjs`); questions answered by a
   figure; map questions whose list names the answer.

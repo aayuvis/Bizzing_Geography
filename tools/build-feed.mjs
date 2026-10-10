@@ -32,13 +32,17 @@
      capitalof / border /       the 195 the other way round: whose capital, which neighbour, the largest
      largest / landlocked       of four (area from the data), the one with no coast
      staterev / meaning         a state from its capital; a word's meaning from the word
+     contq / contin / contfact  which continent, both ways round, and each continent counted from the 195
+     contodd / contbig          the odd one out of four; the biggest of four in a continent
+     oceanq / story             an ocean from its own words; Shelly's picture books, the first page of each
+   A Dictionary word sits on the road whose stops first use it (wordLevel); one no stop uses has no level.
 
    Every card carries `level` — the road (levels.js) on which the child first meets it:
      a stop's card: the first road the stop is on; a quiz: the road whose step generated it;
      a capital or flag: the first road whose step at its depth (lv 1 famous countries, lv 2 also the
      big ones, lv 3 every one) asks for that country — the chapters' own levelPool rule;
      an expedition: the road for its youngest age (Level n is geography age n + 5).
-   Level-agnostic (no `level`): the Dictionary, State Capitals, ranks, oceans and the Where on Earth? postcards
+   Level-agnostic (no `level`): a Dictionary word no stop uses, State Capitals, ranks and the Where on Earth? postcards
    — none of them is on a road.
 
    HELD BACK, on purpose: Landmarks (LANDMARK_NEEDS_REVIEW), Earth Through Time's steps and maps
@@ -72,6 +76,7 @@ const { LANDMARK_NEEDS_REVIEW } = await I('data/landmarks.js');
 const { ERAS_NEED_REVIEW } = await I('data/eras.js');
 const { HISTORY_NEEDS_REVIEW } = await I('data/history.js');
 const { PLACES } = await I('data/places.js');
+const { STORIES, STORIES_MORE, STORY_NOTE } = await I('data/stories.js');
 const { mapDir } = await I('chapters/compass.js');
 const { haversine, fmtKm, POINTS8 } = await I('geo.js');
 
@@ -106,6 +111,21 @@ export const fairMc = (q) => q.kind === 'mc' && !q.html && !/[<>]/.test(q.text) 
 export function leaks(text, ans, opts) {
   const low = text.toLowerCase(), named = (o) => low.includes(String(o).toLowerCase());
   return !['True', 'False'].includes(ans) && ans.length > 2 && named(ans) && !opts.every(named);
+}
+
+/* the road a Dictionary word is first MET on: the first road with a step whose stop's own words (hook,
+   ideas, why) or whose questions at that step use it — a word no stop uses stays level-agnostic */
+const STEP_TEXT = new Map();
+function stepText(L, st) {
+  const k = L.n + '|' + st.stop + '|' + st.lv; if (STEP_TEXT.has(k)) return STEP_TEXT.get(k);
+  const s = byId[st.stop], qs = drill(s, st.lv, 60, seeded(QSEED(L.n, st.stop, st.lv)));
+  const t = plain([s.hook, ...(s.idea || []), s.why, ...qs.map((q) => `${q.text} ${q.ans ?? ''} ${plain(q.why)}`)].join(' ')).toLowerCase();
+  STEP_TEXT.set(k, t); return t;
+}
+export function wordLevel(w) {
+  const re = new RegExp(`(^|[^a-z])${w.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(e?s)?([^a-z]|$)`);
+  for (const L of LEVELS) for (const st of L.steps) if (re.test(stepText(L, st))) return L.n;
+  return null;
 }
 
 export function build() {
@@ -202,7 +222,8 @@ export function build() {
     if (lv) add({ id: 'ct-' + c.cc, kind: 'continent', level: lv, topics: ['stop:which-continent', 'cont:' + c.cont, 'cc:' + c.cc], stop: 'which-continent', src: 'continent:' + c.cc, title: 'Which continent?', badge: B('Continent'), art: flagArt(c.cc), body: `${c.name} is in ${c.cont}.`, route: '#/stop/which-continent', cta: 'Open “Which continent?”' });
   }
   for (const cc of ISLANDS) { const c = byCc[cc];
-    add({ id: 'is-' + cc, kind: 'island', level: firstLevel('island-nations'), topics: ['stop:island-nations', 'cc:' + cc], stop: 'island-nations', src: 'island:' + cc, title: 'Island countries', badge: B('Island country'), art: flagArt(cc), body: `${c.name} is an island country: you cannot walk to it from any other country.`, route: '#/stop/island-nations', cta: 'Open the stop' }); }
+    /* each says its own continent and size, so fourteen island cards are fourteen things, not one said 14 times */
+    add({ id: 'is-' + cc, kind: 'island', level: firstLevel('island-nations'), topics: ['stop:island-nations', 'cc:' + cc], stop: 'island-nations', src: 'island:' + cc, title: 'Island countries', badge: B('Island country'), art: flagArt(cc), body: `${c.name} is an island country${TWO_CONTINENTS.has(cc) ? '' : ` in ${c.cont}`}: you cannot walk to it from any other country. Its land covers ${fmtArea(c.area)}, the ${ord(AREA_RANK[cc])} largest of the 195.`, source: 'From Natural Earth’s map data (India’s depiction)', route: '#/stop/island-nations', cta: 'Open the stop' }); }
 
   /* ---- the 195 the other way round (the owner: double the feed from content the app already holds) */
   const sameCont = (c, f, seed) => shuffle(QUIZ.filter((x) => x !== c && x.cont === c.cont && f(x)), seeded(seed));
@@ -276,6 +297,61 @@ export function build() {
     }
   }
 
+  /* ---- the youngest roads (the owner: more for levels 1 and 2), all from the data. Which continent, both
+     ways round, for the famous countries on the which-continent step's own pool and road; the continents
+     counted from the 195; the oceans on the five-oceans road. */
+  const CONTS = [...new Set(QUIZ.map((c) => c.cont))].filter((x) => GROUP[x]);
+  for (const c of contPool(3)) {
+    let lv = null; for (const L of LEVELS) for (const st of L.steps) if (!lv && st.stop === 'which-continent' && contPool(st.lv).includes(c)) lv = L.n;
+    if (!lv) continue;
+    const t = ['stop:which-continent', 'cont:' + c.cont, 'cc:' + c.cc], here = { route: '#/stop/which-continent', cta: 'Open “Which continent?”', stop: 'which-continent' };
+    const others = shuffle(CONTS.filter((x) => x !== c.cont), seeded('feedcq|' + c.cc)).slice(0, 3);
+    add({ ...here, id: 'cq-' + c.cc, kind: 'contq', level: lv, key: 'ans:' + c.cont, topics: t, src: 'contq:' + c.cc, title: 'Which continent?', badge: B('Continent'), art: flagArt(c.cc),
+      play: { q: `Which continent is ${c.name} in?`, opts: [c.cont, ...others], after: `${c.name} is in ${c.cont}.` } });
+    const pool = shuffle(contPool(lv).filter((x) => x.cont !== c.cont), seeded('feedci|' + c.cc)), wrong = [];
+    for (const x of pool) { if (wrong.length >= 3) break; if (!wrong.some((y) => y.cont === x.cont)) wrong.push(x); }
+    if (wrong.length === 3) add({ ...here, id: 'ci2-' + c.cc, kind: 'contin', level: lv, key: 'ans:' + c.name, topics: t, src: `contin:${c.cc}:${wrong.map((x) => x.cc).join(':')}`, title: 'One country, one continent', badge: B('Continent'),
+      play: { q: `Which of these countries is in ${c.cont}?`, opts: [c.name, ...wrong.map((x) => x.name)], after: `${c.name} is in ${c.cont}. ${wrong.map((x) => `${x.name}: ${x.cont}`).join('. ')}.` } });
+  }
+  /* the oceans asked from their own words: which ocean is this? */
+  for (const o of OCEANS) {
+    const others = shuffle(OCEANS.filter((x) => x !== o), seeded('feedoc|' + o.id)).slice(0, 3).map((x) => x.id);
+    add({ id: 'oq-' + o.id.toLowerCase(), kind: 'oceanq', level: firstLevel('five-oceans'), key: 'ans:' + o.id, topics: ['stop:five-oceans'], stop: 'five-oceans', src: 'oceanq:' + o.id, title: 'Which ocean?', badge: B('Ocean'),
+      play: { q: `Which ocean is this? “${o.blurb}”`, opts: [o.id, ...others], after: `The ${o.id} Ocean: ${o.blurb}` }, source: 'Checked in: ' + OCEAN_SRC.join(' · '), route: '#/stop/five-oceans', cta: 'Open “Five oceans”' });
+  }
+  /* Shelly's picture books, one card each, on the road where the story's own stop is first met */
+  for (const [id, st] of [...Object.entries(STORIES), ...Object.entries(STORIES_MORE).map(([w, x]) => [w + '-2', x])]) {
+    const w = id.replace(/-2$/, ''), stop = st.stop || (STOPS.find((x) => x.world === w) || {}).id, lv = stop && firstLevel(stop); if (!lv) continue;
+    add({ id: 'sy-' + id, kind: 'story', level: lv, topics: ['world:' + w, ...(stop ? ['stop:' + stop] : [])], src: 'story:' + id, title: st.title, badge: B('Shelly’s story'), art: art(`art/${st.pages[0][2]}.webp`),
+      body: `${plain(st.pages[0][1])} (${STORY_NOTE})`, route: '#/story/' + id, cta: 'Read the story' });
+  }
+  /* road 2's own pool, two more ways: the odd one out (three from one continent, one from another), and the
+     biggest of a continent's countries by area (clearly — half as big again as the next of the four) */
+  for (const c of contPool(3)) {
+    let lv = null; for (const L of LEVELS) for (const st of L.steps) if (!lv && st.stop === 'which-continent' && contPool(st.lv).includes(c)) lv = L.n;
+    if (!lv) continue;
+    const home = shuffle(CONTS.filter((x) => x !== c.cont && contPool(lv).filter((y) => y.cont === x).length >= 3), seeded('feedodd|' + c.cc))[0]; if (!home) continue;
+    const three = shuffle(contPool(lv).filter((y) => y.cont === home), seeded('feedodd3|' + c.cc)).slice(0, 3);
+    add({ id: 'od-' + c.cc, kind: 'contodd', level: lv, key: 'odd:' + c.cc, topics: ['stop:which-continent', 'cont:' + c.cont, 'cc:' + c.cc], stop: 'which-continent', src: `contodd:${c.cc}:${three.map((x) => x.cc).join(':')}`, title: 'The odd one out', badge: B('Continent'),
+      play: { q: `Three of these countries are in ${home}. Which one is not?`, opts: [c.name, ...three.map((x) => x.name)], after: `${c.name} is in ${c.cont}; ${list(three.map((x) => x.name))} are in ${home}.` }, route: '#/stop/which-continent', cta: 'Open “Which continent?”' });
+  }
+  for (const ct of CONTS) {
+    const pool = shuffle(QUIZ.filter((c) => c.cont === ct && c.area && FAMOUS.has(c.cc)), seeded('feedbigc|' + ct)).slice(0, 4).sort((a, b) => b.area - a.area);
+    if (pool.length === 4 && pool[0].area >= 1.5 * pool[1].area) add({ id: 'bc-' + ct.toLowerCase().replace(/\s+/g, '-'), kind: 'contbig', level: firstLevel('which-continent'), key: 'ans:' + pool[0].name, topics: ['stop:seven-continents', 'cont:' + ct], stop: 'seven-continents', src: `contbig:${ct}:${pool.map((x) => x.cc).join(':')}`, title: ct, badge: B('Size'),
+      play: { q: `Which of these countries in ${ct} covers the most land?`, opts: pool.map((x) => x.name), after: pool.map((x) => `${x.name}: ${fmtArea(x.area)}`).join(' · ') + '.' }, route: '#/stop/seven-continents', cta: 'Open “Seven continents”' });
+  }
+  const lvCont = firstLevel('seven-continents');
+  for (const ct of CONTS) {
+    const cs = QUIZ.filter((c) => c.cont === ct && c.area), big = cs.slice().sort((a, b) => b.area - a.area)[0], n = QUIZ.filter((c) => c.cont === ct).length;
+    add({ id: 'cf-' + ct.toLowerCase().replace(/\s+/g, '-'), kind: 'contfact', level: lvCont, topics: ['stop:seven-continents', 'cont:' + ct], stop: 'seven-continents', src: 'contfact:' + ct, title: ct, badge: B('Continent'),
+      body: `${ct} has ${n} of the world’s 195 countries. The biggest of them by area is ${big.name}: ${fmtArea(big.area)}.`, source: 'Counted from Natural Earth’s map data (India’s depiction)', route: '#/stop/seven-continents', cta: 'Open “Seven continents”' });
+  }
+  {
+    const counts = CONTS.map((ct) => [ct, QUIZ.filter((c) => c.cont === ct).length]).sort((a, b) => b[1] - a[1]);
+    if (counts[0][1] > counts[1][1]) add({ id: 'cf-most', kind: 'contq', level: lvCont, key: 'ans:' + counts[0][0], topics: ['stop:seven-continents'], stop: 'seven-continents', src: 'contmost', title: 'Seven continents', badge: B('Continent'),
+      play: { q: 'Which continent has the most countries?', opts: [counts[0][0], ...counts.slice(1, 4).map((x) => x[0])], after: counts.map(([c, n]) => `${c}: ${n}`).join(' · ') + '.' }, route: '#/stop/seven-continents', cta: 'Open “Seven continents”' });
+  }
+
   /* ---- the expeditions: each one, each part's objective, each project, each Library day */
   for (const e of EXPEDITIONS) {
     const lv = Math.max(1, Math.min(10, e.ages[0] - 5)), route = '#/expd/' + e.id, t = ['exp:' + e.id], eart = art(`art/crs-${e.id}.webp`), all = daysOf(e);
@@ -299,7 +375,8 @@ export function build() {
      question — four words from its topic, none spelled out in the meaning */
   const inDef = (w, d) => d.toLowerCase().includes(w.toLowerCase()), low = (x) => String(x).toLowerCase();
   for (const [w, d, t, ex] of WORDS) {
-    const slug = w.toLowerCase().replace(/[^a-z0-9]+/g, '-'), base = { topics: ['tool:dictionary', 'dict:' + t], source: 'Geography Dictionary · ' + TOPICS.find((x) => x.id === t).name, route: '#/word/' + encodeURIComponent(w), cta: `Open “${w}” in the Dictionary`, badge: B('Word') };
+    const lvW = wordLevel(w);
+    const slug = w.toLowerCase().replace(/[^a-z0-9]+/g, '-'), base = { ...(lvW ? { level: lvW } : {}), topics: ['tool:dictionary', 'dict:' + t], source: 'Geography Dictionary · ' + TOPICS.find((x) => x.id === t).name, route: '#/word/' + encodeURIComponent(w), cta: `Open “${w}” in the Dictionary`, badge: B('Word') };
     add({ ...base, id: 'd-' + slug, kind: 'word', src: 'word:' + w, title: w, body: d.charAt(0).toUpperCase() + d.slice(1) + '.' });
     if (ex) add({ ...base, id: 'dx-' + slug, kind: 'example', src: 'word:' + w + ':example', title: 'Where to see it: ' + w, body: ex.charAt(0).toUpperCase() + ex.slice(1) + '.' });
     const same = shuffle(WORDS.filter(([x, , tt]) => tt === t && x !== w && !inDef(x, d)).map((x) => x[0]), seeded('feedword|' + w)).slice(0, 3);
@@ -325,7 +402,7 @@ export function build() {
   }
   /* the explorer ranks' checked facts, and the oceans' — each with the sources the app names */
   RANKS.forEach((r, i) => add({ id: 'r-' + i, kind: 'rank', topics: ['rank'], src: 'rank:' + i, title: `Explorer rank ${i + 1}: ${r.n}`, badge: B('Explorer rank'), body: r.why, source: 'Checked in: ' + RANK_SRC.join(' · '), route: '#/me', cta: 'My explorer card' }));
-  for (const o of OCEANS) add({ id: 'o-' + o.id.toLowerCase(), kind: 'ocean', topics: ['stop:five-oceans'], src: 'ocean:' + o.id, title: `The ${o.id} Ocean`, badge: B('Ocean'), body: o.blurb, source: 'Checked in: ' + OCEAN_SRC.join(' · '), route: '#/stop/five-oceans', cta: 'Open “Five oceans”' });
+  for (const o of OCEANS) add({ id: 'o-' + o.id.toLowerCase(), kind: 'ocean', level: firstLevel('five-oceans'), topics: ['stop:five-oceans'], src: 'ocean:' + o.id, title: `The ${o.id} Ocean`, badge: B('Ocean'), body: o.blurb, source: 'Checked in: ' + OCEAN_SRC.join(' · '), route: '#/stop/five-oceans', cta: 'Open “Five oceans”' });
   for (const p of POSTCARDS) {
     const c = byCc[p.cc]; if (!c) continue;
     const wrong = shuffle(QUIZ.filter((x) => x.cont !== c.cont && FAMOUS.has(x.cc)), seeded('feedpc|' + p.id)).slice(0, 3).map((x) => x.name);

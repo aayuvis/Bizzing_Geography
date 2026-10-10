@@ -1,5 +1,5 @@
 {
- "total": 10370,
+ "total": 10560,
  "byKind": {
   "world": 10,
   "stop": 45,
@@ -12,7 +12,7 @@
   "capital": 181,
   "flag": 193,
   "continent": 73,
-  "island": 1,
+  "island": 14,
   "capitalof": 181,
   "border": 591,
   "largest": 156,
@@ -20,6 +20,13 @@
   "city": 2209,
   "cityin": 476,
   "cityway": 1201,
+  "contin": 73,
+  "contq": 6,
+  "oceanq": 5,
+  "story": 20,
+  "contodd": 62,
+  "contbig": 5,
+  "contfact": 6,
   "exp": 145,
   "word": 304,
   "example": 104,
@@ -33,17 +40,17 @@
   "where": 40
  },
  "byLevel": {
-  "1": 222,
-  "2": 168,
-  "3": 583,
-  "4": 763,
+  "1": 497,
+  "2": 284,
+  "3": 762,
+  "4": 825,
   "5": 758,
-  "6": 1031,
-  "7": 1345,
-  "8": 1002,
+  "6": 1118,
+  "7": 1430,
+  "8": 1031,
   "9": 1414,
   "10": 1420,
-  "any": 1664
+  "any": 1021
  },
  "heldBack": [
   "Landmarks (awaiting a second reader)",

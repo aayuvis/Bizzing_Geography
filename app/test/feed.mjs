@@ -32,6 +32,9 @@ import { feedFor, order, LIMIT } from '../src/bizzing-feed.js';
 import { feedOpts, feedSession, topicOf } from '../src/feed.js';
 import { plain, QSEED, QN, bandOfLevel, leaks, words, jaccard, NEAR, nearDups, nearPairs, groupOf, metaOf } from '../../tools/build-feed.mjs';
 import { PLACES } from '../src/data/places.js';
+import { STORIES, STORIES_MORE, storyById } from '../src/data/stories.js';
+import { QUIZ as Q195 } from '../src/geo.js';
+const byName = Object.fromEntries(Q195.map((c) => [c.name, c]));
 import { haversine, POINTS8 } from '../src/geo.js';
 import { mapDir } from '../src/chapters/compass.js';
 const byPlace = Object.fromEntries(PLACES.map((p) => [p.id, p])), sameName = (n) => PLACES.filter((p) => p.n.toLowerCase() === n.toLowerCase()).length;
@@ -78,7 +81,7 @@ for (const c of FEED) {
   const ITEM = { explorer: (x) => byCc[x] || byPlace[x], capitals: (x) => byCc[x] && byCc[x].quiz, flags: (x) => byCc[x] && byCc[x].quiz, states: (x) => REGION_COUNTRIES.some((C) => regionsOf(C.c).some((g) => g.id === x)) };
   ok({ stop: () => byId[arg], world: () => WORLDS.some((w) => w.id === arg), lib: () => SHELF.some((t) => t.id === a0) && (!item || (ITEM[a0] && ITEM[a0](item))),
     expd: () => { const e = EXPEDITIONS.find((x) => x.id === a0); return e && (!item || daysOf(e).some((d) => d.key === item)); },
-    word: () => WORDS.some((w) => w[0] === arg), me: () => !arg, place: () => POSTCARDS.some((p) => p.id === arg) }[r[1]]?.(), `${where}: route ${c.route} opens a real screen`);
+    word: () => WORDS.some((w) => w[0] === arg), me: () => !arg, story: () => !!storyById(arg), place: () => POSTCARDS.some((p) => p.id === arg) }[r[1]]?.(), `${where}: route ${c.route} opens a real screen`);
   /* the owner: a card about ONE thing opens THAT thing, never the generic tool or collection */
   const one = { city: `#/lib/explorer/${c.src.split(':')[1]}`, cityway: `#/lib/explorer/${c.src.split(':')[1]}`, cityin: `#/lib/explorer/${c.src.split(':')[1]}`, capitalof: `#/lib/capitals/${c.src.split(':')[1]}`, country: `#/lib/explorer/${c.src.split(':')[1]}`, neighbours: `#/lib/explorer/${c.src.split(':')[1]}`, capital: `#/lib/capitals/${c.src.split(':')[1]}`, flag: `#/lib/flags/${c.src.split(':')[1]}`,
     state: `#/lib/states/${c.src.split(':')[2]}`, expday: `#/expd/${c.src.split(':')[1]}/${c.src.split(':')[2]}` }[c.src.split(':')[0]];
@@ -135,6 +138,19 @@ for (const c of FEED) {
       if (kind === 'cityway') { const cap = x.capAt[0], km = haversine(cap, p.at), deg = mapDir({ at: cap }, p), k = Math.round(deg / 45) % 8, off = Math.abs(deg - k * 45) % 360;
         ok(c.play.opts[0] === POINTS8[k] && Math.min(off, 360 - off) <= 15 && km >= 100 && km <= 3000 && c.play.opts.slice(1).every((o) => POINTS8.includes(o) && o !== POINTS8[k]), `${where}: measured on the map — within 15° of a point, 100–3,000 km`); }
       break; }
+    /* the youngest roads: continents both ways round, counted continents, the oceans' own words, the stories */
+    case 'contq': { const x = byCc[a]; ok(x && !TWO_CONTINENTS.has(a) && c.play.opts[0] === x.cont && c.play.q.includes(x.name) && new Set(c.play.opts).size === c.play.opts.length, `${where}: its continent, from the data`); break; }
+    case 'contmost': { const n = (ct) => Q195.filter((x) => x.cont === ct).length; ok(c.play.opts.slice(1).every((o) => n(o) < n(c.play.opts[0])), `${where}: the continent with most of the 195, counted`); break; }
+    case 'contin': { const x = byCc[a], rest = [b, d, c.src.split(':')[4]].map((k) => byCc[k]);
+      ok(x && c.play.opts[0] === x.name && c.play.q.endsWith(`in ${x.cont}?`) && rest.every((y) => y && y.cont !== x.cont && !TWO_CONTINENTS.has(y.cc) && c.play.opts.includes(y.name)), `${where}: one in the continent, three not, from the data`); break; }
+    case 'contodd': { const x = byCc[a], rest = [b, d, c.src.split(':')[4]].map((k) => byCc[k]);
+      ok(x && rest.every((y) => y && y.cont === rest[0].cont && y.cont !== x.cont) && c.play.opts[0] === x.name && c.play.q.includes(rest[0].cont), `${where}: three from one continent, the odd one from another`); break; }
+    case 'contbig': { const xs = c.src.split(':').slice(2).map((k) => byCc[k]);
+      ok(xs.length === 4 && xs.every((y) => y && y.cont === a) && c.play.opts[0] === xs[0].name && xs.slice(1).every((y) => y.area * 1.5 <= xs[0].area), `${where}: clearly the biggest of four, by the data's areas`); break; }
+    case 'contfact': { const xs = Q195.filter((x) => x.cont === a), big = xs.filter((x) => x.area).sort((p, q) => q.area - p.area)[0];
+      ok(xs.length && c.body.includes(`${a} has ${xs.length} of`) && c.body.includes(big.name), `${where}: the continent counted from the 195`); break; }
+    case 'oceanq': { const o = OCEANS.find((x) => x.id === a); ok(o && c.play.opts[0] === a && c.play.q.includes(o.blurb) && c.play.opts.slice(1).every((x) => OCEANS.some((y) => y.id === x)), `${where}: the ocean's own words`); break; }
+    case 'story': { const st = storyById(a); ok(st && c.body.startsWith(plain(st.pages[0][1])) && /made up/.test(c.body) && c.route === '#/story/' + a, `${where}: the story's own first page, labelled a story`); break; }
     case 'rank': ok(RANKS[+a] && c.body === RANKS[+a].why, `${where}: the rank's checked fact`); break;
     case 'ocean': { const o = OCEANS.find((x) => x.id === a); ok(o && c.body === o.blurb, `${where}: the ocean's own words`); break; }
     default: ok(false, `${where}: an unknown source`);
