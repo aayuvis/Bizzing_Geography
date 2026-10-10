@@ -324,6 +324,15 @@ The shared spec every Bizzing app follows. Here it lives in five files:
   `test/feed.mjs` resolves each one, finds its words there, refuses near-duplicates (≥ 80% the same words)
   and holds every road to ≥ 100 cards and the level-agnostic ones to ≥ 300. Change a stop, a word, a
   country or an expedition → `node tools/build-feed.mjs`, or the test fails.
+- **Doubled (the owner, 10 Oct 2026): 10,370 cards from 5,022**, every new one cut from data the app already
+  held: the **cities** of `data/places.js` (which country; which way from the capital on a map — the compass
+  stop's rule, within 15° of a point, 100–3,000 km; which of four cities is in a country), the **195 the other
+  way round** (whose capital, which land neighbour, the clearly largest of four — half as big again —, the one
+  with no coast), a state from its capital, a word's meaning from the word. A city two countries share a name
+  with, a capital, or a question whose words or title name its answer is never asked (`add()` refuses it —
+  Port Sudan, Niger state, "South Africa: which way?"). A city card opens the Map Explorer on that city
+  (`#/lib/explorer/<place id>`). Near-duplicates are found by **prefix filtering** (`nearIndex`) — exact, and
+  `test/feed.mjs` proves it finds the same pairs as comparing every pair, at a fraction of the cost.
 - **Held back:** Landmarks, Earth Through Time and the continent histories while their review flags are up;
   Street View places (the feed makes no third-party request — `test/feed-ui.mjs`); questions answered by a
   figure; map questions whose list names the answer.

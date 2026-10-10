@@ -113,7 +113,9 @@ addEventListener('hashchange', () => { if (selfHash) { selfHash = false; return;
    day's part with the day lit. FOCUS says what "on the item" means for each tool; test/feed.mjs holds
    every card about one thing to a link like this. */
 const FOCUS = {
-  explorer: (t, x, cc) => { t.act('sel', cc, x); },
+  /* a country by its code, or a city by its place id (a feed card about a city opens the map on it) */
+  explorer: (t, x, id) => { if (/^[A-Z]{2}$/.test(id)) { t.act('sel', id, x); return; }
+    placesReady().then(() => { const p = placeOf(id); if (!p) return; t.act('place', JSON.stringify({ cc: p.cc, n: p.n, at: p.at }), x); if (R.ui.nav === 'lib' && R.ui.arg === 'explorer') render(); }); },
   capitals: (t, x, cc) => { t.act('cont', 'All', x); t.act('sel', cc, x); },
   flags: (t, x, cc) => { t.act('sel', cc, x); },
   states: (t, x, id) => { t.act('c', id.split('-')[0], x); t.act('sel', id, x); },

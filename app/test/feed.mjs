@@ -30,7 +30,11 @@ import { HISTORY_NEEDS_REVIEW } from '../src/data/history.js';
 import { newHousehold, newKid } from '../src/model.js';
 import { feedFor, order, LIMIT } from '../src/bizzing-feed.js';
 import { feedOpts, feedSession, topicOf } from '../src/feed.js';
-import { plain, QSEED, QN, bandOfLevel, leaks, words, jaccard, NEAR, nearDups, groupOf, metaOf } from '../../tools/build-feed.mjs';
+import { plain, QSEED, QN, bandOfLevel, leaks, words, jaccard, NEAR, nearDups, nearPairs, groupOf, metaOf } from '../../tools/build-feed.mjs';
+import { PLACES } from '../src/data/places.js';
+import { haversine, POINTS8 } from '../src/geo.js';
+import { mapDir } from '../src/chapters/compass.js';
+const byPlace = Object.fromEntries(PLACES.map((p) => [p.id, p])), sameName = (n) => PLACES.filter((p) => p.n.toLowerCase() === n.toLowerCase()).length;
 import { RANKS } from '../src/model.js';
 import { OCEANS } from '../src/geo.js';
 import { regionsOf, COUNTRY as REGION_COUNTRIES } from '../src/library/states.js';
@@ -71,12 +75,12 @@ for (const c of FEED) {
   const arg = r[2] ? decodeURIComponent(r[2]) : null;
   /* a deep link (#/lib/<tool>/<item>, #/expd/<id>/<day>) must name a real item of that tool */
   const [a0, item] = arg ? [arg.split('/')[0], arg.split('/').slice(1).join('/') || null] : [null, null];
-  const ITEM = { explorer: (x) => byCc[x], capitals: (x) => byCc[x] && byCc[x].quiz, flags: (x) => byCc[x] && byCc[x].quiz, states: (x) => REGION_COUNTRIES.some((C) => regionsOf(C.c).some((g) => g.id === x)) };
+  const ITEM = { explorer: (x) => byCc[x] || byPlace[x], capitals: (x) => byCc[x] && byCc[x].quiz, flags: (x) => byCc[x] && byCc[x].quiz, states: (x) => REGION_COUNTRIES.some((C) => regionsOf(C.c).some((g) => g.id === x)) };
   ok({ stop: () => byId[arg], world: () => WORLDS.some((w) => w.id === arg), lib: () => SHELF.some((t) => t.id === a0) && (!item || (ITEM[a0] && ITEM[a0](item))),
     expd: () => { const e = EXPEDITIONS.find((x) => x.id === a0); return e && (!item || daysOf(e).some((d) => d.key === item)); },
     word: () => WORDS.some((w) => w[0] === arg), me: () => !arg, place: () => POSTCARDS.some((p) => p.id === arg) }[r[1]]?.(), `${where}: route ${c.route} opens a real screen`);
   /* the owner: a card about ONE thing opens THAT thing, never the generic tool or collection */
-  const one = { country: `#/lib/explorer/${c.src.split(':')[1]}`, neighbours: `#/lib/explorer/${c.src.split(':')[1]}`, capital: `#/lib/capitals/${c.src.split(':')[1]}`, flag: `#/lib/flags/${c.src.split(':')[1]}`,
+  const one = { city: `#/lib/explorer/${c.src.split(':')[1]}`, cityway: `#/lib/explorer/${c.src.split(':')[1]}`, cityin: `#/lib/explorer/${c.src.split(':')[1]}`, capitalof: `#/lib/capitals/${c.src.split(':')[1]}`, country: `#/lib/explorer/${c.src.split(':')[1]}`, neighbours: `#/lib/explorer/${c.src.split(':')[1]}`, capital: `#/lib/capitals/${c.src.split(':')[1]}`, flag: `#/lib/flags/${c.src.split(':')[1]}`,
     state: `#/lib/states/${c.src.split(':')[2]}`, expday: `#/expd/${c.src.split(':')[1]}/${c.src.split(':')[2]}` }[c.src.split(':')[0]];
   if (one) ok(c.route === one, `${where}: opens its own item (${one}), not the shelf (${c.route})`);
   if (c.day && c.exp) ok(c.route === `#/expd/${c.exp}/${c.day}`, `${where}: an expedition day opens that day`);
@@ -102,7 +106,7 @@ for (const c of FEED) {
     case 'capital': { const x = byCc[a]; ok(x && !givesAway(x) && c.play.opts[0] === capOf(x) && c.play.opts.slice(1).every((o) => !x.cap.includes(o)), `${where}: its capital, from the data`); break; }
     case 'flag': { const x = byCc[a]; ok(x && c.play.opts[0] === x.name && c.art === `flags/${a.toLowerCase()}.svg`, `${where}: its flag`); break; }
     case 'word': { const w = WORDS.find((x) => x[0] === a);
-      ok(w && (b === 'example' ? low(c.body).includes(low(w[3])) && w[3] : b === 'quiz' ? c.play.opts[0] === w[0] && c.play.q.includes(w[1]) && c.play.opts.slice(1).every((o) => !low(w[1]).includes(low(o))) : low(c.body).includes(low(w[1])) && c.title === w[0]), `${where}: the Dictionary's words`); break; }
+      ok(w && (b === 'example' ? low(c.body).includes(low(w[3])) && w[3] : b === 'meaning' ? c.play.opts[0] === w[1] && c.play.q.includes(w[0]) && c.play.opts.slice(1).every((o) => WORDS.some((x) => x[1] === o && x[0] !== w[0])) : b === 'quiz' ? c.play.opts[0] === w[0] && c.play.q.includes(w[1]) && c.play.opts.slice(1).every((o) => !low(w[1]).includes(low(o))) : low(c.body).includes(low(w[1])) && c.title === w[0]), `${where}: the Dictionary's words`); break; }
     case 'postcard': { const p = POSTCARDS.find((x) => x.id === a); ok(p && c.play.opts[0] === byCc[p.cc].name && p.clues.every((cl) => c.play.after.includes(cl)) && c.bands[0] === p.band && /painting, not a photo/.test(c.body), `${where}: the postcard, said to be a painting`); break; }
     case 'exp': {
       const e = EXPEDITIONS.find((x) => x.id === a), m = e && e.modules.find((x) => x.id === (b || '').split('.')[0]);
@@ -114,7 +118,23 @@ for (const c of FEED) {
     case 'island': ok(ISLANDS.includes(a) && c.body.startsWith(byCc[a].name), `${where}: an island country of the stop's list`); break;
     case 'expday': { const e = EXPEDITIONS.find((x) => x.id === a), d = e && daysOf(e).find((x) => x.key === b); ok(d && d.o && c.body.includes(plain(d.o)), `${where}: the day's own aim`); break; }
     case 'state': { const C = REGION_COUNTRIES.find((x) => x.c === a), r = C && regionsOf(a).find((x) => x.id === b);
-      ok(r && (d === 'quiz' ? c.play.opts[0] === r.cap && !c.play.opts.slice(1).includes(r.cap) : c.body.includes(r.capFull) && c.body.includes(r.name)), `${where}: the state's capital, from the data`); break; }
+      ok(r && (d === 'rev' ? c.play.opts[0] === r.name && c.play.q.startsWith(r.cap + ' ') && c.play.opts.slice(1).every((o) => regionsOf(a).some((g) => g.name === o && g.cap !== r.cap)) : d === 'quiz' ? c.play.opts[0] === r.cap && !c.play.opts.slice(1).includes(r.cap) : c.body.includes(r.capFull) && c.body.includes(r.name)), `${where}: the state's capital, from the data`); break; }
+    /* the 195 the other way round, and the cities — every answer checked against the data again */
+    case 'capitalof': { const x = byCc[a]; ok(x && x.quiz && !givesAway(x) && c.play.opts[0] === x.name && c.play.q.startsWith(capOf(x) + ' ') && c.play.opts.slice(1).every((o) => { const y = Object.values(byCc).find((z) => z.name === o); return y && !y.cap.includes(capOf(x)); }), `${where}: whose capital, from the data`); break; }
+    case 'border': { const x = byCc[a], y = byCc[b], nb = x ? nbrs(x) : [];
+      ok(x && y && nb.includes(b) && c.play.opts[0] === y.name && c.play.opts.slice(1).every((o) => { const z = Object.values(byCc).find((q) => q.name === o); return z && !nb.includes(z.cc) && z.cc !== a; }), `${where}: a land neighbour, the others not, from the data`); break; }
+    case 'largest': { const x = byCc[a], rest = [b, d, c.src.split(':')[4]].map((k) => byCc[k]);
+      ok(x && rest.every((y) => y && y.area * 1.5 <= x.area) && c.play.opts[0] === x.name && rest.every((y) => c.play.opts.includes(y.name)), `${where}: clearly the largest, by the data's areas`); break; }
+    case 'landlocked': { const x = byCc[a]; ok(x && x.landlocked && c.play.opts[0] === x.name && c.play.opts.slice(1).every((o) => { const y = Object.values(byCc).find((z) => z.name === o); return y && !y.landlocked; }), `${where}: the one with no coast, from the data`); break; }
+    case 'city': case 'cityway': case 'cityin': { const p = byPlace[a], x = p && byCc[p.cc];
+      ok(p && x && x.quiz && sameName(p.n) === 1 && !x.cap.includes(p.n), `${where}: a city the data names once, not a capital`);
+      if (!p || !x) break;
+      if (kind === 'city') ok(c.play.opts[0] === x.name && c.play.q.includes(p.n) && !c.play.opts.slice(1).includes(x.name), `${where}: the city's country, from the data`);
+      if (kind === 'cityin') { const others = c.src.split(':').slice(2).map((k) => byPlace[k]);
+        ok(c.play.opts[0] === p.n && others.length === 3 && others.every((q) => q && q.cc !== p.cc && c.play.opts.includes(q.n) && sameName(q.n) === 1), `${where}: one city in it, three in other countries, from the data`); }
+      if (kind === 'cityway') { const cap = x.capAt[0], km = haversine(cap, p.at), deg = mapDir({ at: cap }, p), k = Math.round(deg / 45) % 8, off = Math.abs(deg - k * 45) % 360;
+        ok(c.play.opts[0] === POINTS8[k] && Math.min(off, 360 - off) <= 15 && km >= 100 && km <= 3000 && c.play.opts.slice(1).every((o) => POINTS8.includes(o) && o !== POINTS8[k]), `${where}: measured on the map — within 15° of a point, 100–3,000 km`); }
+      break; }
     case 'rank': ok(RANKS[+a] && c.body === RANKS[+a].why, `${where}: the rank's checked fact`); break;
     case 'ocean': { const o = OCEANS.find((x) => x.id === a); ok(o && c.body === o.blurb, `${where}: the ocean's own words`); break; }
     default: ok(false, `${where}: an unknown source`);
@@ -126,9 +146,14 @@ ok(agnostic >= 300, `${agnostic} level-agnostic cards (300 needed)`);
 ok(FEED.length >= 1300, `${FEED.length} cards (100 a road and 300 more at least)`);
 /* no near-duplicates: no two cards' words ≥ 80% the same — and the rule itself catches one */
 { const c = FEED.find((x) => x.kind === 'idea'); ok(nearDups([c, { ...c, id: 'copy', body: c.body + ' indeed' }]).dropped.length === 1, 'the near-duplicate rule catches a card said twice'); }
-{ const W = FEED.map(words), dup = [];
-  for (let i = 0; i < FEED.length; i++) for (let j = 0; j < i; j++) { const a = W[i], b = W[j]; if (Math.min(a.size, b.size) < NEAR * Math.max(a.size, b.size)) continue; if (jaccard(a, b) >= NEAR) dup.push(FEED[i].id + ' ≈ ' + FEED[j].id); }
-  ok(!dup.length, `no near-duplicates (${dup.length}: ${dup.slice(0, 3).join(', ')})`); }
+{ const dup = nearPairs(FEED).map(([x, y]) => x + ' ≈ ' + y);
+  ok(!dup.length, `no near-duplicates (${dup.length}: ${dup.slice(0, 3).join(', ')})`);
+  /* the fast look is the slow look: on a sample, every pair compared by hand finds the same pairs */
+  const S = FEED.filter((_, i) => i % 7 === 0).slice(0, 900);
+  const T2 = [...S, { ...S[3], id: 'copy-a', body: (S[3].body || '') + ' indeed' }, { ...S[8], id: 'copy-b' }];
+  const fast = nearPairs(T2).map(([x, y]) => x + '|' + y), slow2 = []; const W2 = T2.map(words);
+  for (let i = 0; i < T2.length; i++) for (let j = 0; j < i; j++) if (jaccard(W2[i], W2[j]) >= NEAR) slow2.push(T2[i].id + '|' + T2[j].id);
+  ok(fast.length === slow2.length && slow2.every((x) => fast.includes(x)) && fast.length >= 2, `the indexed near-duplicate look finds exactly the pairs a full comparison does (${fast.length} vs ${slow2.length})`); }
 /* the built file is today's: rebuilding gives the same bytes */
 const { build } = await import('../../tools/build-feed.mjs');
 ok(JSON.stringify(build()) === JSON.stringify(FEED), 'data/feed/ is what tools/build-feed.mjs makes now — rerun it');

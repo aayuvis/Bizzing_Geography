@@ -50,7 +50,7 @@ function scale(r, lv) {
    countries' own centres in the data. Only asked when the answer is clear —
    within 15° of one of the eight points, and no further than 3,000 km, so a
    child is never marked wrong for a direction that is really in between. */
-function mapDir(a, b) {
+export function mapDir(a, b) {
   let dx = b.at[1] - a.at[1]; if (dx > 180) dx -= 360; if (dx < -180) dx += 360;
   const dy = b.at[0] - a.at[0];
   const deg = ((Math.atan2(dx * Math.cos(((a.at[0] + b.at[0]) / 2) * Math.PI / 180), dy) * 180) / Math.PI + 360) % 360;

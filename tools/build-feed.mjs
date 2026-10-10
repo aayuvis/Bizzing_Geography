@@ -26,6 +26,12 @@
      state / stateq             the State Capitals shelf, from the data
      rank / ocean               the explorer ranks' and the oceans' checked facts, with their sources
      where                      the painted postcards of Where on Earth? — the painting, never a photo
+     city / cityway / cityin    Natural Earth's populated places (data/places.js, the search's cities):
+                                which country each is in, and which way it lies from its capital on a
+                                map — measured from the data, asked only within 15° of a point, 100–3,000 km
+     capitalof / border /       the 195 the other way round: whose capital, which neighbour, the largest
+     largest / landlocked       of four (area from the data), the one with no coast
+     staterev / meaning         a state from its capital; a word's meaning from the word
 
    Every card carries `level` — the road (levels.js) on which the child first meets it:
      a stop's card: the first road the stop is on; a quiz: the road whose step generated it;
@@ -65,6 +71,9 @@ const { EXPEDITIONS, daysOf } = await I('data/expeditions.js');
 const { LANDMARK_NEEDS_REVIEW } = await I('data/landmarks.js');
 const { ERAS_NEED_REVIEW } = await I('data/eras.js');
 const { HISTORY_NEEDS_REVIEW } = await I('data/history.js');
+const { PLACES } = await I('data/places.js');
+const { mapDir } = await I('chapters/compass.js');
+const { haversine, fmtKm, POINTS8 } = await I('geo.js');
 
 export const MAX = 2000, PER_LEVEL = 100, AGNOSTIC = 300, QUIZ_PER_STEP = Infinity, TOP_UP = 110, NEAR = 0.8;
 const BANDS = ['6-7', '8-10', '11-14'];
@@ -106,6 +115,9 @@ export function build() {
     /* a card whose words are fewer than three is not worth reading on its own: a figure's letters ("NESW"),
        a bare example ("Pangaea.") — the auditor found both */
     if (c.body && !c.play && plain(c.body).split(/\s+/).filter((w) => /[a-z]/i.test(w)).length < 3) return;
+    /* a question whose words or title name its own answer is not asked (Port Sudan; Niger state, Nigeria;
+       "South Africa: which way?") — test/feed.mjs's rule, applied before a card exists */
+    if (c.play && (leaks(c.play.q, c.play.opts[0], c.play.opts) || leaks(c.title, c.play.opts[0], c.play.opts))) return;
     const lv = c.level;
     cards.push({ ...c, bands: c.bands || (lv ? bandsFrom(bandOfLevel(lv)) : BANDS) });
   };
@@ -192,6 +204,78 @@ export function build() {
   for (const cc of ISLANDS) { const c = byCc[cc];
     add({ id: 'is-' + cc, kind: 'island', level: firstLevel('island-nations'), topics: ['stop:island-nations', 'cc:' + cc], stop: 'island-nations', src: 'island:' + cc, title: 'Island countries', badge: B('Island country'), art: flagArt(cc), body: `${c.name} is an island country: you cannot walk to it from any other country.`, route: '#/stop/island-nations', cta: 'Open the stop' }); }
 
+  /* ---- the 195 the other way round (the owner: double the feed from content the app already holds) */
+  const sameCont = (c, f, seed) => shuffle(QUIZ.filter((x) => x !== c && x.cont === c.cont && f(x)), seeded(seed));
+  for (const c of QUIZ) {
+    const g = GROUP[c.cont]; if (!g) continue;
+    const lvCap = levelFor('cap-' + g, c); if (!lvCap) continue;
+    const t = ['cont:' + c.cont, 'cc:' + c.cc], here = { route: '#/lib/explorer/' + c.cc, cta: `Open ${c.name} on the map`, source: 'From Natural Earth’s map data (India’s depiction)' };
+    /* whose capital is this? — never one that carries its country's name */
+    if (!givesAway(c)) {
+      const wrong = sameCont(c, (x) => true, 'feedcapof|' + c.cc).slice(0, 3).map((x) => x.name);
+      if (wrong.length === 3) add({ ...here, id: 'ko-' + c.cc, kind: 'capitalof', level: lvCap, key: 'ans:' + c.name, topics: ['stop:cap-' + g, 'tool:capitals', ...t], src: 'capitalof:' + c.cc, title: 'Whose capital?', badge: B('Capital'),
+        play: { q: `${capOf(c)} is the capital of which country?`, opts: [c.name, ...wrong], after: `${capOf(c)} is the capital of ${c.name}, in ${c.cont}.` }, route: '#/lib/capitals/' + c.cc, cta: `Find ${capOf(c)} on the map` });
+    }
+    /* which of these is a neighbour? — one card per land border, the others from the continent but not touching */
+    const nb = nbrs(c), lvN = levelFor('neighbours', c) || lvCap;
+    for (const n of nb) {
+      const x = byCc[n], wrong = sameCont(c, (y) => !nb.includes(y.cc), `feedbord|${c.cc}|${n}`).slice(0, 3).map((y) => y.name);
+      if (wrong.length === 3) add({ ...here, id: `bd-${c.cc}-${n}`, kind: 'border', level: lvN, key: 'ans:' + x.name, topics: ['stop:neighbours', ...t], src: `border:${c.cc}:${n}`, title: `${c.name}’s neighbours`, badge: B('Neighbours'),
+        play: { q: `Which of these shares a land border with ${c.name}?`, opts: [x.name, ...wrong], after: `${x.name} and ${c.name} share a land border. ${c.name}’s land neighbours: ${list(nb.map((y) => byCc[y].name))}.` } });
+    }
+    /* the largest of four — only when it is clearly the largest (half as big again as the next) */
+    if (c.area) {
+      const others = sameCont(c, (x) => x.area && x.area * 1.5 <= c.area, 'feedbig|' + c.cc).slice(0, 3);
+      if (others.length === 3) add({ ...here, id: 'lg-' + c.cc, kind: 'largest', level: Math.max(lvCap, firstLevel('big-countries')), key: 'ans:' + c.name, topics: ['stop:big-countries', ...t], src: 'largest:' + c.cc + ':' + others.map((x) => x.cc).join(':'), title: 'Which is biggest?', badge: B('Size'),
+        play: { q: 'Which of these countries covers the most land?', opts: [c.name, ...others.map((x) => x.name)], after: `${c.name}: ${fmtArea(c.area)}. ${others.map((x) => `${x.name}: ${fmtArea(x.area)}`).join('. ')}.` } });
+    }
+    /* the one with no coast */
+    if (c.landlocked) {
+      const coast = sameCont(c, (x) => !x.landlocked && !ISLANDS.includes(x.cc), 'feedll|' + c.cc).slice(0, 3).map((x) => x.name);
+      if (coast.length === 3) add({ ...here, id: 'll-' + c.cc, kind: 'landlocked', level: Math.max(lvCap, firstLevel('landlocked')), key: 'ans:' + c.name, topics: ['stop:landlocked', ...t], src: 'landlocked:' + c.cc, title: 'No coast', badge: B('Landlocked'),
+        play: { q: 'Which of these countries has no coast at all?', opts: [c.name, ...coast], after: `${c.name} is landlocked: every one of its borders is on land. ${list(coast)} each have a coast.` } });
+    }
+  }
+
+  /* ---- the cities: which country, and which way from its capital (Natural Earth's populated places).
+     A name two countries share is never asked; nor a capital (the capital cards ask those), nor a city
+     whose name says its country. A big city is met on its country's capital road; the rest a few at a time
+     along roads 6–10, a country's cities taken in turn. */
+  const NAMES = {}, NTH = {}; for (const p of PLACES) { const k = p.n.toLowerCase(); NAMES[k] = (NAMES[k] || 0) + 1; }
+  const CAPS = new Set(QUIZ.flatMap((c) => c.cap.map((x) => x.toLowerCase())));
+  const askable = (p) => byCc[p.cc] && byCc[p.cc].quiz && NAMES[p.n.toLowerCase()] === 1 && !CAPS.has(p.n.toLowerCase());
+  const CITY_OF = {}; for (const p of PLACES) if (askable(p)) (CITY_OF[p.cc] = CITY_OF[p.cc] || []).push(p);
+  for (const p of PLACES) {
+    const c = byCc[p.cc]; if (!askable(p)) continue;
+    const g = GROUP[c.cont], lvCap = g && levelFor('cap-' + g, c); if (!lvCap) continue;
+    NTH[p.cc] = (NTH[p.cc] || 0) + 1;
+    const lv = p.big ? lvCap : Math.max(lvCap, 6 + (NTH[p.cc] % 5)), cap = c.capAt && c.capAt[0], km = cap ? haversine(cap, p.at) : null;
+    const t = ['cont:' + c.cont, 'cc:' + c.cc, 'tool:explorer'], here = { route: '#/lib/explorer/' + p.id, cta: `See ${p.n} on the map`, source: 'From Natural Earth’s populated places' };
+    const nb = nbrs(c), pool = [...shuffle(nb.map((x) => byCc[x]).filter((x) => x && x.quiz), seeded('feedcityn|' + p.id)).slice(0, 2), ...sameCont(c, (x) => !nb.includes(x.cc), 'feedcity|' + p.id)];
+    const wrong = pool.map((x) => x.name).filter((v, i, a) => a.indexOf(v) === i).slice(0, 3);
+    const where = km != null && km >= 30 ? ` It lies about ${fmtKm(Math.round(km / 10) * 10)} from ${capOf(c)}, the capital.` : km != null ? ` It is close to ${capOf(c)}, the capital.` : '';
+    if (wrong.length === 3) add({ ...here, id: 'ci-' + p.id, kind: 'city', level: lv, key: 'ans:' + c.name, topics: t, src: 'city:' + p.id, title: 'Which country?', badge: B('City'),
+      play: { q: `Which country is the city of ${p.n} in?`, opts: [c.name, ...wrong], after: `${p.n} is in ${c.name}, in ${c.cont}.${where}` } });
+    /* and the other way round: which of these cities is in the country? — the others from its neighbours
+       and its continent, each a city those countries' own data names (up to three a country) */
+    if (NTH[p.cc] <= 3) {
+      const others = pool.flatMap((x) => (CITY_OF[x.cc] || []).slice(0, 4)).filter((q) => q.n !== p.n);
+      const pick3 = shuffle(others, seeded('feedcin|' + p.id)).filter((q, i, a) => a.findIndex((y) => y.cc === q.cc) === i).slice(0, 3);
+      if (pick3.length === 3) add({ ...here, id: 'cn-' + p.id, kind: 'cityin', level: lv, key: 'ans:' + p.n, topics: t, src: 'cityin:' + p.id + ':' + pick3.map((q) => q.id).join(':'), title: 'Cities of ' + c.cont, badge: B('City'),
+        play: { q: `Which of these cities is in ${c.name}?`, opts: [p.n, ...pick3.map((q) => q.n)], after: `${p.n} is in ${c.name}. ${pick3.map((q) => `${q.n} is in ${byCc[q.cc].name}`).join('; ')}.` } });
+    }
+    /* which way from the capital, on a map: the compass stop's own rule */
+    if (km != null && km >= 100 && km <= 3000 && !/north|south|east|west/i.test(p.n + capOf(c))) {
+      const deg = mapDir({ at: cap }, p), k = Math.round(deg / 45) % 8, off = Math.abs(deg - k * 45) % 360;
+      if (Math.min(off, 360 - off) <= 15) {
+        const opts = [POINTS8[k], POINTS8[(k + 4) % 8], ...shuffle([POINTS8[(k + 2) % 8], POINTS8[(k + 6) % 8], POINTS8[(k + 1) % 8], POINTS8[(k + 7) % 8]], seeded('feedway|' + p.id)).slice(0, 2)];
+        const d = fmtKm(Math.round(km / 10) * 10);
+        add({ ...here, id: 'cw-' + p.id, kind: 'cityway', level: Math.max(lv, firstLevel('eight-points')), key: 'way:' + p.id, topics: ['stop:eight-points', ...t], src: 'cityway:' + p.id, title: 'Which way on the map?', badge: B('Compass'),
+          play: { q: `${p.n} is ${d} from ${capOf(c)}. On a map, which way is ${p.n} from ${capOf(c)}?`, opts, after: `On the map, ${p.n} is ${POINTS8[k]} of ${capOf(c)}, ${c.name}’s capital — ${d} away.` } });
+      }
+    }
+  }
+
   /* ---- the expeditions: each one, each part's objective, each project, each Library day */
   for (const e of EXPEDITIONS) {
     const lv = Math.max(1, Math.min(10, e.ages[0] - 5)), route = '#/expd/' + e.id, t = ['exp:' + e.id], eart = art(`art/crs-${e.id}.webp`), all = daysOf(e);
@@ -213,12 +297,15 @@ export function build() {
   /* ---- level-agnostic: the Dictionary, and the painted postcards of Where on Earth? */
   /* a word: its meaning; its example (where the Dictionary gives one); and the Dictionary quiz's own
      question — four words from its topic, none spelled out in the meaning */
-  const inDef = (w, d) => d.toLowerCase().includes(w.toLowerCase());
+  const inDef = (w, d) => d.toLowerCase().includes(w.toLowerCase()), low = (x) => String(x).toLowerCase();
   for (const [w, d, t, ex] of WORDS) {
     const slug = w.toLowerCase().replace(/[^a-z0-9]+/g, '-'), base = { topics: ['tool:dictionary', 'dict:' + t], source: 'Geography Dictionary · ' + TOPICS.find((x) => x.id === t).name, route: '#/word/' + encodeURIComponent(w), cta: `Open “${w}” in the Dictionary`, badge: B('Word') };
     add({ ...base, id: 'd-' + slug, kind: 'word', src: 'word:' + w, title: w, body: d.charAt(0).toUpperCase() + d.slice(1) + '.' });
     if (ex) add({ ...base, id: 'dx-' + slug, kind: 'example', src: 'word:' + w + ':example', title: 'Where to see it: ' + w, body: ex.charAt(0).toUpperCase() + ex.slice(1) + '.' });
     const same = shuffle(WORDS.filter(([x, , tt]) => tt === t && x !== w && !inDef(x, d)).map((x) => x[0]), seeded('feedword|' + w)).slice(0, 3);
+    /* and the other way round: the word given, which meaning? — the other meanings from its topic */
+    const defs = shuffle(WORDS.filter(([x, dd, tt]) => tt === t && x !== w && !low(dd).includes(low(w))), seeded('feedmean|' + w)).slice(0, 3).map((x) => x[1]);
+    if (defs.length === 3 && !low(d).includes(low(w))) add({ ...base, id: 'dm-' + slug, kind: 'meaning', key: 'mean:' + w, src: 'word:' + w + ':meaning', title: 'What does it mean?', play: { q: `What does “${w}” mean?`, opts: [d, ...defs], after: `${w}: ${d}.` } });
     if (same.length === 3) add({ ...base, id: 'dq-' + slug, kind: 'wordq', key: 'ans:' + w, src: 'word:' + w + ':quiz', title: 'Which word is it?', play: { q: `Which word means: “${d}”?`, opts: [w, ...same], after: `${w}: ${d}.` } });
   }
   /* the State Capitals shelf: each state's capital, and its question (never one whose capital is its own name) */
@@ -230,6 +317,8 @@ export function build() {
       add({ ...base, id: 'st-' + r.id, kind: 'state', badge: B('State'), src: `state:${C.c}:${r.id}`, body: `${r.name} is a ${r.type === 'ut' ? 'union territory' : C.unit.split(' ')[0]} of ${/^United /.test(C.name) ? 'the ' : ''}${C.name}. Its capital: ${r.capFull}.` });
       if (fairState(r)) {
         const wrong = shuffle(regs.filter((x) => x !== r && x.cap !== r.cap).map((x) => x.cap), seeded('feedst|' + r.id)).filter((v, i, a) => a.indexOf(v) === i).slice(0, 3);
+        const others = shuffle(regs.filter((x) => x !== r && x.cap !== r.cap), seeded('feedsr|' + r.id)).slice(0, 3).map((x) => x.name);
+        if (others.length === 3) add({ ...base, id: 'sr-' + r.id, kind: 'staterev', badge: B('State capital'), key: 'ans:' + r.name, src: `state:${C.c}:${r.id}:rev`, title: `States of ${C.name}`, play: { q: `${r.cap} is the capital of which ${C.unit} of ${/^United /.test(C.name) ? 'the ' : ''}${C.name}?`, opts: [r.name, ...others], after: `${r.cap} is the capital of ${r.name}, ${/^United /.test(C.name) ? 'the ' : ''}${C.name}.` } });
         add({ ...base, id: 'sq-' + r.id, kind: 'stateq', badge: B('State capital'), key: 'ans:' + r.cap, src: `state:${C.c}:${r.id}:quiz`, title: `Capitals of ${C.name}`, play: { q: `What is the capital of ${r.name}?`, opts: [r.cap, ...wrong], after: `The capital of ${r.name} is ${r.capFull}.` } });
       }
     }
@@ -260,17 +349,36 @@ export function build() {
    later is let go. Words = the body, the question and its options (a title is a label). */
 export const words = (c) => new Set(`${c.body || ''} ${c.play ? c.play.q + ' ' + c.play.opts.join(' ') : ''}`.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean));
 export const jaccard = (a, b) => { let n = 0; for (const x of a) if (b.has(x)) n++; return n / (a.size + b.size - n || 1); };
+/* exact, but fast enough for ten thousand cards: PREFIX FILTERING. Order every word by how rare it is;
+   two sets whose Jaccard is ≥ t must share a word among the first |A| − ⌈t·|A|⌉ + 1 of each. Only the
+   pairs that do are compared in full — the same answer as comparing every pair. */
+export function nearIndex(W, near = NEAR) {
+  const freq = new Map(); for (const w of W) for (const x of w) freq.set(x, (freq.get(x) || 0) + 1);
+  const rare = (a, b) => freq.get(a) - freq.get(b) || (a < b ? -1 : a > b ? 1 : 0);
+  return W.map((w) => { const s = [...w].sort(rare); return s.slice(0, s.length - Math.ceil(near * s.length) + 1); });
+}
 export function nearDups(cards, near = NEAR) {
-  const kept = [], dropped = [], W = [];
-  for (const c of cards) {
-    const w = words(c); let hit = null;
-    for (let i = 0; i < kept.length && !hit; i++) {
-      const v = W[i]; if (Math.min(v.size, w.size) < near * Math.max(v.size, w.size)) continue;
-      if (jaccard(v, w) >= near) hit = kept[i];
-    }
-    if (hit) dropped.push([c.id, hit.id]); else { kept.push(c); W.push(w); }
-  }
+  const kept = [], dropped = [], W = cards.map(words), P = nearIndex(W, near), post = new Map(), KW = [];
+  cards.forEach((c, i) => {
+    const w = W[i], cand = new Set(); let hit = null;
+    for (const x of P[i]) for (const j of post.get(x) || []) cand.add(j);
+    for (const j of cand) { const v = KW[j]; if (Math.min(v.size, w.size) < near * Math.max(v.size, w.size)) continue; if (jaccard(v, w) >= near) { hit = kept[j]; break; } }
+    if (hit) { dropped.push([c.id, hit.id]); return; }
+    const k = kept.length; kept.push(c); KW.push(w);
+    for (const x of P[i]) (post.get(x) || post.set(x, []).get(x)).push(k);
+  });
   return { kept, dropped };
+}
+/* every near pair among a set of cards (the test's own look, by the same exact filter) */
+export function nearPairs(cards, near = NEAR) {
+  const W = cards.map(words), P = nearIndex(W, near), post = new Map(), out = [];
+  cards.forEach((c, i) => {
+    const seen = new Set();
+    for (const x of P[i]) for (const j of post.get(x) || []) { if (seen.has(j)) continue; seen.add(j); const a = W[i], b = W[j];
+      if (Math.min(a.size, b.size) >= near * Math.max(a.size, b.size) && jaccard(a, b) >= near) out.push([c.id, cards[j].id]); }
+    for (const x of P[i]) (post.get(x) || post.set(x, []).get(x)).push(i);
+  });
+  return out;
 }
 
 /* the lazy groups: an index (what the engine ranks) and the cards' words, one group per road

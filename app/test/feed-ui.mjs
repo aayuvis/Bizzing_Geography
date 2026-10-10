@@ -142,6 +142,16 @@ async function run(vp, tag) {
   await page.close();
 }
 
+/* a city card opens the Map Explorer ON that city — its pin and its line, not just its country */
+async function cityLink() {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  const card = INDEX.find((x) => x.kind === 'city'), pid = card.id.replace(/^ci-/, '');
+  await page.goto(BASE + '?demo#/lib/explorer/' + pid); await page.waitForSelector('.t-ex-pin', { timeout: 15000 }).catch(() => {});
+  const t = await page.locator('.t-ex-pin').innerText().catch(() => '');
+  ok(/a city in/.test(t), `a city card's link (#/lib/explorer/${pid}) opens the map on that city: “${t}”`);
+  await page.close();
+}
+
 async function demo() {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 }, hasTouch: true });
   await page.goto(BASE + '?demo#/feed'); await page.waitForSelector('.bzf-list [data-bz=feed-end]');
@@ -156,6 +166,7 @@ try {
   await run({ width: 1280, height: 800 }, 'desktop');
   await run({ width: 390, height: 844 }, 'phone');
   await demo();
+  await cityLink();
 } finally { await browser.close(); srv.kill(); rmSync(SITE, { recursive: true, force: true }); }
 if (fails) { console.error(`✗ feed-ui: ${fails} failure(s)`); process.exit(1); }
 console.log('✓ feed-ui: My Feed the last tab, checkShell [], twenty and then the end, only its own groups, contrast in 6 worlds × 2, keyboard and touch, pays once, the PIN switch, ?demo writes nothing');
