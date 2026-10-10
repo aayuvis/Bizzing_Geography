@@ -12,7 +12,6 @@ import { THEMES, themeOf, themePicker } from './themes.js';
 import { Store } from './store.js';
 import { EXPEDITIONS, EXPEDITIONS_PARENT } from './data/expeditions.js';
 import { learnedList, stats as expStats } from './expeditions.js';
-import { GOALS, goalOf, sessionsToday } from './model.js';
 import { todaysWord } from './library/dictionary.js';
 import { LANDMARKS } from './data/landmarks.js';
 import { reviewDue } from './model.js';
@@ -32,6 +31,7 @@ import { MEDALS, earned, medallion, SHOP, shopOf, PIN_PATH, TIER } from './rewar
 import { nextStep, homeExpedition } from './next.js';
 import { missDue, missCount } from './mistakes.js';
 import { home as famHome } from './bizzing-shell.js';
+import * as CZ from './coach.js';
 import { FOOT } from './chrome.js';
 import { certificatesOf } from './certificate.js';
 import { STORIES, STORIES_MORE, STORY_NOTE, storyById, storyWorld } from './data/stories.js';
@@ -284,7 +284,6 @@ const ring = (n, goal) => { const r = 34, c = 2 * Math.PI * r, f = Math.min(1, n
 export function viewHome() {
   const k = kid(R.h), n = nextStep(k), rk = n.rank;
   const pc = todaysCard(), gd = (k.lib.geoguess || {}).daily || {}, doneToday = gd[dayKey()];
-  const done = sessionsToday(k), goal = goalOf(k);
   const [tw, td] = todaysWord();
   const e = homeExpedition(k), es = expStats(k, e), ed = es.next;
   const trip = (k.trips || {})[dayKey()];
@@ -293,12 +292,8 @@ export function viewHome() {
      hour; the next stop (the ONE filled Continue) and the expedition; a tip and a quote. */
   return famHome({
     greet: { mascot: 'mascot/shelly-wave.webp', hello: `${greet()},`, name: k.name, line: plain(greetLine(k)) },
-    ring: { html: `<div class="hm-ring" role="group" aria-label="Today’s ring: ${done} of ${goal}">
-        <div class="h-ring-c">${ring(done, goal)}<span><b>${done}/${goal}</b><i>today</i></span></div>
-        <div><p class="small"><b>Today’s ring</b><br><span class="muted">each finished quiz, day or round fills a notch</span></p>
-          <span class="h-prog">${ico('star')} <b>${starsTotal(k)}</b> stars · <b>${COUNTRIES_Q.filter((c) => capKnown(k.lib.capitals || {}, c.cc)).length}</b> capitals known</span>
-          <span class="h-goal" role="group" aria-label="How many a day">${GOALS.map((g) => `<button class="${g === goal ? 'on' : ''}" data-act="goal" data-arg="${g}" aria-pressed="${g === goal}" aria-label="${g} a day">${g}</button>`).join('')}</span></div></div>`,
-      foot: { kicker: 'Your level', title: `Level ${n.level} · ${rk.n}`, href: '#/me' } },
+    ring: { html: dailyGoal(k),
+      foot: { kicker: 'Your level', title: `Level ${n.level} · ${rk.n}`, href: '#/road' } },
     hour: { kicker: 'Place of the hour', title: 'Where on Earth is this?', sub: doneToday ? `You scored ${doneToday.toLocaleString('en-US')} today. Pin this one too.` : 'A painted place somewhere on Earth. Pin it on the map.', href: `#/place/${pc.id}`, icon: 'globe' },
     next: { plate: `art/${n.art}.webp`, icon: 'path', chip: `Level ${n.level}`, kicker: `Next on your journey · ${plain(n.kicker)}`, title: plain(n.title), sub: n.sub, href: '#/continue', cta: 'Continue',
       progress: { pct: Math.round((100 * n.done) / Math.max(1, n.total)), label: `${n.done} of ${n.total} stops` } },
@@ -670,7 +665,7 @@ function reportCard(k) {
     ${(() => { const cs = certificatesOf(k); return `<details class="rc-set rc-certs"${cs.length ? '' : ''}><summary>Certificates for ${esc(k.name)} (${cs.length})</summary>
       ${cs.length ? `<p class="muted small">Each is a picture made on this device — nothing is uploaded. Share or save it from here.</p><ul class="certs">${cs.map((c) => `<li><span><b>${esc(c.title)}</b><span class="muted small">${esc(k.name)} ${esc(c.what)}</span></span>${btn(`${ico('share')} Make the picture`, 'cert', k.id + '|' + c.id, 'small')}</li>`).join('')}</ul>` : `<p class="muted small">The first one comes with a finished level, a world walked or an expedition done.</p>`}</details>`; })()}
     <details class="rc-set"><summary>Settings for ${esc(k.name)}</summary>
-      <div class="row gap wrap"><span>Today’s ring:</span>${GOALS.map((g) => `<button class="btn small${goalOf(k) === g ? ' primary-o' : ''}" data-act="kidGoal" data-arg="${k.id}|${g}" aria-pressed="${goalOf(k) === g}">${g} a day</button>`).join('')}</div>
+      <div class="row gap wrap"><span>Daily goal:</span>${(() => { const t = CZ.targets(k); return `${t.app} min in the app · ${t.prac} min answering · ${t.right} right answers`; })()} <span class="muted small">— ${esc(k.name)} sets these on the Coach page</span></div>
       <div class="row gap wrap"><span>Read questions aloud by itself:</span><button class="btn small" data-act="kidRead" data-arg="${k.id}" aria-pressed="${autoRead(k)}">${autoRead(k) ? 'On' : 'Off'}</button></div>
       <div class="row gap wrap">${btn(`Delete ${esc(k.name)}’s progress`, 'delKid', k.id, 'danger small')}</div>
       ${R.ui.confirm === 'del:' + k.id ? `<p class="fb bad">This deletes everything ${esc(k.name)} has done on this device. ${btn(`Yes, delete ${esc(k.name)}`, 'delKidYes', k.id, 'danger small')}</p>` : ''}
@@ -729,5 +724,66 @@ export function viewMistakes() {
     <div class="card mist-go">${says(due.length ? 'point' : 'sleep', due.length ? `${due.length === 1 ? 'One card is' : `${due.length} cards are`} ready. Right after a gap moves a card up; two steps up and it is yours, and it leaves the deck.` : 'Nothing is ready yet. Each card comes back after a gap — a day, then three days — because remembering later is what learning is.')}
       ${due.length ? btn(`Practise my misses (${Math.min(10, due.length)})`, 'practiseMisses', '', 'primary big') : ''}</div>
     <ul class="mist-list">${all.map((m) => `<li class="card mist"><div class="mist-fig">${m.q.html && !/<button/.test(m.q.html) ? m.q.html : ''}</div><div><p class="kicker">${esc(m.from || '')} · ${['step 1 of 2', 'step 2 of 2'][Math.min(m.box, 1)]} · ${waitFor(m)}</p><p>${esc(m.q.text)}</p><p class="muted small">The answer: <b>${esc(ansOf(m.q))}</b>${m.n > 1 ? ` · missed ${m.n} times` : ''}</p></div></li>`).join('')}</ul>
+  </section>`;
+}
+
+/* ------------------------------------------------------------------ the Coach (Bizzing Bee's Coach desk) */
+const ringLine = (lab, col, val, tgt) => `<span class="cz-line"><i style="background:${col}"></i><span>${lab}</span><b>${val}<em>/${tgt}</em></b></span>`;
+/* Home's daily-goal card: three rings and their lines; the whole top half opens the Coach */
+export function dailyGoal(k) {
+  const m = CZ.today(k), done = CZ.allClosed(m);
+  return `<button class="cz-goal" data-act="nav" data-arg="coach" title="Coach speaks — what Shelly makes of today">
+    <span class="cz-goal-r">${CZ.ringsSVG(96, [m.pApp, m.pPrac, m.pRight])}</span>
+    <span class="cz-goal-t"><span class="cz-goal-top"><b class="cz-goal-h">Daily goal${done ? ' ✓' : ''}</b><span class="cz-goal-l">${done ? 'All closed — Coach →' : 'Coach speaks →'}</span></span>
+      ${ringLine('App time', CZ.RING_COL[0][0], CZ.fmtMins(m.app), m.t.app + 'm')}
+      ${ringLine('Practice time', CZ.RING_COL[1][0], CZ.fmtMins(m.prac), m.t.prac + 'm')}
+      ${ringLine('Right answers', CZ.RING_COL[2][0], m.right, m.t.right)}
+      <span class="h-prog">${ico('star')} <b>${starsTotal(k)}</b> stars · <b>${COUNTRIES_Q.filter((c) => capKnown(k.lib.capitals || {}, c.cc)).length}</b> capitals known</span></span></button>`;
+}
+export function viewCoach() {
+  const k = kid(R.h), m = CZ.today(k), g = CZ.traps(k), read = CZ.readLine(k);
+  const sel = g.find((x) => x.k === R.ui.coachTrap) || g[0] || null, top = g[0], maxN = top ? top.n : 1;
+  const tgtRow = (f, lab, unit) => `<div class="cz-tgt"><span>${lab}</span><span class="cz-tgt-b" role="group" aria-label="${lab} a day">${CZ.TGT_CHOICES[f].map((v) => `<button class="${m.t[f] === v ? 'on' : ''}" data-act="tgt" data-arg="${f}|${v}" aria-pressed="${m.t[f] === v}">${v}${unit}</button>`).join('')}</span></div>`;
+  const hero = `<div class="cz-hero" style="--tc:${top ? CZ.TRAPS[top.k].col : 'var(--action)'}">
+      <div class="cz-read">${shelly(read.pose, 84)}<div><p class="cz-kick">Shelly’s read on ${esc(k.name)}</p><p class="cz-say">${read.line}</p></div></div>
+      <div class="cz-today">${CZ.ringsSVG(72, [m.pApp, m.pPrac, m.pRight])}<div>
+        <p class="cz-kick">Today${CZ.allClosed(m) ? ' ✓' : ''}</p>
+        ${ringLine('App', CZ.RING_COL[0][0], CZ.fmtMins(m.app), m.t.app + 'm')}${ringLine('Practice', CZ.RING_COL[1][0], CZ.fmtMins(m.prac), m.t.prac + 'm')}${ringLine('Right', CZ.RING_COL[2][0], m.right, m.t.right)}</div></div></div>`;
+  const radar = g.length ? `<div class="cz-radar">${g.slice(0, 6).map((t) => { const T = CZ.TRAPS[t.k], on = sel && sel.k === t.k;
+      return `<button class="cz-trap${on ? ' on' : ''}" style="--tc:${T.col}" data-act="coachTrap" data-arg="${t.k}" aria-pressed="${on}"><span class="cz-trap-t">${esc(T.label)}<span class="cz-bar"><i style="width:${Math.max(14, Math.round((100 * t.n) / maxN))}%"></i></span></span><b>${t.n}</b></button>`; }).join('')}</div>`
+    : '<p class="muted small">No pattern yet — nothing in your mistakes deck.</p>';
+  let detail;
+  if (!sel) detail = `<div class="cz-none">${shelly('wave', 96)}<h3>Nothing is catching you yet</h3><p class="muted">Practise a stop and come back. Every question you get wrong teaches me something about how you think.</p>${btn('Go and practise', 'nav', 'continue', 'primary')}</div>`;
+  else {
+    const T = CZ.TRAPS[sel.k], own = sel.items.slice(0, 3);
+    const step = (n, t, body, col) => `<div class="cz-step"><span class="cz-n" style="background:${col}">${n}</span><div><p class="cz-st" style="color:${col}">${t}</p>${body}</div></div>`;
+    detail = `<div class="cz-det" style="--tc:${T.col}">
+      <div class="cz-det-h">${shelly(T.pose, 58)}<div><h2>${esc(T.label)}</h2><p class="muted small">caught you <b style="color:${T.col}">${sel.n}</b> time${sel.n > 1 ? 's' : ''}</p></div>
+        <button class="btn cz-beat" data-act="beatTrap" data-arg="${sel.k}">Beat it →</button></div>
+      ${step(1, 'What goes wrong', `<p>${esc(T.mistake)}</p>`, 'var(--bad, #C4453C)')}
+      ${step(2, 'The trick', `<p>${esc(T.rule)}</p><p class="cz-check"><b>Before you tap:</b> ${esc(T.check)}</p>`, T.col)}
+      ${step(3, 'Your own questions', `<ul class="cz-own">${own.map((x) => `<li><p>${esc(x.q.text)}</p><p class="small"><span class="muted">The answer:</span> <b>${esc(CZ.answerOf(x.q))}</b>${x.n > 1 ? ` <span class="cz-x">×${x.n}</span>` : ''}</p>${x.q.why ? `<p class="small muted">${esc(String(x.q.why).replace(/<[^>]+>/g, ''))}</p>` : ''}</li>`).join('')}</ul>`, 'var(--good, #2FA35C)')}
+    </div>`;
+  }
+  const L = CZ.ladder(k.road.level);
+  const ladder = `<div class="cz-rungs" aria-hidden="true">${LEVELS.map((x) => `<span class="${x.n === L.now.n ? 'on' : x.n < L.now.n ? 'done' : ''}">${x.n}</span>`).join('')}</div>
+    <div class="cz-2"><div><p class="cz-kick2">Right now · Level ${L.now.n} · ${esc(L.now.name)}</p><p>${esc(L.now.blurb)}</p></div>
+      ${L.next ? `<div class="cz-next"><p class="cz-kick2">Coming next · ${esc(L.next.name)}</p><p>${esc(L.next.blurb)}</p></div>` : '<div class="cz-next"><p class="cz-kick2">The top road</p><p>Every road is yours. Keep the stars bright with the mistakes deck and the 5-minute trip.</p></div>'}</div>`;
+  const ti = R.ui.coachTip == null ? Math.floor(Date.now() / 864e5) : R.ui.coachTip, tip = CZ.tipOf(ti);
+  const tipCard = `<div class="cz-tip">${shelly('cheer', 52)}<div><h3>${esc(tip.t)}</h3><p class="muted">${esc(tip.b)}</p></div></div>
+    <div class="row gap"><button class="btn small" data-act="coachTip" data-arg="${ti + 1}">Another one →</button><span class="muted small">${((ti % CZ.TIPS.length) + CZ.TIPS.length) % CZ.TIPS.length + 1} of ${CZ.TIPS.length}</span></div>`;
+  const last30 = Object.entries(k.days || {}).filter(([d]) => Date.now() - new Date(d + 'T12:00').getTime() <= 30 * 864e5);
+  const q30 = last30.reduce((s, [, d]) => s + (d.q || 0), 0), ok30 = last30.reduce((s, [, d]) => s + (d.ok || 0), 0);
+  const stat = (v, l, col) => `<div class="cz-stat" style="--sc:${col}"><b>${v}</b><span>${l}</span></div>`;
+  const stats = `<div class="cz-stats">${stat(starsTotal(k), 'stars', 'var(--good, #2FA35C)')}${stat(COUNTRIES_Q.filter((c) => capKnown(k.lib.capitals || {}, c.cc)).length, 'capitals known', '#B14FC4')}${stat(missCount(k), 'to revise', 'var(--bad, #C4453C)')}${stat(q30 >= 20 ? Math.round((100 * ok30) / q30) + '%' : '—', 'right, last 30 days', 'var(--action)')}</div>`;
+  const panel = (t, body, c = '') => `<section class="card cz-p ${c}">${t ? `<h2 class="cz-ph">${t}</h2>` : ''}${body}</section>`;
+  return `<section class="coach">
+    ${pageHead('Coach', esc(k.name))}
+    ${hero}
+    <div class="cz-grid">
+      <div class="cz-col">${panel('What catches you', radar)}${panel('Your numbers', stats)}${panel('Your daily goal', `${tgtRow('app', 'App time', 'm')}${tgtRow('prac', 'Practice time', 'm')}${tgtRow('right', 'Right answers', '')}<p class="muted small">Your own targets, for today only — nothing carries over and nothing counts days in a row. Practice time counts only while you answer questions; games and the map do not move it.</p>`)}</div>
+      ${panel('', detail, 'cz-detail')}
+    </div>
+    <div class="cz-grid3">${panel('Your level, and the road ahead', ladder)}${panel('Shelly’s habit of the day', tipCard)}</div>
   </section>`;
 }

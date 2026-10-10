@@ -184,6 +184,19 @@ async function run(vp, tag) {
   /* the activity feed (O3): an active minute is written for this child */
   for (let i = 0; i < 6; i++) { await page.keyboard.press('Shift'); await page.clock.runFor(15000); }
   ok(await page.evaluate(() => { const f = JSON.parse(localStorage.getItem('bizzing.activity') || '{}'); return (f.s || []).some((x) => x.a === 'geography' && x.who === 'Ahana' && x.m >= 1); }), 'bizzing.activity gets an active minute for this child');
+  /* the daily goal (Bizzing Bee's three rings): app time ticked while the page was looked at, practice
+     time only while answering, right answers from the day's own count; the card opens the Coach */
+  ok(await page.evaluate(() => { const g = document.querySelector('[data-bz=ring] .cz-goal'); const t = g ? g.innerText : '';
+    return g && g.querySelectorAll('.cz-rings circle').length >= 3 && /App time/.test(t) && /Practice time/.test(t) && /Right answers/.test(t) && /Coach speaks/.test(t); }), 'Home: the daily goal — three rings, app time, practice time, right answers, and “Coach speaks”');
+  ok(await page.evaluate(() => { const d = window.__bzg.R.h.kids[0].days; const t = d[Object.keys(d).sort().pop()]; return t.app >= 60 && !(t.prac > 0); }), 'the clock: app time ticks on Home, practice time does not');
+  await page.click('[data-bz=ring] .cz-goal'); await page.waitForSelector('.coach .cz-hero');
+  ok(await page.evaluate(() => /Shelly’s read on Ahana/i.test(document.querySelector('.cz-hero').innerText) && document.querySelectorAll('.cz-tgt').length === 3 && document.querySelectorAll('.cz-rungs span').length === 10 && document.querySelector('.cz-tip h3')), 'the Coach: Shelly’s read, the three targets, the ten-road ladder, a habit of the day');
+  await shot('02d-coach'); await noSideways('coach');
+  await page.click('[data-act=tgt][data-arg="right|30"]'); await page.waitForTimeout(100);
+  ok(await page.evaluate(() => window.__bzg.R.h.kids[0].prefs.tgt.right === 30 && /\/30/.test(document.querySelector('.cz-today').innerText)), 'a target is the child’s own, and the ring re-measures against it');
+  const tipA = await page.locator('.cz-tip h3').innerText(); await page.click('[data-act=coachTip]'); await page.waitForTimeout(80);
+  ok((await page.locator('.cz-tip h3').innerText()) !== tipA, '“Another one” turns the habit over');
+  await nav('home'); await page.waitForSelector('[data-bz=home]');
 
   await nav('atlas'); await page.waitForSelector('.map-board');
   await page.waitForTimeout(400); await shot('03-atlas'); await noSideways('atlas');
@@ -241,6 +254,10 @@ async function run(vp, tag) {
   await page.evaluate(() => { const R = window.__bzg.R; R.h.parent.tester = false; });
   await page.evaluate(() => { const R = window.__bzg.R; R.run = { kind: 'drill', title: 'Map test', items: [{ kind: 'map', text: 'Tap France on the map.', ok: ['FR'], view: [-25, 34, 45, 72], why: '', target: 'FR', stop: 'cap-europe', lv: 2 }, { kind: 'map', text: 'Tap Spain on the map.', ok: ['ES'], view: [-25, 34, 45, 72], why: '', target: 'ES', stop: 'cap-europe', lv: 2 }], i: 0, results: [], fb: null, over: false, stop: 'cap-europe', lv: 2 }; window.__bzg.go('run'); });
   ok(await page.evaluate(() => document.documentElement.classList.contains('sc-calm')), 'a quiz run holds the scene still (calm)');
+  { const p0 = await page.evaluate(() => { const d = window.__bzg.R.h.kids[0].days; return d[Object.keys(d).sort().pop()].prac || 0; });
+    await page.clock.runFor(30000);
+    const p1 = await page.evaluate(() => { const d = window.__bzg.R.h.kids[0].days; return d[Object.keys(d).sort().pop()].prac || 0; });
+    ok(p1 >= p0 + 15, `practice time ticks while a question is on screen (${p0}s → ${p1}s)`); }
   await page.waitForSelector('.gmap.tap');
   await page.waitForTimeout(300); await shot('08-mapq');
   // France's shape includes overseas parts; tap inside the European part via the projection
@@ -988,7 +1005,7 @@ async function run(vp, tag) {
     ok(!got.some((x) => /geoguess-|time-/.test(x.u)), 'the heavy tools are not in the first screen');
   }
   await shot('27-demo');
-  await page.evaluate(() => { window.__bzg.fire('goal', '5'); }); for (let i = 0; i < 6; i++) { await page.keyboard.press('Shift'); await page.clock.runFor(15000); } await page.waitForTimeout(1200);   // the store writes on a short delay
+  await page.evaluate(() => { window.__bzg.fire('tgt', 'right|30'); }); for (let i = 0; i < 6; i++) { await page.keyboard.press('Shift'); await page.clock.runFor(15000); } await page.waitForTimeout(1200);   // the store writes on a short delay
   ok(JSON.stringify(await page.evaluate(() => [localStorage.getItem('bzg_household'), localStorage.getItem('bizzing.activity'), localStorage.getItem('bizzing.wallet')])) === JSON.stringify(before), 'the sample saves nothing and writes no shared feed');
   await page.close();
 }

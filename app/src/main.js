@@ -14,6 +14,7 @@ import { missAdd, missDue, missRight, missWrong, keyOf } from './mistakes.js';
 import { CATALOGUE, byAvatar, worldNo, canWear, stateOf as avState } from './avatars.js';
 import { buy as buyAvatar, buyWorld as buyWorldFam, worldOpen } from './bizzing-avatars.js';
 import { byId, drill, correct, worldOf, STOPS, newSeen, remember, vary } from './stops.js';
+import * as CZ from './coach.js';
 import { newHousehold, newKid, kid, AVATARS, tick, session, GOALS, stopRec, scoreRun, road, stopOpen, lvFor, passLevel, levelOf, CHECK_PASS } from './model.js';
 import { byCc } from './geo.js';
 import { shuffle, rnd } from './rand.js';
@@ -125,7 +126,7 @@ function focusTool(id, item) {
   if (!FOCUS[id]) return;
   loadTool(id).then((t) => { if (!t) return; FOCUS[id](t, libCtx(id), item); if (R.ui.nav === 'lib' && R.ui.arg === id) render(); });
 }
-const ROUTES = new Set(['home', 'atlas', 'world', 'stop', 'road', 'exp', 'expd', 'proj', 'library', 'play', 'lib', 'game', 'me', 'settings', 'shop', 'collection', 'medals', 'help', 'search', 'mistakes', 'feed', 'run', 'welcome', 'grownups', 'privacy', 'story']);
+const ROUTES = new Set(['home', 'atlas', 'world', 'stop', 'road', 'exp', 'expd', 'proj', 'library', 'play', 'lib', 'game', 'me', 'settings', 'shop', 'collection', 'medals', 'help', 'search', 'mistakes', 'coach', 'feed', 'run', 'welcome', 'grownups', 'privacy', 'story']);
 function go(nav, arg = null, fromHash = false) {
   let focus = null;
   if ((nav === 'lib' || nav === 'expd') && arg && arg.includes('/')) { const i = arg.indexOf('/'); focus = arg.slice(i + 1); arg = arg.slice(0, i); }
@@ -191,6 +192,7 @@ function screen() {
     case 'help': return C.viewHelp();
     case 'search': return viewSearch(R.ui.q || R.ui.arg || '');
     case 'mistakes': return V.viewMistakes();
+    case 'coach': return V.viewCoach();
     case 'feed': return viewFeed(k);
     default: return V.viewHome();
   }
@@ -701,6 +703,20 @@ on('hourAns', (cc) => {
   save(); render();
 });
 on('goal', (n) => { const k = kid(R.h); if (GOALS.includes(+n)) { k.prefs.goal = +n; save(); render(); } });
+/* the Coach (Bizzing Bee's): the child's own daily targets, a trap to look at, a habit to turn over */
+on('tgt', (a) => { const k = kid(R.h), [f, v] = String(a).split('|'); if (!k || !CZ.TGT_CHOICES[f] || !CZ.TGT_CHOICES[f].includes(+v)) return; k.prefs.tgt = { ...CZ.targets(k), [f]: +v }; save(); render(); focusIn(`[data-act=tgt][data-arg="${f}|${v}"]`); });
+on('coachTrap', (t) => { if (!CZ.TRAPS[t]) return; R.ui.coachTrap = t; render(); });
+on('coachTip', (i) => { R.ui.coachTip = +i || 0; render(); });
+on('beatTrap', (t) => { const k = kid(R.h), id = CZ.TRAPS[t] && CZ.beatStop(k, t); if (!id || !byId[id]) return; if (!stopOpen(k, id)) { toast('That stop is further along your road — the trick works on the questions you meet before it.'); return; } startDrill(id); });
+/* the daily goal's clock (Bee's metricTick): app time while the page is looked at, practice time
+   only while a question run is on screen; a sample explorer is never timed */
+setInterval(() => {
+  if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+  const k = kid(R.h); if (!k || R.demo || R.ui.nav === 'welcome' || R.ui.nav === 'landing') return;
+  CZ.metricTick(k, !!(R.run && R.run.kind !== 'trial'));
+  if (!R.czSave) R.czSave = setTimeout(() => { R.czSave = null; save(); }, 60000);
+  const el = !R.run && root.querySelector('.cz-goal'); if (el) el.outerHTML = V.dailyGoal(k);   // Home's rings move in place, nothing else re-renders
+}, CZ.TICK * 1000);
 on('still', () => { Store.saveDevice('still', !Store.loadDevice('still', false)); render(); });
 /* themes belong to the child: chosen on their page, applied at once */
 on('theme', (id) => {

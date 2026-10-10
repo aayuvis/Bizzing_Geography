@@ -138,9 +138,11 @@ Inherited from the family, and it holds here:
 - **Tabs: Home · Atlas · Expeditions · Library · Play · My Feed** (My Feed last, FAMILY-STANDARD §6a; a grown-up can switch it off behind the PIN). "My road" is the Atlas's second tab,
   **Your journey** (the ten levels as a strip, then the level's stations) — the road only ever
   explained the map.
-- **Home is Bizzing Bee's and India's shape**: greeting card (avatar + speech bubble), **Today's
-  ring** (sessions today against a 2/3/5 goal — `model.js session()`; today only, nothing carries
-  over, so it is not a streak), word of the day; two picture journey cards (next station, your
+- **Home is Bizzing Bee's and India's shape**: greeting card (avatar + speech bubble), **the daily goal**
+  (Bee's three rings, `src/coach.js`: **app time** — ticks only while the page is visible, **practice time** —
+  only while a question run is on screen, never games, the feed or the map — and **right answers** today;
+  the child's own targets, today only, nothing counts days in a row; past a target a second lap; the card
+  opens the Coach and its foot opens Your journey), word of the day; two picture journey cards (next station, your
   expedition); today's place and landmark of the day. Rank lives in the header pill and on Me.
   **The hello card wears the child's own avatar, and a tap opens the deck** (Bizzing Bee's, the owner;
   `src/avatar-cards.js`, `data/avatar-lore.js`): every one of the 96 is a trading card — an overall and Bee's four
@@ -202,6 +204,21 @@ Inherited from the family, and it holds here:
   props per theme, calm (paused) during a quiz run and on the device's "Still background" switch;
   the Satellite globe is painted from the app's own map data. Scene classes are prefixed `s-`/`scn`
   because the app already owns `.sky`, `.bubble` and `.sc`.
+
+## The Coach (Bizzing Bee's Coach desk, the owner, 10 Oct 2026)
+
+`#/coach` (`src/coach.js` rules, `views.js viewCoach`), reached from Home's daily goal and the drawer.
+Hardcoded and offline — no model anywhere, Bee's discipline. It reads the **mistakes deck** and groups it
+into **eleven traps**, one per kind of geography thinking (which way · reading a map · continents & oceans ·
+capitals · flags · countries & borders · lines on the globe · land & water · weather & climate · the restless
+Earth · people & places). Shelly says the one thing (the biggest trap, in the child's terms); "What catches
+you" is a bar per trap; the chosen trap is **what goes wrong → the trick → before you tap → your own
+questions** (the child's missed questions with the right answer and the generator's own reason), and **Beat
+it** opens the stop with most misses in it. Then the child's numbers (stars, capitals known, to revise, right
+in the last 30 days — never a streak), their three targets, the ten-road ladder (right now / coming next, in
+`levels.js`'s own words) and a habit of the day. **A trick teaches method and never names a real place**
+(rule 3): `test/coach.mjs` fails on a country or capital in any trick or habit, and on a stop no trap claims
+— both watched to fail.
 
 ## Play (the games)
 
@@ -279,7 +296,7 @@ The shared spec every Bizzing app follows. Here it lives in five files:
 - **Read it to me**: 🔊 on every question, lesson and instruction, in the **device's own voice**
   (an Indian English one first). **No recorded clips** (the owner's decision). 6–7 auto-reads.
 - **Report card**: Time (active minutes from the feed) · Progress (level, road, expeditions) ·
-  Mastery (worlds, capitals, flags, objectives learned). Per child: ring goal, read-aloud, delete.
+  Mastery (worlds, capitals, flags, objectives learned). Per child: the daily goal (the child sets it on the Coach page), read-aloud, delete.
 - **Weight**: Where on Earth? and Earth Through Time load on demand (`library/index.js loadTool`,
   prefetched when idle so they work offline). So do the eight countries' state shapes (`map.js regionsReady`;
   a state map asked for first draws "Drawing the map…" and re-renders on `bzg-regions-ready`) and the
@@ -287,7 +304,7 @@ The shared spec every Bizzing app follows. Here it lives in five files:
   ≤ 400 KB gzipped (365 KB after the v4 split) and the phone's first screen ≤ 1.5 MB.
 - **Tabs: Home · Atlas · Expeditions · Library · Play · My Feed** (the owner kept "Expeditions" and asked for Play; My Feed is last, owner 2 Oct 2026): a tab row under the top bar
   at ≥900px, a bottom bar below. Everything else is in the **☰ drawer** (`src/chrome.js`): My page · Shop ·
-  Collection · Medals · Your journey · My mistakes · Where on Earth? · My Feed (Search when the feed is off — the shell takes four app rows) · Settings · Grown-ups · Help ·
+  Collection · Medals · Your journey · My mistakes · Coach · My Feed (Search when the feed is off — the shell takes four app rows) · Settings · Grown-ups · Help ·
   Privacy · Back to the Hive, with a one-tap mute.
 - **Top bar** (standard §3): ⬡ Hive · ☰ · Shelly + Bizzing Geography · search · coin chip (opens the wallet
   history) · light/dark · 🔒 · avatar ▾. **Settings** is Bee's sheet in five sections (Me · Sound & music ·

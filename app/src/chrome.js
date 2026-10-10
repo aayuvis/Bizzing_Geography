@@ -81,7 +81,7 @@ export function drawer(k) {
     <nav class="dr-list" aria-label="Everything">
       ${k ? `${it('nav', 'me', 'user', 'My page')}${it('nav', 'shop', 'bag', 'Shop')}${it('nav', 'collection', 'cards', 'Collection', `<i>${CATALOGUE.filter((a) => stateOf(a.id, ctxOf(k)).state === 'owned').length}/96</i>`)}${it('nav', 'medals', 'medal', 'Medals', `<i>${earned(k).length}</i>`)}
       <hr>
-      ${it('nav', 'road', 'road', 'Your journey')}${it('nav', 'mistakes', 'retry', 'My mistakes', nMiss ? `<i>${due ? due + ' ready' : nMiss}</i>` : '')}${it('nav', 'search', 'search', 'Search')}${it('openTool', 'geoguess', 'globe', 'Where on Earth?')}
+      ${it('nav', 'coach', 'brain', 'Coach')}${it('nav', 'road', 'road', 'Your journey')}${it('nav', 'mistakes', 'retry', 'My mistakes', nMiss ? `<i>${due ? due + ' ready' : nMiss}</i>` : '')}${it('nav', 'search', 'search', 'Search')}${it('openTool', 'geoguess', 'globe', 'Where on Earth?')}
       <hr>` : ''}
       ${it('nav', 'settings', 'gear', 'Settings')}${it('nav', 'grownups', 'lock', 'Grown-ups')}${it('nav', 'help', 'help', 'Help')}${it('nav', 'privacy', 'shield', 'Privacy')}
       <a class="dr-i" href="${HIVE}">${ico('hex')}<span>Back to the Hive</span></a>
@@ -348,7 +348,7 @@ export function shell(body, { home = false } = {}) {
     drawer: { sub: k ? `Level ${k.road.level} · ${rankOf(k.xp).n}` : 'Welcome',
       app: [{ icon: 'path', label: 'Your journey', sub: 'the ten levels, stop by stop', href: '#/road' },
         { icon: 'star', label: 'My mistakes', sub: due ? `${due} ready to try again` : 'misses come back after a gap', href: '#/mistakes' },
-        { icon: 'globe', label: 'Where on Earth?', sub: 'pin a real place on the map', href: '#/game/geoguess' },
+        { icon: 'lamp', label: 'Coach', sub: 'what catches you, and the trick that fixes it', href: '#/coach' },
         /* the shell takes four rows here: My Feed has one when it is on; Search keeps the top bar's box */
         ...(feedOn(h) ? [{ icon: 'feed', label: 'My Feed', sub: 'about twenty cards from across the app, and then it ends', href: '#/feed' }] : [{ icon: 'search', label: 'Search', sub: 'places, stops, words and tools', href: '#/search' }])] },
     content: `${pre}${body}${home ? '' : `<footer class="foot">${FOOT()}</footer>`}`,

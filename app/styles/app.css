@@ -1540,7 +1540,7 @@ h1,h2,h3,.tab,.tb,.set-head h1,.set-sec h2,.shop-page h1,.dr-i{font-family:var(-
 .hourq-tile .fb{margin:0 0 6px;font-size:13.5px;padding:4px 8px}
 .hourq-pin{display:inline-block;margin-top:8px;font-weight:700;font-size:14px}
 
-.h-prog{display:block;font-size:13px;color:var(--muted);margin:2px 0 6px} .h-prog .ico{width:14px;height:14px;vertical-align:-2px;color:#E8A317}
+.h-prog{display:block;font-size:12.5px;color:var(--muted);margin:4px 0 0} .h-prog .ico{width:14px;height:14px;vertical-align:-2px;color:#E8A317}
 
 /* painted medals: earned in full colour; not yet, the same painting faded */
 img.medal{display:block;object-fit:contain;filter:drop-shadow(0 3px 6px rgb(0 0 0 / .25))}
@@ -1707,3 +1707,77 @@ img.medal.dim{filter:grayscale(.75) opacity(.62) contrast(1.05)}
 .col-w-b{display:flex;flex-direction:column;gap:6px;padding:12px;align-items:flex-start}
 @media (max-width:560px){.col-head{grid-template-columns:auto 1fr}.col-head .phead-t{text-align:left}.col-head .phead-r{grid-column:1/-1;justify-self:stretch;justify-content:space-between}
   .col-tabs button{font-size:13px;padding:0 4px}.col-tabs .col-n{display:block;margin:0}.col-app{display:none}}
+
+/* ---- the daily goal and the Coach (Bizzing Bee's, the owner, 10 Oct 2026) ---- */
+.cz-goal{display:flex;align-items:center;gap:13px;width:100%;padding:0;text-align:left;background:none;border:0;cursor:pointer;color:inherit;font:inherit}
+.cz-goal-r{flex:none;width:96px;height:96px;display:grid;place-items:center}
+.cz-goal-t{min-width:0;flex:1;display:flex;flex-direction:column;gap:3px}
+.cz-goal-top{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:2px}
+.cz-goal-h{font-family:var(--display);font-size:17px}
+.cz-line{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:800;line-height:1.3}
+.cz-line i{width:8px;height:8px;border-radius:3px;flex:none}
+.cz-line>span{color:var(--muted)}
+.cz-line b{margin-left:auto;font-variant-numeric:tabular-nums;white-space:nowrap}
+.cz-line em{font-style:normal;color:var(--muted)}
+.cz-goal-l{margin-left:auto;color:var(--action);font-weight:800;font-size:12.5px;white-space:nowrap}
+.cz-hero{position:relative;border-radius:20px;padding:clamp(14px,3vw,22px);margin-bottom:14px;background:linear-gradient(135deg,var(--tc),color-mix(in srgb,var(--tc) 35%,#1b1426));color:#fff;display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;align-items:center}
+.cz-read{display:flex;align-items:center;gap:14px;min-width:0}
+.cz-read .shelly{flex:none;width:84px;height:84px}
+.cz-kick{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:rgb(255 255 255 / .75);margin:0 0 4px}
+.cz-say{font-family:var(--display);font-weight:800;font-size:clamp(15px,2.4vw,19px);line-height:1.4;margin:0}
+.cz-say b{color:#fff;text-decoration:underline;text-underline-offset:3px}
+.cz-today{display:flex;align-items:center;gap:12px;background:rgb(255 255 255 / .12);border:1px solid rgb(255 255 255 / .24);border-radius:16px;padding:12px 14px}
+.cz-today>div{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.cz-today .cz-line>span,.cz-today .cz-line em{color:rgb(255 255 255 / .75)}
+.cz-grid{display:grid;grid-template-columns:minmax(250px,.7fr) minmax(0,1.3fr);gap:14px;align-items:start;margin-bottom:14px}
+.cz-col{display:flex;flex-direction:column;gap:14px;min-width:0}
+.cz-grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px;align-items:start}
+.cz-p{margin:0}
+.cz-ph{font-size:16px;margin:0 0 10px}
+.cz-radar{display:flex;flex-direction:column;gap:6px}
+.cz-trap{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:8px 11px;border-radius:12px;background:transparent;border:1px solid transparent;color:inherit;font:inherit;cursor:pointer}
+.cz-trap.on{background:var(--surface2, color-mix(in srgb,var(--ink) 6%,transparent));border-color:var(--tc)}
+.cz-trap-t{flex:1;min-width:0;font-weight:800;font-size:14px}
+.cz-bar{display:block;height:7px;border-radius:4px;background:color-mix(in srgb,var(--ink) 8%,transparent);overflow:hidden;margin-top:4px}
+.cz-bar i{display:block;height:100%;border-radius:4px;background:var(--tc)}
+.cz-trap>b{font-family:var(--display);font-size:16px;color:var(--tc)}
+.cz-det-h{display:flex;align-items:center;gap:12px;padding-bottom:10px}
+.cz-det-h .shelly{flex:none;width:58px;height:58px}
+.cz-det-h>div{flex:1;min-width:0}
+.cz-det-h h2{margin:0;font-size:clamp(18px,3vw,22px)}
+.cz-det-h p{margin:2px 0 0}
+.cz-beat{background:var(--tc);border-color:var(--tc);color:#fff;font-weight:800;flex:none}
+.cz-step{display:flex;gap:11px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line)}
+.cz-n{flex:none;width:24px;height:24px;border-radius:50%;color:#fff;display:grid;place-items:center;font-weight:800;font-size:12.5px}
+.cz-step>div{min-width:0;flex:1}
+.cz-step p{margin:0 0 6px;line-height:1.55}
+.cz-st{font-weight:800;font-size:12.5px;letter-spacing:.05em;text-transform:uppercase}
+.cz-check{padding:10px 12px;border-radius:11px;background:color-mix(in srgb,var(--tc) 13%,transparent)}
+.cz-own{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.cz-own li{padding:9px 11px;border-radius:11px;background:color-mix(in srgb,var(--ink) 4%,transparent);border-left:3px solid var(--tc)}
+.cz-own li p{margin:0 0 3px}
+.cz-x{color:var(--bad,#C4453C);font-weight:800}
+.cz-none{text-align:center;padding:18px}
+.cz-none .shelly{width:96px;height:96px}
+.cz-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.cz-stat{padding:11px 12px;border-radius:13px;background:color-mix(in srgb,var(--sc) 12%,transparent)}
+.cz-stat b{display:block;font-family:var(--display);font-size:clamp(19px,3.4vw,24px);line-height:1;color:var(--sc)}
+.cz-stat span{display:block;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.cz-tgt{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px;font-weight:700;font-size:14px}
+.cz-tgt-b{display:flex;gap:4px;flex-wrap:wrap}
+.cz-tgt-b button{min-width:44px;min-height:36px;padding:0 9px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-weight:800;cursor:pointer}
+.cz-tgt-b button.on{background:var(--action);border-color:var(--action);color:#fff}
+.cz-rungs{display:flex;gap:4px;margin-bottom:12px}
+.cz-rungs span{flex:1;display:grid;place-items:center;height:30px;border-radius:8px;font-weight:800;font-size:13px;background:color-mix(in srgb,var(--ink) 6%,transparent);color:var(--muted)}
+.cz-rungs span.done{background:color-mix(in srgb,var(--good,#2FA35C) 22%,transparent);color:var(--ink)}
+.cz-rungs span.on{background:var(--action);color:#fff;transform:scale(1.08)}
+.cz-2{display:flex;gap:11px;flex-wrap:wrap}
+.cz-2>div{flex:1;min-width:210px}
+.cz-2 p{margin:0 0 3px;line-height:1.55}
+.cz-kick2{font-size:11px!important;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.cz-next{padding:11px 13px;border-radius:12px;background:color-mix(in srgb,#F0B429 15%,transparent)}
+.cz-tip{display:flex;gap:12px;align-items:flex-start;margin-bottom:10px}
+.cz-tip .shelly{flex:none;width:52px;height:52px}
+.cz-tip h3{margin:0 0 4px;font-size:16px}
+.cz-tip p{margin:0;line-height:1.55}
+@media (max-width:760px){.cz-hero{grid-template-columns:1fr}.cz-grid{grid-template-columns:1fr}.cz-goal-r{width:88px;height:88px}.cz-goal-r svg{width:88px;height:88px}}
