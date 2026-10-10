@@ -1,4 +1,4 @@
-import{g as e,i as c,d as r,$ as p}from"./index-DTxm0PmZ.js";const i=a=>String(a).replace(/[&<>"]/g,t=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[t]),$=(a,t="Read it to me")=>`<button class="read-btn" data-act="read" data-arg="${i(a)}" aria-label="${i(t)}" title="${i(t)}">${c("sound")}</button>`;function m(a,{how:t,starts:s,best:n="",note:o=""}){return`<div class="gm-title card">
+import{g as e,i as c,d as r,$ as p}from"./index-DIxU2fK0.js";const i=a=>String(a).replace(/[&<>"]/g,t=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[t]),$=(a,t="Read it to me")=>`<button class="read-btn" data-act="read" data-arg="${i(a)}" aria-label="${i(t)}" title="${i(t)}">${c("sound")}</button>`;function m(a,{how:t,starts:s,best:n="",note:o=""}){return`<div class="gm-title card">
     <div class="gm-art" style="background-image:url(art/${a.art}.webp)"><span class="gm-glyph" aria-hidden="true">${e(a.glyph)}</span></div>
     <div class="gm-body">
       <h2>${i(a.name)}</h2>
