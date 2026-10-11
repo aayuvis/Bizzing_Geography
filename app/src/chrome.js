@@ -65,7 +65,8 @@ export function whoMenu(k) {
   return `<div class="who-menu" role="menu" aria-label="Explorers">
     ${R.h.kids.map((x) => `<button role="menuitemradio" aria-checked="${x.id === k.id}" class="wm-kid${x.id === k.id ? ' on' : ''}" data-act="switchKid" data-arg="${x.id}">${av(x.avatar, 44)}<b>${esc(x.name)}</b>${x.id === k.id ? ico('check') : ''}</button>`).join('')}
     <hr>
-    <button role="menuitem" class="wm-i" data-act="nav" data-arg="me">My page — avatar, badges, collection</button>
+    <button role="menuitem" class="wm-i" data-act="openCollection" data-arg="medals">Collections</button>
+    <button role="menuitem" class="wm-i" data-act="nav" data-arg="me">My progress</button>
     <button role="menuitem" class="wm-i" data-act="nav" data-arg="settings">Settings</button>
     ${R.demo ? '' : `<button role="menuitem" class="wm-i" data-act="nav" data-arg="welcome">+ Add a child <small class="wm-tag">grown-ups</small></button>`}
   </div>`;
@@ -160,7 +161,7 @@ export function avCard(a, k, ctx) {
 export function viewCollection() {
   const k = kid(R.h), ctx = ctxOf(k), tab = R.ui.colTab || 'avatars', c = balance(k.name);
   const ownedAv = CATALOGUE.filter((a) => stateOf(a.id, ctx).state === 'owned'), openW = THEMES.filter((t, i) => worldOpen(i + 1, ctx)).length;
-  const tb = (id, label, n, of) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? 'on' : ''}" data-act="colTab" data-arg="${id}">${label} <span class="col-n">${n}/${of}</span></button>`;
+  const tb = (id, label, n, of, icon) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? 'on' : ''}" data-act="colTab" data-arg="${id}">${ico(icon)} ${label} <span class="col-n">· ${n}/${of}</span></button>`;
   let body = '';
   if (tab === 'medals') body = medalShelf(k);
   else if (tab === 'worlds') {
@@ -185,7 +186,7 @@ export function viewCollection() {
   return `<section class="collection">
     <header class="phead col-head"><button class="btn ghost col-back" data-act="nav" data-arg="home">‹ Home</button><div class="phead-t"><h1>Collection</h1></div>
       <div class="phead-r">${tab === 'avatars' && ownedAv.length ? `<button class="btn small" data-act="printCards">${ico('print')} Print my cards</button>` : ''}<span class="chip col-coins">${ico('coin')} ${c.toLocaleString('en-US')}</span></div></header>
-    <div class="col-tabs" role="tablist" aria-label="Your collection">${tb('medals', 'Medals', earned(k).length, MEDALS.length)}${tb('avatars', 'Avatars', ownedAv.length, CATALOGUE.length)}${tb('worlds', 'Worlds', openW, THEMES.length)}</div>
+    <div class="col-tabs" role="tablist" aria-label="Your collection">${tb('medals', 'Medals', earned(k).length, MEDALS.length, 'medal')}${tb('avatars', 'Avatars', ownedAv.length, CATALOGUE.length, 'sparkle')}${tb('worlds', 'Worlds', openW, THEMES.length, 'palette')}</div>
     <div class="col-body">${body}</div>
   </section>`;
 }
@@ -230,10 +231,25 @@ export function viewShop() {
 export const pinSwatch = (shape) => `<svg viewBox="-12 -12 24 24" width="34" height="34" aria-hidden="true">${PIN_PATH[shape] ? `<path d="${PIN_PATH[shape]}" class="pin-shape"/>` : '<circle r="7" class="pin-shape"/>'}</svg>`;
 
 /* ------------------------------------------------------------------ Medals */
+/* Bee's medal page: the medals in groups, each "n/N won", every tile its painting, its name, how it is
+   won and LOCKED or the day it was earned */
+export const MEDAL_GROUPS = [
+  ['Atlas', (m) => m.id === 'first-station' || m.id === 'ten-aced' || m.id.startsWith('world-')],
+  ['Roads', (m) => m.id.startsWith('level-')],
+  ['Capitals & flags', (m) => m.id.startsWith('caps-') || m.id === 'flags-50' || m.id.startsWith('states-')],
+  ['Expeditions', (m) => m.id.startsWith('exp-') || m.id === 'first-made' || m.id === 'part-learned'],
+  ['Play', () => true],
+];
+export function medalGroups() {
+  const left = MEDALS.slice();
+  return MEDAL_GROUPS.map(([name, f]) => { const ms = left.filter(f); ms.forEach((m) => left.splice(left.indexOf(m), 1)); return [name, ms]; }).filter(([, ms]) => ms.length);
+}
 export function medalShelf(k) {
-  const got = earned(k).length;
-  return `<div class="card" id="medals"><div class="row between wrap"><h2>Medals <span class="muted small">${got} of ${MEDALS.length}</span></h2><span class="muted small">Each one is earned by what you did — never by luck, never by days in a row.</span></div>
-    <ol class="medal-shelf">${MEDALS.map((m) => { const on = (k.medals || {})[m.id]; return `<li class="${on ? 'got' : ''}" title="${esc(m.how)}">${medallion(m, 64, !!on)}<b>${esc(m.name)}</b><span>${on ? `Earned ${esc(on)}` : esc(m.how)}</span></li>`; }).join('')}</ol></div>`;
+  const got = (m) => (k.medals || {})[m.id];
+  return `<div id="medals" class="md-groups">${medalGroups().map(([name, ms]) => `<section class="card md-group">
+      <h2>${esc(name)} <span class="muted small">${ms.filter(got).length}/${ms.length} won</span></h2>
+      <ol class="medal-shelf">${ms.map((m) => { const on = got(m); return `<li class="${on ? 'got' : ''}" title="${esc(m.how)}">${medallion(m, 64, !!on)}<b>${esc(m.name)}</b><span>${esc(m.how)}</span><em class="md-st">${on ? `Won ${esc(on)}` : 'Locked'}</em></li>`; }).join('')}</ol></section>`).join('')}
+    <p class="muted small center-t">Each one is earned by what you did — never by luck, never by days in a row.</p></div>`;
 }
 export const viewMedals = () => `<section class="narrow">${head('Medals')}${medalShelf(kid(R.h))}</section>`;
 

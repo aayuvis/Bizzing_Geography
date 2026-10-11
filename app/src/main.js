@@ -532,6 +532,7 @@ function focusIn(sel) { const f = root.querySelector(sel); if (f) f.focus(); }
 on('drawer', () => { R.ui.drawer = !R.ui.drawer; R.ui.menu = false; render(); if (R.ui.drawer) focusIn('.drawer .dr-x'); else focusIn('.burger'); });
 on('wallet', () => { R.ui.sheet = R.ui.sheet === 'wallet' ? null : 'wallet'; R.ui.drawer = false; render(); if (R.ui.sheet) focusIn('#wallet-sheet .tool'); else focusIn('.coin-chip'); });
 on('back', () => history.back());
+on('openCollection', (t) => { R.ui.menu = false; R.ui.colTab = ['medals', 'avatars', 'worlds'].includes(t) ? t : 'medals'; go('collection'); });
 on('colTab', (t) => { if (!['medals', 'avatars', 'worlds'].includes(t)) return; R.ui.colTab = t; render(); focusIn('.col-tabs .on'); });
 on('printCards', () => {
   const k = kid(R.h); if (!k) return;

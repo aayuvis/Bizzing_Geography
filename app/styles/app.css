@@ -1781,3 +1781,12 @@ img.medal.dim{filter:grayscale(.75) opacity(.62) contrast(1.05)}
 .cz-tip h3{margin:0 0 4px;font-size:16px}
 .cz-tip p{margin:0;line-height:1.55}
 @media (max-width:760px){.cz-hero{grid-template-columns:1fr}.cz-grid{grid-template-columns:1fr}.cz-goal-r{width:88px;height:88px}.cz-goal-r svg{width:88px;height:88px}}
+/* Bee's medal page: groups, each "n/N won"; a tile says Locked or the day it was won */
+.md-groups{display:flex;flex-direction:column;gap:14px}
+.md-group{margin:0}
+.md-group h2{font-size:18px;margin:0 0 4px;display:flex;align-items:baseline;gap:10px}
+.md-group .medal-shelf li{border:1px solid var(--line);background:var(--card)}
+.md-group .medal-shelf li.got{background:var(--action-tint);border-color:color-mix(in srgb,var(--action) 40%,transparent)}
+.md-st{font-style:normal;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.md-group li.got .md-st{color:var(--action)}
+.col-tabs .ico{width:18px;height:18px;vertical-align:-3px}

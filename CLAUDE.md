@@ -291,8 +291,9 @@ The shared spec every Bizzing app follows. Here it lives in five files:
   saves nothing and writes no shared key (asserted).
 - **Top bar** (56px, the family order): ⬡ back to the Hive · name · theme · 🔒 · avatar ▾. Shelly beside the
   name is the whole turtle (`mascot/shelly-brand.webp`), never the cropped head. The avatar ▾ opens Bee's menu
-  (`whoMenu`): every child with the current one ticked, then **My page — avatar, badges, collection**,
-  **Settings**, **+ Add a child** (marked grown-ups; hidden in the sample). `?from=hive` shows "← back to my day".
+  (`whoMenu`): every child with the current one ticked, then **Collections** (straight to the Collection on its
+  Medals tab, Bee's — medals in groups, each "n/N won", every tile Locked or the day it was won), **My progress**
+  (My page), **Settings**, **+ Add a child** (marked grown-ups; hidden in the sample). `?from=hive` shows "← back to my day".
 - **Read it to me**: 🔊 on every question, lesson and instruction, in the **device's own voice**
   (an Indian English one first). **No recorded clips** (the owner's decision). 6–7 auto-reads.
 - **Report card**: Time (active minutes from the feed) · Progress (level, road, expeditions) ·
