@@ -58,12 +58,13 @@ async function run(vp, tag) {
   }
   await page.evaluate(() => { document.documentElement.setAttribute('data-mode', 'light'); window.__bzg.R.render(); });
 
-  /* the feed: twenty, then the end; nothing sideways; only the groups its session needs */
+  /* the feed: forty, then the end; nothing sideways; only the groups its session needs */
   ok(!groups.length, `${tag}: no card group loads before #/feed (${groups.join(',')})`);
   await page.click(`${tabSel}[href="#/feed"]`);
   await page.waitForSelector('.bzf-list [data-bz=feed-end]');
   const n = await page.locator('.bzf-list .bzf-card:not(.bzf-end)').count();
-  ok(n >= 15 && n <= 20, `${tag}: a session of about twenty (${n}), then the finished card`);
+  ok(n >= 30 && n <= 40, `${tag}: a session of up to forty (${n}), then the finished card`);
+  ok(!(await page.locator('[data-bz=phead] small').count()) && !(await page.locator('.bzf-end .bzf-body').count()), `${tag}: no subtitle explaining the feed, no sentence explaining its end`);
   ok(await page.locator('.bzf-list .bzf-card').last().getAttribute('data-bz') === 'feed-end' && !/load more|see more/i.test(await page.locator('.bzf-list').innerText()), `${tag}: it ends — nothing loads more`);
   const sess = await page.evaluate(() => window.__bzg.R.h.kids[0].feed.sess.list.map((x) => x.id));
   const need = [...new Set(sess.map((id) => G[id]))].sort();
@@ -169,4 +170,4 @@ try {
   await cityLink();
 } finally { await browser.close(); srv.kill(); rmSync(SITE, { recursive: true, force: true }); }
 if (fails) { console.error(`✗ feed-ui: ${fails} failure(s)`); process.exit(1); }
-console.log('✓ feed-ui: My Feed the last tab, checkShell [], twenty and then the end, only its own groups, contrast in 6 worlds × 2, keyboard and touch, pays once, the PIN switch, ?demo writes nothing');
+console.log('✓ feed-ui: My Feed the last tab, checkShell [], forty and then the end, only its own groups, contrast in 6 worlds × 2, keyboard and touch, pays once, the PIN switch, ?demo writes nothing');

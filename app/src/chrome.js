@@ -366,7 +366,7 @@ export function shell(body, { home = false } = {}) {
         { icon: 'star', label: 'My mistakes', sub: due ? `${due} ready to try again` : 'misses come back after a gap', href: '#/mistakes' },
         { icon: 'lamp', label: 'Coach', sub: 'what catches you, and the trick that fixes it', href: '#/coach' },
         /* the shell takes four rows here: My Feed has one when it is on; Search keeps the top bar's box */
-        ...(feedOn(h) ? [{ icon: 'feed', label: 'My Feed', sub: 'about twenty cards from across the app, and then it ends', href: '#/feed' }] : [{ icon: 'search', label: 'Search', sub: 'places, stops, words and tools', href: '#/search' }])] },
+        ...(feedOn(h) ? [{ icon: 'feed', label: 'My Feed', sub: 'questions and places for today', href: '#/feed' }] : [{ icon: 'search', label: 'Search', sub: 'places, stops, words and tools', href: '#/search' }])] },
     content: `${pre}${body}${home ? '' : `<footer class="foot">${FOOT()}</footer>`}`,
   });
   return `<a class="skip" href="#main">Skip to the content</a>

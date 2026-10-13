@@ -72,7 +72,9 @@ export function feedOpts(h, k, items, now = Date.now()) {
    5 of 20). From the engine's own ranked order, take at most MAX_TOPIC cards about one thing (a stop, a
    country, a word's topic…), MAX_KIND of one kind, MAX_WORLD from one world (its painting) and MAX_TF two-option questions, keeping the engine's tier
    shares (review and any ≤ a quarter each, next ≤ 2) and its "never three of a kind in a row". */
-export const LIMIT = 20, MAX_TOPIC = 2, MAX_KIND = 4, MAX_TF = 1, MAX_WORLD = 3;
+/* the owner: forty a session. The shares the v4 audit set for twenty scale with it — a kind at most a fifth,
+   a world's painting 3 in 20, one true/false in 20 — but "about one thing" stays at two: repetition is not a share */
+export const LIMIT = 40, MAX_TOPIC = 2, MAX_KIND = LIMIT / 5, MAX_TF = LIMIT / 20, MAX_WORLD = Math.round(LIMIT * 3 / 20);
 export const topicOf = (it) => (it.stop ? 'stop:' + it.stop : (it.topics || []).find((t) => /^(stop|cc|exp|dict|world):/.test(t)) || (it.topics || [])[0] || it.kind);
 export function capSession(ranked, items) {
   const byId = new Map(items.map((x) => [x.id, x])), out = [], n = { topic: {}, kind: {}, tier: {}, why: {} };
@@ -81,7 +83,7 @@ export function capSession(ranked, items) {
   for (const pass of [0, 1]) for (const x of ranked) {
     /* a second pass only when the first fell short: the caps on a topic, a kind and a world hold; the
        quarter-shares of review and level-free cards give way (never "next", never past the limit) */
-    if (out.length >= LIMIT || (pass && out.length >= 16)) break;
+    if (out.length >= LIMIT) break;
     if (out.includes(x)) continue;
     const it = byId.get(x.id); if (!it) continue;
     const t = topicOf(it), two = it.play === 2 || !!(it.play && it.play.opts && it.play.opts.length === 2), L = out.length;
@@ -103,7 +105,7 @@ export function feedSession(h, k, items, now = Date.now()) {
   const o = feedOpts(h, k, items, now), f = feedRec(k);
   const key = [o._today, (k.last || {}).at || 0, k.road.level, Object.keys(o.due).length, k.band].join('|');
   if (f.sess && f.sess.key === key && f.sess.list.every((x) => items.some((i) => i.id === x.id))) return f.sess.list;
-  const list = capSession(feedFor({ ...o, limit: 150, maxKind: 99, maxWhy: 99 }), items);
+  const list = capSession(feedFor({ ...o, limit: 400, maxKind: 99, maxWhy: 99 }), items);
   for (const x of list) f.seen[x.id] = o._today;
   for (const id of Object.keys(f.seen)) if (o._today - f.seen[id] > 14) delete f.seen[id];
   f.sess = { key, list };

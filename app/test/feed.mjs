@@ -7,7 +7,7 @@
             one right answer that is not in its text.
    RANKING  a younger band never sees an older band's card; a child on level n sees nothing above
             n + 1; moving up changes the "now" cards; what the child did moves its cards up and
-            says why; a slipped question comes back first; a session is at most twenty.
+            says why; a slipped question comes back first; a session is at most forty (feed.js LIMIT).
    Each was watched failing once (see the commit). */
 import { existsSync, readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -29,7 +29,7 @@ import { ERAS_NEED_REVIEW } from '../src/data/eras.js';
 import { HISTORY_NEEDS_REVIEW } from '../src/data/history.js';
 import { newHousehold, newKid } from '../src/model.js';
 import { feedFor, order, LIMIT } from '../src/bizzing-feed.js';
-import { feedOpts, feedSession, topicOf } from '../src/feed.js';
+import { feedOpts, feedSession, topicOf, LIMIT as SESSION, MAX_KIND, MAX_TF, MAX_WORLD } from '../src/feed.js';
 import { plain, QSEED, QN, bandOfLevel, leaks, words, jaccard, NEAR, nearDups, nearPairs, groupOf, metaOf } from '../../tools/build-feed.mjs';
 import { PLACES } from '../src/data/places.js';
 import { STORIES, STORIES_MORE, storyById } from '../src/data/stories.js';
@@ -226,7 +226,7 @@ for (let n = 1; n <= 10; n++) for (const d of [0, 1, 2]) {
   const list = feedSession(h, k, FEED, T + d * 864e5), cnt = (f) => list.reduce((a, x) => ((a[f(byIdF[x.id])] = (a[f(byIdF[x.id])] || 0) + 1), a), {});
   const top = Math.max(...Object.values(cnt(topicOf))), kind = Math.max(...Object.values(cnt((c) => c.kind))), tf = list.filter((x) => byIdF[x.id].play && byIdF[x.id].play.opts.length === 2).length;
   const wc = list.reduce((a, x) => { const w = (byIdF[x.id].topics || []).find((z) => z.startsWith('world:')); if (w) a[w] = (a[w] || 0) + 1; return a; }, {}), world = Math.max(0, ...Object.values(wc));
-  ok(list.length >= 15 && top <= 2 && kind <= 4 && tf <= 1 && world <= 3, `level ${n} day ${d}: ${list.length} cards, a topic at most ${top}×, a kind ${kind}×, a world's painting ${world}×, ${tf} true/false`);
+  ok(list.length >= SESSION * 0.75 && top <= 2 && kind <= MAX_KIND && tf <= MAX_TF && world <= MAX_WORLD, `level ${n} day ${d}: ${list.length} cards, a topic at most ${top}×, a kind ${kind}×, a world's painting ${world}×, ${tf} true/false`);
 }
 /* the right option's slot is spread, not written first */
 const slots = [0, 0, 0, 0];

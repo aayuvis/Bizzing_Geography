@@ -219,7 +219,8 @@ function feedItems() {
   return null;
 }
 function viewFeed(k) {
-  const head = feedHead({ name: 'My Feed' });
+  /* the owner: no subtitle saying what a feed is, no end card explaining that it ended */
+  const head = feedHead({ name: 'My Feed' }).replace(/<small>[\s\S]*?<\/small>/, '');
   if (!feedOn(R.h)) return `<section class="feed-page">${head}${empty('My Feed is switched off on this device. A grown-up can switch it back on behind the PIN.', btn0('Home', 'home'))}</section>`;
   const items = feedItems(), wait = `<section class="feed-page">${head}<div class="card center-card" role="status"><p class="muted">Opening your feed…</p></div></section>`;
   if (!items) return wait;
@@ -227,7 +228,7 @@ function viewFeed(k) {
   const need = [...new Set(list.map((x) => items.find((i) => i.id === x.id).g))];
   if (list.some((x) => !FEED_BY[x.id])) { Promise.all(need.map(feedGroup)).then(() => { if (R.ui.nav === 'feed') render(); }); return wait; }
   const play = R.ui.feedPlay || (R.ui.feedPlay = {});
-  return `<section class="feed-page">${head}<div class="bzf-list" data-feed="1">${list.map((x) => feedCard(FEED_BY[x.id], x, play[x.id] || {})).join('')}${feedEnd({ href: '#/continue', label: 'Continue your journey' })}</div></section>`;
+  return `<section class="feed-page">${head}<div class="bzf-list" data-feed="1">${list.map((x) => feedCard(FEED_BY[x.id], x, play[x.id] || {})).join('')}${feedEnd({ href: '#/continue', label: 'Continue your journey' }).replace(/<p class="bzf-body">[\s\S]*?<\/p>/, '')}</div></section>`;
 }
 const btn0 = (label, nav) => `<button class="btn" data-act="nav" data-arg="${nav}">${label}</button>`;
 /* a card's question: options in the engine's order; a right answer pays one coin, once; a wrong one
