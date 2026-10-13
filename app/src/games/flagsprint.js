@@ -81,7 +81,7 @@ function finish(ctx) {
 export function view(ctx) {
   const g = ctx.ui.g, d = ctx.data;
   if (!g) return titleCard(TOOL, {
-    how: ['A flag appears. Four names. Tap the country it belongs to — or press 1, 2, 3 or 4.', 'Name as many as you can in <b>60 seconds</b>. No flag comes twice.', 'A wrong pick shows the right one for a moment. Tap to move on sooner.'],
+    how: ['A flag appears. Four names. Tap the country it belongs to — or press 1, 2, 3 or 4.', 'Name as many as you can in <b>60 seconds</b>. No flag comes twice.'],
     starts: [['flagsprint|start', 'Start the sprint'], todayStart('flagsprint', d, (x) => `${x} flags`)],
     best: d.best ? `Best sprint: ${d.best} flags · ${d.plays || 0} played` : '',
     note: 'Only the 195 countries are asked — the UN’s members and its two observer states.',

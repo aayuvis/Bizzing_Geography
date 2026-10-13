@@ -209,7 +209,7 @@ for (let n = 1; n <= 10; n++) {
   const q = drill(byId['water-bodies'], 1, 1, seeded('miss'))[0];
   k.miss = { [q.text + '|' + q.ans]: { q: { ...q }, at: T - 3 * 864e5, box: 0, from: byId['water-bodies'].title, n: 1 } };
   const list = feedFor(feedOpts(h, k, FEED, T));
-  ok(/slipped/.test(list[0].why) && byIdF[list[0].id].topics.includes('stop:water-bodies'), `a slipped question comes back first, with its reason (${list[0].why})`);
+  ok(/try again/.test(list[0].why) && byIdF[list[0].id].topics.includes('stop:water-bodies'), `a slipped question comes back first, with its reason (${list[0].why})`);
 }
 {
   const { h, k } = child('8-10', 3);

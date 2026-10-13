@@ -16,7 +16,7 @@
    The record lives on the child: k.exp[expeditionId] = { at, seen:{key:day}, m:{modId:{on,tries,best}} }.
    Grown-ups are shown objectives mastered, never minutes. */
 import { gi, ico } from './icons.js';
-import { EXPEDITIONS, expeditionById, daysOf, EXPEDITIONS_INTRO, EXPEDITIONS_PARENT } from './data/expeditions.js';
+import { EXPEDITIONS, expeditionById, daysOf } from './data/expeditions.js';
 import { byId, drill, newSeen } from './stops.js';
 import { dayKey, shuffle, rnd } from './rand.js';
 import { esc } from './ui.js';
@@ -133,7 +133,6 @@ export function viewHub(k, pageHead) {
           <span class="crs-meta">${s.days} days · ${e.modules.length} parts · ${s.projects} projects · ${ageStr(e)}</span>
           ${pct ? `<span class="crs-bar"><i style="width:${pct}%"></i></span>` : ''}</span></button>`;
     }).join('')}</div>
-    <p class="muted small crs-colophon">${esc(EXPEDITIONS_INTRO)} ${esc(EXPEDITIONS_PARENT)}</p>
   </section>`;
 }
 
@@ -208,7 +207,7 @@ export function viewProject(k, arg, { pageHead, back, btn }) {
         <h3>Your checklist</h3>
         <ul class="pj-goals">${goals.map((g) => `<li class="${g.ok ? 'ok' : ''}"><span>${g.ok ? '✓' : '○'}</span>${esc(g.t)}</li>`).join('')}</ul>
         ${btn(made && all ? 'Save my changes ✓' : all ? `Finish project ${ico('sparkle')}` : `${goals.filter((g) => !g.ok).length} to go`, 'projDone', '', all ? 'primary big wide' : 'big wide', all ? '' : 'disabled')}
-        ${made ? `<p class="muted small center-t">Made on ${esc(k.exp[e.id].seen[d.key] || '')}. You can keep changing it.</p>` : ''}
+        ${made ? `<p class="muted small center-t">Made on ${esc(k.exp[e.id].seen[d.key] || '')}.</p>` : ''}
       </aside>
     </div>
   </section>`;

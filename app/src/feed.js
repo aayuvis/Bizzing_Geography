@@ -53,7 +53,7 @@ export function feedOpts(h, k, items, now = Date.now()) {
   for (const id of Object.keys(k.lib || {})) if (TOOL_NAME[id] && Object.keys(k.lib[id] || {}).length) signals.push({ topic: 'tool:' + id, w: 4, why: `Because you opened ${TOOL_NAME[id]}` });
   for (const e of EXPEDITIONS) if ((k.exp || {})[e.id]) signals.push({ topic: 'exp:' + e.id, w: 5, why: `Because you are on ${e.name}` });
   for (const m of missDue(k, now)) {
-    const why = `A question from ${m.from || 'your journey'} slipped — its gap is over`;
+    const why = `One to try again${m.from ? ' — from ' + m.from : ''}`;
     if (m.q.stop && byId[m.q.stop]) due['stop:' + m.q.stop] = due['stop:' + m.q.stop] || why;
     if (m.q.ans) due['ans:' + m.q.ans] = due['ans:' + m.q.ans] || why;
   }

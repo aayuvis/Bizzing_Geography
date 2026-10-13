@@ -45,7 +45,7 @@ export function view(ctx) {
       ${cc ? `<button class="chip-btn small on" data-act="lib" data-arg="landmarks|cc|">${esc(byCc[cc].name)} ✕</button>` : ''}
     </div>
     ${worldSVG({ key: 'lm-all-' + cont, tap: true, view, pins, fill: cc ? { [cc]: 'hl' } : {}, label: 'Landmarks on the map: tap a country to see its landmarks' })}
-    <p class="muted small center-t">Each dot is a landmark (green once you have opened it). Tap a country to see only its landmarks.</p>
+    <p class="muted small center-t">Tap a country to see its landmarks.</p>
     <p class="muted small">${list.length} landmark${list.length === 1 ? '' : 's'}</p>
     <div class="t-lm-grid">${list.map((x) => `<button class="t-lm-tile${seen[x.id] ? ' seen' : ''}" data-act="lib" data-arg="landmarks|sel|${x.id}">
       <img src="art/lm-${x.id}.webp" alt="" loading="lazy" width="960" height="720"><span><b>${esc(x.name)}</b><i>${esc(byCc[x.cc].name)} · ${x.kind === 'natural' ? ico('leaf') : ico('city')}</i></span></button>`).join('')}

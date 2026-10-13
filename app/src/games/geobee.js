@@ -48,7 +48,7 @@ export function view(ctx) {
       best: mine ? `This month: ${ordinal(mine)} of 11${d.bestPlace ? ` · best ever ${ordinal(d.bestPlace)}` : ''} · ${d.plays || 0} played` : d.bestPlace ? `Best ever: ${ordinal(d.bestPlace)} of 11` : '',
     })}
     <h2 class="sec-h">The field</h2>
-    <p class="muted">The same ten who line up at Bizzing Bee’s mock spelling bee and Bizzing Maths’ contest. Suki is still unshakeable.</p>
+    <p class="muted">Suki is still unshakeable.</p>
     <div class="gb-rivals">${RIVALS.map((b, i) => `<div class="card gb-rival">${disc({ id: b.id })}<div><b>${esc(b.name)}, ${b.age}</b><p>${esc(b.note)}</p><p class="muted small">Tell: ${esc(b.tell)}${b.spec ? ` · here, strongest on ${esc(SPECS[b.spec])}` : ''}</p></div></div>`).join('')}</div>`;
   }
   const c = g.c, k = ctx.kid, you = c.field.find((f) => f.you);

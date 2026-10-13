@@ -166,7 +166,7 @@ export function act(name, arg, ctx) {
     else {
       const z = e.zones.find((z) => km([t.lat, t.lng], [z[0], z[1]]) <= z[2]);
       if (z) ctx.toast(`${z[3]} — about here.`);
-      else if (e.today && t.cc) ctx.toast('A country of today — the Capitals tool knows its capital.');
+      else if (e.today && t.cc) { /* a country of today: nothing more to say */ }
     }
   }
   else if (name === 'quiz') {

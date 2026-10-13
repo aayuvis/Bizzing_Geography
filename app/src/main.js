@@ -281,7 +281,7 @@ function render() {
   if (loop === th) lastLoopTheme = th;
   if (nav === 'world' && lastStingWorld !== R.ui.arg) M.worldSting(R.ui.arg);   // entering a world: its own sting, once
   lastStingWorld = nav === 'world' || nav === 'stop' || nav === 'story' ? (nav === 'world' ? R.ui.arg : lastStingWorld) : null;
-  if (R.ui.coinToast) { const c = R.ui.coinToast; R.ui.coinToast = 0; setTimeout(() => toast(`+${c} Bizzing ${c === 1 ? 'coin' : 'coins'} for learning`), 0); }
+  if (R.ui.coinToast) { const c = R.ui.coinToast; R.ui.coinToast = 0; setTimeout(() => toast(`+${c} Bizzing ${c === 1 ? 'coin' : 'coins'}`), 0); }
   syncScene(th, R.ui.nav === 'run' || Store.loadDevice('still', false) || Store.loadDevice('motion', false));   // a quiz run gets a still, faded scene
   root.innerHTML = C.shell(screen(), { home: R.ui.nav === 'home' && !!kid(R.h) });
   starsToIcons(root);
@@ -410,15 +410,15 @@ function finish(run) {
     earn('stop');
     k.trips = k.trips || {}; k.trips[dayKey()] = { n, right };
     const ks = Object.keys(k.trips).sort(); while (ks.length > 30) delete k.trips[ks.shift()];
-    run.summary = { lines: [`You practised ${[...new Set(run.items.map((q) => q.from).filter(Boolean))].join(', ')}.`, 'That is today’s trip done. Nothing more is needed — and another is always here.'] };
+    run.summary = { lines: [`You practised ${[...new Set(run.items.map((q) => q.from).filter(Boolean))].join(', ')}.`] };
     if (right >= n - 1) { sfx.level(); confetti(25); }
   } else if (run.kind === 'warm') {
     const st = road(k).next;
-    run.summary = { lines: [right ? 'You know where that is. Now your journey starts — the first stop is ready.' : 'That is how the map works: tap, and it tells you. Now your journey starts.'], buttons: st ? [V.btn(`First stop: ${V.esc(byId[st.stop].title)} ${'→'}`, 'warmNext', st.stop, 'big')] : [] };
+    run.summary = { lines: [right ? 'You know where that is. Now your journey starts — the first stop is ready.' : 'Now your journey starts.'], buttons: st ? [V.btn(`First stop: ${V.esc(byId[st.stop].title)} ${'→'}`, 'warmNext', st.stop, 'big')] : [] };
   } else if (run.kind === 'mist') {
     const left = missDue(k).length;
     k.last = { k: 'mist', title: 'My mistakes', at: Date.now(), right, n };
-    run.summary = { lines: [`${right} of ${n} came back right after the gap${right === n ? ' — every one' : ''}.`, left ? `${left} more ${left === 1 ? 'is' : 'are'} ready.` : 'The rest come back after their gap.'] };
+    run.summary = { lines: [`${right} of ${n} came back right after the gap${right === n ? ' — every one' : ''}.`, left ? `${left} more ${left === 1 ? 'is' : 'are'} ready.` : ''].filter(Boolean) };
     if (right) earn('stop');
   } else if (run.kind === 'lib') {
     const t = toolById[run.lib];
@@ -483,7 +483,7 @@ on('landAgain', () => { R.ui.land = { i: 0, score: 0, picks: [], frames: R.ui.la
 on('landMap', (cc) => { if (R.ui.land.map) return; R.ui.land.map = cc; cc === V.landMap().c.cc ? sfx.good() : sfx.bad(); render(); });
 on('landPin', (id) => { R.ui.land.frames.pin = id; render(); });
 on('landBig', (cc) => { const F = R.ui.land.frames; if (F.big) return; F.big = cc; const [a, b] = V.landPair(); (a.area > b.area ? a : b).cc === cc ? sfx.good() : sfx.bad(); render(); });
-on('trial', () => startRun('trial', 'Try one question', drill(byId['find-continent'], 1, 1), { sub: 'No explorer needed yet' }));
+on('trial', () => startRun('trial', 'Try one question', drill(byId['find-continent'], 1, 1), {}));
 /* the timed round of Where on Earth? (E2): a clock per card, ticking on screen only */
 setInterval(() => {
   const g = isTool() && R.ui.arg === 'geoguess' && ((R.ui.lib || {}).geoguess || {}).g;
@@ -508,7 +508,7 @@ on('trip', () => {
 on('buy', (id) => {
   const k = kid(R.h), it = SHOP.find((x) => x.id === id), sh = shopOf(k); if (!it || sh.owned.includes(id)) return;
   if (R.demo) { toast('The sample cannot buy — make your own explorer.'); return; }
-  if (!spend(APP, k.name, it.price, id)) { toast(`${it.price} coins needed — earn them by learning.`); return; }
+  if (!spend(APP, k.name, it.price, id)) { toast(`${it.price} coins needed.`); return; }
   sh.owned.push(id); sh[it.kind] = id.split(':')[1]; sfx.coin(); toast(`${it.name} is yours — and in use.`); save(); render();
 });
 on('use', (id) => { const k = kid(R.h), it = SHOP.find((x) => x.id === id), sh = shopOf(k); if (!it || !sh.owned.includes(id)) return; sh[it.kind] = id.split(':')[1]; save(); render(); });
@@ -552,7 +552,7 @@ on('buyAv', (id) => {
 on('buyWorld', (n) => {
   const k = kid(R.h); n = +n; if (!k) return;
   if (R.demo) { toast('The sample cannot buy — make your own explorer.'); return; }
-  if (!buyWorldFam(APP, k.name, n, C.ctxOf(k))) { toast('240 Bizzing coins open a world — earn them by learning.'); return; }
+  if (!buyWorldFam(APP, k.name, n, C.ctxOf(k))) { toast('240 coins needed.'); return; }
   k.worlds = [...new Set([...(k.worlds || []), n])]; sfx.unlock(); confetti(40); save(); render(); toast('A new world is open — and two more packs of faces with it.');
 });
 on('music', () => { Store.saveDevice('music', !Store.loadDevice('music', true)); render(); });
@@ -574,8 +574,8 @@ if (typeof window !== 'undefined') window.addEventListener('bzg-regions-ready', 
 on('openCountry', (cc) => { loadTool('explorer').then((t) => { if (t) t.act('sel', cc, libCtx('explorer')); go('lib', 'explorer'); }); });
 on('practiseMisses', () => {
   const k = kid(R.h), due = missDue(k).sort((a, b) => a.at - b.at).slice(0, 10);
-  if (!due.length) { toast('Nothing is ready yet — each card waits for a gap.'); return; }
-  startRun('mist', 'My mistakes', due.map((m) => ({ ...m.q, missKey: m.key, from: m.from })), { sub: 'Cards that came back after a gap' });
+  if (!due.length) { toast('Nothing is ready yet.'); return; }
+  startRun('mist', 'My mistakes', due.map((m) => ({ ...m.q, missKey: m.key, from: m.from })), {});
 });
 /* read it to me: the text of whatever the button points at, in the device's voice */
 function readOut(sel) {
@@ -689,7 +689,7 @@ on('createKid', () => {
   /* A8: the welcome ends IN an easy, confident first question — find a continent on the
      whole map — whose right answer is celebrated; then straight on to the first stop */
   const warm = drill(byId['find-continent'], 1, 6).filter((q) => q.kind === 'map').slice(0, 1);
-  if (warm.length) return startRun('warm', 'Your first question', warm, { sub: 'An easy one to start' });
+  if (warm.length) return startRun('warm', 'Your first question', warm, {});
   const st = road(k).next; if (st) return startDrill(st.stop, { intro: true });
   go('home');
 });
@@ -709,7 +709,7 @@ on('goal', (n) => { const k = kid(R.h); if (GOALS.includes(+n)) { k.prefs.goal =
 on('tgt', (a) => { const k = kid(R.h), [f, v] = String(a).split('|'); if (!k || !CZ.TGT_CHOICES[f] || !CZ.TGT_CHOICES[f].includes(+v)) return; k.prefs.tgt = { ...CZ.targets(k), [f]: +v }; save(); render(); focusIn(`[data-act=tgt][data-arg="${f}|${v}"]`); });
 on('coachTrap', (t) => { if (!CZ.TRAPS[t]) return; R.ui.coachTrap = t; render(); });
 on('coachTip', (i) => { R.ui.coachTip = +i || 0; render(); });
-on('beatTrap', (t) => { const k = kid(R.h), id = CZ.TRAPS[t] && CZ.beatStop(k, t); if (!id || !byId[id]) return; if (!stopOpen(k, id)) { toast('That stop is further along your road — the trick works on the questions you meet before it.'); return; } startDrill(id); });
+on('beatTrap', (t) => { const k = kid(R.h), id = CZ.TRAPS[t] && CZ.beatStop(k, t); if (!id || !byId[id]) return; if (!stopOpen(k, id)) { toast('That stop is further along your road.'); return; } startDrill(id); });
 /* the daily goal's clock (Bee's metricTick): app time while the page is looked at, practice time
    only while a question run is on screen; a sample explorer is never timed */
 setInterval(() => {

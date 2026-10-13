@@ -45,7 +45,7 @@ export function view(ctx) {
       <button class="btn primary" data-act="lib" data-arg="capitals|quiz">Quiz me on ${cont === 'All' ? 'the world' : esc(cont)}</button></div>
     <div class="t-cap-wide">
       ${worldSVG({ key: 'cap-' + cont, tap: true, view, pins, fill: sel ? { [sel.cc]: 'hl' } : {}, label: 'Tap a country, then type its capital' })}
-      <div class="row gap center map-ctl"><button class="btn small" data-act="mapZoom" data-arg="cap-${cont}|in" aria-label="Zoom in">＋</button><button class="btn small" data-act="mapZoom" data-arg="cap-${cont}|out" aria-label="Zoom out">－</button><button class="btn small" data-act="mapZoom" data-arg="cap-${cont}|home" aria-label="Whole map">⟲</button><span class="muted small">Tap a country</span></div>
+      <div class="row gap center map-ctl"><button class="btn small" data-act="mapZoom" data-arg="cap-${cont}|in" aria-label="Zoom in">＋</button><button class="btn small" data-act="mapZoom" data-arg="cap-${cont}|out" aria-label="Zoom out">－</button><button class="btn small" data-act="mapZoom" data-arg="cap-${cont}|home" aria-label="Whole map">⟲</button></div>
     </div>
     ${sel ? panel('capitals', askOf(sel, QUIZ), st) : ''}
     <details class="card"><summary><b>Every capital in ${cont === 'All' ? 'the world' : esc(cont)}</b></summary>

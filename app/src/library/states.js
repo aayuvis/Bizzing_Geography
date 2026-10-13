@@ -11,7 +11,7 @@ import { panel, handle } from './ask.js';
 /* the same Leitner record Country Capitals keeps: right on two different days = known */
 import { record, known } from './capitals.js';
 
-export const TOOL = { id: 'states', name: 'State Capitals', glyph: '🗺️', art: 'lib-states', blurb: 'The states and capitals of the United States, India, Canada and Australia — tap, learn, quiz.' };
+export const TOOL = { id: 'states', name: 'State Capitals', glyph: '🗺️', art: 'lib-states', blurb: 'The states and capitals of eight countries — tap, learn, quiz.' };
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 export const COUNTRY = [
@@ -50,7 +50,7 @@ export function view(ctx) {
       <span class="row gap"><button class="btn primary" data-act="lib" data-arg="states|quiz">Quiz: capitals</button><button class="btn" data-act="lib" data-arg="states|find">Quiz: find it on the map</button></span></div>
     <div class="t-cap-wide">
       ${regionSVG(c, { key: 'st-' + c, tap: true, fill, pins, label: `Map of ${C.name}: tap a ${C.unit}, then type its capital` })}
-      <div class="row gap center map-ctl"><button class="btn small" data-act="mapZoom" data-arg="st-${c}|in" aria-label="Zoom in">＋</button><button class="btn small" data-act="mapZoom" data-arg="st-${c}|out" aria-label="Zoom out">－</button><button class="btn small" data-act="mapZoom" data-arg="st-${c}|home" aria-label="Whole map">⟲</button><span class="muted small">Tap a ${esc(C.unit)}</span></div>
+      <div class="row gap center map-ctl"><button class="btn small" data-act="mapZoom" data-arg="st-${c}|in" aria-label="Zoom in">＋</button><button class="btn small" data-act="mapZoom" data-arg="st-${c}|out" aria-label="Zoom out">－</button><button class="btn small" data-act="mapZoom" data-arg="st-${c}|home" aria-label="Whole map">⟲</button></div>
     </div>
     ${sel ? panel('states', askOf(sel, regs, C), st) : ''}
     <details class="card"><summary><b>Every ${esc(C.unit)} of ${esc(C.name)}</b></summary><ul class="t-cap-list">${regs.map((s) => `<li class="${known(ctx.data, s.id) ? 'k' : ''}"><button class="linkish" data-act="lib" data-arg="states|sel|${s.id}">${esc(s.name)}</button> — ${esc(s.capFull)}</li>`).join('')}</ul></details>`;

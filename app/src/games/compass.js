@@ -55,7 +55,7 @@ export function view(ctx) {
     ${g.guesses.length ? `<ol class="gm-trail" aria-label="Your guesses">${g.guesses.map((x, j) => `<li>${j + 1}. ${fmtKm(x.km)} · ${POINTS[x.p]} ${ARROWS[x.p]}</li>`).join('')}</ol>` : ''}
     ${done ? `<div class="card gm-res"><p class="fb ${done.found ? 'good' : ''}">${done.found ? `${done.pts} points — ${done.n} ${done.n === 1 ? 'guess' : 'guesses'}.` : 'No points this time — but now you know where it is.'}</p>
       <button class="btn primary big" data-act="lib" data-arg="compass|next">${g.i + 1 < g.list.length ? 'Next capital' : 'See your points'} <kbd>Enter</kbd></button></div>`
-      : `<p class="muted small center-t">Tap the map — or focus it, move the cross with the arrows and press Enter.</p>`}`;
+      : `<p class="muted small center-t">Tap the map (or arrows + Enter).</p>`}`;
 }
 
 export function act(name, arg, ctx) {

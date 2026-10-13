@@ -23,7 +23,7 @@ export function view(ctx) {
     ${hits.length ? `<div class="row gap wrap">${hits.map((c) => `<button class="btn small" data-act="lib" data-arg="explorer|sel|${c.cc}">${esc(c.name)}</button>`).join('')}</div>` : ''}
     <div class="t-cap">
       <div>${worldSVG({ key: 'ex', tap: true, lines, fill, view: sel && u.zoom ? viewOfCountry(sel.cc, 1) : null, pins: [...(sel && sel.capAt[0] ? [{ at: sel.capAt[0], cls: 'red', r: 5, label: sel.cap[0] }] : []), ...(u.pin && u.pin.cc === u.sel ? [{ at: u.pin.at, cls: 'good', r: 6, label: u.pin.n }] : [])], label: 'World map' })}</div>
-      <div class="card t-cap-side">${sel ? card(sel, u) : u.sel ? `<h3>${esc(shapeName(u.sel))}</h3><p class="muted">Not one of the 195 countries the app quizzes — a territory or area with its own shape on the map.</p>` : '<p class="muted">Tap any country. Its neighbours light up too.</p>'}</div>
+      <div class="card t-cap-side">${sel ? card(sel, u) : u.sel ? `<h3>${esc(shapeName(u.sel))}</h3><p class="muted">Not one of the 195 countries — a territory with its own shape.</p>` : '<p class="muted">Tap any country. Its neighbours light up too.</p>'}</div>
     </div>`;
 }
 function card(c, u) {

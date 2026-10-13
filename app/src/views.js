@@ -110,19 +110,17 @@ export function viewWelcome() {
   }
   /* A3 (the owner, audit v4): a face and a world are already chosen — setup is a name, an age and Start.
      Both can be changed here, or later on My page and in Settings. */
-  if (d.step === 'ready') return shell(`${guide(`All set, <b>${esc(d.name)}</b>! I picked a face and a world for you — change them now, or any time later.`, 'cheer')}
+  if (d.step === 'ready') return shell(`${guide(`All set, <b>${esc(d.name)}</b>! Here are your face and your world — change them if you like.`, 'cheer')}
     <div class="card ob-card ob-ready"><div class="ob-ready-row">${av(d.avatar, 88)}<span><b>${esc(AVATAR_NAME[d.avatar].replace(/ \(.*\)/, ''))}</b><span class="muted small">${esc((THEMES.find((t) => t.id === d.theme) || {}).name || '')} world · Level ${d.level || START[d.band]}</span></span></div>
       <div class="row gap">${btn('Change face', 'obGo', '2', 'ghost')}${btn('Change world', 'obGo', '3', 'ghost')}</div>
       ${btn(`Start exploring ${ico('next')}`, 'createKid', '', 'primary big wide')}</div>`, 2);
-  if (d.step === 2) return shell(`${guide('Every explorer needs a face of their own. Which one is yours? There are ninety-six to find.', 'point')}
+  if (d.step === 2) return shell(`${guide('Every explorer needs a face of their own. Which one is yours?', 'point')}
     <div class="card ob-card"><div class="ob-avs" role="radiogroup" aria-label="Your companion">${STARTER_AVATARS.map((a) => `<button id="av-ob-${a}" class="av-pick${d.avatar === a ? ' on' : ''}" role="radio" aria-checked="${d.avatar === a}" data-act="draftAv" data-arg="${a}" aria-label="${esc(AVATAR_NAME[a])}">${av(a, 96)}<span>${esc(AVATAR_NAME[a].replace(/ \(.*\)/, ''))}</span></button>`).join('')}</div>
-      <p class="hint center-t">${AVATARS.length - STARTER_AVATARS.length} more faces wait in your Collection — some free, some to earn with Bizzing coins.</p>
       ${btn('Done', 'obReady', '', 'primary big wide')}</div>`, 2);
-  return shell(`${guide('Which world would you like to explore in? Which world would you like to explore in? It changes the colours, the letters, the living picture and the music.', 'think')}
+  return shell(`${guide('Which world would you like to explore in?', 'think')}
     <div class="card ob-card"><div class="themes ob-themes" role="radiogroup" aria-label="Your world">${THEMES.filter((t) => STARTER_THEMES.includes(t.id)).map((t) => `<button class="theme-card" id="theme-ob-${t.id}" data-theme="${t.id}" data-act="draftTheme" data-arg="${t.id}" role="radio" aria-checked="${d.theme === t.id}">
         <span class="tc-sw" aria-hidden="true"><svg class="tc-map" viewBox="0 0 120 60"><rect width="120" height="60" class="tc-sea"/><path class="tc-land" d="M8 14c10-6 22-4 28 4s2 16-6 20-18 8-22 0-6-18 0-24zM52 8c14-4 30 0 36 8s14 4 22 10-2 18-14 18-16-6-26-4-22-2-22-12 0-16 4-20z"/><path class="tc-hl" d="M64 22c6-2 12 2 10 8s-10 6-13 2-3-8 3-10z"/></svg><span class="tc-aa">Aa</span>${d.theme === t.id ? '<span class="tc-on">On</span>' : ''}</span>
         <span class="tc-t"><b>${t.name}</b><span>${t.blurb}</span></span></button>`).join('')}</div>
-      <p class="hint center-t">Four more worlds — rainforest, desert, aurora and space — open later with Bizzing coins or the family plan.</p>
       ${btn('Done', 'obReady', '', 'primary big wide')}</div>`, 2);
 }
 
@@ -209,7 +207,7 @@ function viewLanding() {
       </div>
       <div class="card lh-try" aria-live="polite">${tryCard}</div>
     </section>
-    <section class="land-strip"><h2>One sitting, three ways in</h2><p class="muted">Not pictures of the app — the app. Try each one.</p>
+    <section class="land-strip"><h2>One sitting, three ways in</h2>
       <div class="lf-row">${f1}${f2}${f3}</div></section>
     <div class="card ob-promises">${[['map', 'One map, drawn with care', 'Every map is drawn by the app from open data — never by an AI. India’s own depiction, everywhere.'], ['lock', 'Nothing about your child leaves this device', 'A first name and an age band. No email, no photo, no tracking, no ads. (Street View photos in one game come from Google; a grown-up can switch them off.)'], ['book', 'A report on learning, not minutes', 'Stars come only from right answers, and a test counts only on a later day than the lesson.']].map(([g, t, x]) => `<div><span>${ico(g)}</span><p><b>${t}</b><br><span class="muted small">${x}</span></p></div>`).join('')}</div>
   </div>`;
@@ -252,11 +250,11 @@ export function greetLines(k) {
     const t = esc(L.title);
     out.push({ stop: `Last time you passed “${t}”. The next stop is ready, ${n}.`, try: `You had a go at “${t}”. Shall we try it again, ${n}?`,
       exp: `Day done on ${t}! The next day is waiting.`, geo: `You pinned places all over the world, ${n}. Your best round is ${L.n ? L.n.toLocaleString('en-US') : ''} points.`,
-      made: `You made “${t}”. It is in your gallery.`, check: `Level check done — welcome to a new road, ${n}!`, mist: `You went back over your misses, ${n}. That is how places stick.` }[L.k] || '');
+      made: `You made “${t}”. It is in your gallery.`, check: `Level check done — welcome to a new road, ${n}!`, mist: `You went back over your misses, ${n}.` }[L.k] || '');
     if (L.right != null && L.n) out.push(`${L.right} of ${L.n} right on “${t}” last time${L.right >= L.n - 1 ? ' — nearly all of them' : ''}. Ready for more, ${n}?`);
   }
   const due = missDue(k).length;
-  if (due) out.push(`${due === 1 ? 'One of your misses is' : `${due} of your misses are`} ready to try again, ${n}. They stick better after a gap.`);
+  if (due) out.push(`${due === 1 ? 'One of your misses is' : `${due} of your misses are`} ready to try again, ${n}.`);
   const known = Object.values((k.lib.capitals || {}).box || {}).filter((b) => b >= 2).length;
   if (known) out.push(`You know ${known === 1 ? 'one capital' : known + ' capitals'} for sure now, ${n}. Shall we add one more?`);
   if (!out.filter(Boolean).length) out.push(...SAY.map((x) => x.replace('{n}', n)));
@@ -299,7 +297,7 @@ export function viewHome() {
       progress: { pct: Math.round((100 * n.done) / Math.max(1, n.total)), label: `${n.done} of ${n.total} stops` } },
     second: { plate: `art/crs-${e.id}.webp`, icon: 'compass', chip: `${es.days} days`, kicker: es.started ? 'Your expedition' : 'An expedition for you', title: e.name, sub: es.started ? `Day ${ed ? ed.n : es.days} of ${es.days}` : e.blurb || '', href: `#/expd/${e.id}`, cta: es.started ? 'Open the expedition' : 'Have a look', ctaIcon: 'flag',
       progress: { pct: Math.round((100 * es.done) / es.days), label: `${es.done} of ${es.days} days` } },
-    tip: { kicker: '5-minute trip', text: trip ? `Done today — ${trip.right} of ${trip.n}. Another one any time.` : 'Review, one new thing, one map — then it ends by itself. Nothing is lost for skipping.', href: '#/trip' },
+    tip: { kicker: '5-minute trip', text: trip ? `Done today — ${trip.right} of ${trip.n}. Another one any time.` : 'Review, one new thing, one map.', href: '#/trip' },
     quote: { kicker: 'Word of the hour', text: `${td}.`, who: tw, href: `#/word/${encodeURIComponent(tw)}` },
     foot: FOOT(),
   })
@@ -391,7 +389,7 @@ export function viewWorld(wid) {
       <p class="kicker">Stop ${ss.indexOf(s) + 1} of ${ss.length} · ${open ? starRow(rec.stars || 0) : 'opens on Level ' + firstLevel(sel)}${reviewDue(rec) ? ' · <b class="rv-due">time to review</b>' : ''}</p>
       <h2>${esc(s.title)}</h2>
       <p class="lead">${esc(s.hook)}</p>
-      <div class="row gap">${open ? btn('Open this stop', 'openStop', s.id, 'primary big') : `<span class="muted">This stop is on the Level ${firstLevel(sel)} road. Keep going on your own road — it will open.</span>`}</div>
+      <div class="row gap">${open ? btn('Open this stop', 'openStop', s.id, 'primary big') : `<span class="muted">Opens on Level ${firstLevel(sel)}.</span>`}</div>
     </div>
     ${STORIES[wid] ? `<div class="story-doors">
       <button class="card story-door" data-act="openStory" data-arg="${wid}">${shelly('wave', 64)}<span><b>Shelly’s story</b><em>${esc(STORIES[wid].title)}</em></span><span class="sd-go">Read ›</span></button>
@@ -426,7 +424,7 @@ export function viewStory(id) {
         </div>
       </div>
     </div>
-    <p class="muted small st-note">${esc(STORY_NOTE)} Use ← → to turn the page.</p>
+    <p class="muted small st-note">${esc(STORY_NOTE)}</p>
   </section>`;
 }
 
@@ -447,7 +445,7 @@ export function viewStop(id) {
     <div class="card drill-card">
       <p class="kicker">Practice · ${lvName}${onRoad ? ` · stop ${onRoad.n} on your Level ${k.road.level} road` : ''}</p>
       <h3>Ten questions</h3>
-      <p class="muted">Seven right earns ★★ and passes this stop; nine right earns ★★★. Best so far: ${rec.best || 0}%.</p>
+      <p class="muted">Seven right passes. Best so far: ${rec.best || 0}%.</p>
       ${btn('Start practice', 'startDrill', id, 'primary big')}
     </div>
   </section>`;
@@ -459,9 +457,9 @@ export function viewStop(id) {
    are not (src/listmode.js, tested on every map question the stops make). */
 function mapList(q) {
   const { ids, names } = listOptions(q);
-  return `<p class="muted small list-say">Choose one place from the list.</p><div class="choice-row map-list" role="group" aria-label="Choose a place">${ids.map((id, i) => `<button class="btn big opt" data-act="choose" data-arg="${esc(id)}"><span>${esc(names[id])}</span> <kbd>${i + 1}</kbd></button>`).join('')}</div>`;
+  return `<div class="choice-row map-list" role="group" aria-label="Choose a place">${ids.map((id, i) => `<button class="btn big opt" data-act="choose" data-arg="${esc(id)}"><span>${esc(names[id])}</span> <kbd>${i + 1}</kbd></button>`).join('')}</div>`;
 }
-const qHead = (q, read, hint, hintBtn) => `<div class="q-head"><p class="long-q" id="q-text" aria-live="polite">${esc(q.text)}</p>${hintBtn || ''}${readBtn(read, 'Read the question to me')}</div>${hint && hint.say ? `<p class="hint-say" role="status">${ico('hint')} ${esc(hint.say)} <span class="muted small">A right answer after a hint pays no coin.</span></p>` : ''}${hint && hint.map ? `<div class="hint-map">${worldSVG({ key: 'hint', fill: hint.map.fill, view: viewFor((CONTINENTS.find((c) => c.id === hint.map.cont) || {}).view || [-180, -60, 180, 80], 0.08), label: 'A hint: part of the world map lit up' })}</div>` : ''}`;
+const qHead = (q, read, hint, hintBtn) => `<div class="q-head"><p class="long-q" id="q-text" aria-live="polite">${esc(q.text)}</p>${hintBtn || ''}${readBtn(read, 'Read the question to me')}</div>${hint && hint.say ? `<p class="hint-say" role="status">${ico('hint')} ${esc(hint.say)}</p>` : ''}${hint && hint.map ? `<div class="hint-map">${worldSVG({ key: 'hint', fill: hint.map.fill, view: viewFor((CONTINENTS.find((c) => c.id === hint.map.cont) || {}).view || [-180, -60, 180, 80], 0.08), label: 'A hint: part of the world map lit up' })}</div>` : ''}`;
 export function questionBody(q, fb, key = 'q', hint = null, hintBtn = '') {
   if (q.kind === 'type') {
     const val = (R.run && R.run.typed) || '';
@@ -562,13 +560,13 @@ function viewRunEnd(run) {
         ${s.practised && s.practised.length ? `<li>${ico('book')}<span><b>Practised</b> ${s.practised.map(esc).join(' · ')}</span></li>` : ''}
         ${s.secs != null ? `<li>${ico('timer')}<span><b>Time</b> ${mmss(s.secs)}</span></li>` : ''}
         ${s.starsUp ? `<li>${ico('star')}<span><b>Stars</b> +${s.starsUp}</span></li>` : ''}
-        ${s.coins != null && k ? `<li>${ico('coin')}<span><b>Bizzing coins</b> ${s.coins ? '+' + s.coins : 'none this time'}${Object.keys(run.hints || {}).length ? ' (hinted answers pay none)' : ''}</span></li>` : ''}
+        ${s.coins != null && k ? `<li>${ico('coin')}<span><b>Bizzing coins</b> ${s.coins ? '+' + s.coins : 'none this time'}</span></li>` : ''}
         ${s.next && s.next.title ? `<li>${ico('next')}<span><b>Next</b> ${esc(s.next.title)}</span></li>` : ''}
       </ul>
       <div class="row gap center wrap">${(s.buttons || []).join('')}${btn('Done', 'endRun', '', 'primary big')}</div>
     </div>
     ${revealMap(run)}
-    ${run.results.some((r) => !r.right) ? `<div class="card"><h3>To look at again</h3><p class="muted small">Each one is in <button class="linkish" data-act="nav" data-arg="mistakes">My mistakes</button> and comes back after a gap.</p><ul class="missed">${run.results.map((r, i) => (r.right ? '' : `<li>${run.items[i].html && /<img/.test(run.items[i].html) ? `<span class="mfig">${run.items[i].html}</span>` : ''}<span>${esc(run.items[i].text)} — <b>${esc(ansOf(run.items[i]))}</b></span></li>`)).join('')}</ul></div>` : ''}
+    ${run.results.some((r) => !r.right) ? `<div class="card"><h3>To look at again</h3><p class="muted small">They wait in <button class="linkish" data-act="nav" data-arg="mistakes">My mistakes</button>.</p><ul class="missed">${run.results.map((r, i) => (r.right ? '' : `<li>${run.items[i].html && /<img/.test(run.items[i].html) ? `<span class="mfig">${run.items[i].html}</span>` : ''}<span>${esc(run.items[i].text)} — <b>${esc(ansOf(run.items[i]))}</b></span></li>`)).join('')}</ul></div>` : ''}
   </section>`;
 }
 
@@ -602,7 +600,7 @@ export function viewRoad() {
     ${show ? '' : `<div class="card center-card">
       <p class="kicker">Level check</p>
       <h3>${rd.all ? `Ready for Level ${L.n + 1}` : 'Already know this?'}</h3>
-      <p class="muted">Twelve questions from this road. Ten right opens Level ${Math.min(10, L.n + 1)}${rd.all ? '' : ' — even before you have walked every stop'}.</p>
+      <p class="muted">Ten of twelve right opens Level ${Math.min(10, L.n + 1)}.</p>
       ${L.n < 10 || !k.road.finished.includes(10) ? btn('Take the level check', 'levelCheck', '', rd.all ? 'primary big' : 'big') : ''}
     </div>`}
     </div>
@@ -663,7 +661,7 @@ function reportCard(k) {
     ${L.length ? `<h4>What ${esc(k.name)} can do now</h4><ul class="learned">${L.map((x) => `<li>✓ ${esc(k.name)} can ${esc(x.m.objective)} <span class="muted small">(${esc(x.e.name)}, ${x.on})</span></li>`).join('')}</ul>` : ''}
     <p class="hint">${esc(EXPEDITIONS_PARENT)}</p>
     ${(() => { const cs = certificatesOf(k); return `<details class="rc-set rc-certs"${cs.length ? '' : ''}><summary>Certificates for ${esc(k.name)} (${cs.length})</summary>
-      ${cs.length ? `<p class="muted small">Each is a picture made on this device — nothing is uploaded. Share or save it from here.</p><ul class="certs">${cs.map((c) => `<li><span><b>${esc(c.title)}</b><span class="muted small">${esc(k.name)} ${esc(c.what)}</span></span>${btn(`${ico('share')} Make the picture`, 'cert', k.id + '|' + c.id, 'small')}</li>`).join('')}</ul>` : `<p class="muted small">The first one comes with a finished level, a world walked or an expedition done.</p>`}</details>`; })()}
+      ${cs.length ? `<p class="muted small">Made on this device; nothing is uploaded.</p><ul class="certs">${cs.map((c) => `<li><span><b>${esc(c.title)}</b><span class="muted small">${esc(k.name)} ${esc(c.what)}</span></span>${btn(`${ico('share')} Make the picture`, 'cert', k.id + '|' + c.id, 'small')}</li>`).join('')}</ul>` : `<p class="muted small">The first one comes with a finished level, a world walked or an expedition done.</p>`}</details>`; })()}
     <details class="rc-set"><summary>Settings for ${esc(k.name)}</summary>
       <div class="row gap wrap"><span>Daily goal:</span>${(() => { const t = CZ.targets(k); return `${t.app} min in the app · ${t.prac} min answering · ${t.right} right answers`; })()} <span class="muted small">— ${esc(k.name)} sets these on the Coach page</span></div>
       <div class="row gap wrap"><span>Read questions aloud by itself:</span><button class="btn small" data-act="kidRead" data-arg="${k.id}" aria-pressed="${autoRead(k)}">${autoRead(k) ? 'On' : 'Off'}</button></div>
@@ -683,12 +681,12 @@ export function viewGrownups() {
         <div class="row center">${btn(h.parent.pinHash ? 'Open' : 'Set PIN', 'gate', '', 'primary')}</div>
         <p class="hint">The PIN is a deterrent, not security — anyone who can clear this browser’s storage can reset it.</p></div></section>`;
   }
-  return `<section class="narrow">${pageHead('For grown-ups', 'What each child has done, measured from their answers.', back('nav', 'Back', 'home'))}
+  return `<section class="narrow">${pageHead('For grown-ups', '', back('nav', 'Back', 'home'))}
     <p class="muted small center-t">The family-wide view, across every Bizzing app, is on <a href="${HIVE}#/grownups">the Hive’s grown-ups page</a>.</p>
     ${h.kids.map(reportCard).join('')}
     <div class="card"><h3>Settings</h3>
-      <label class="set-row"><input type="checkbox" data-act="plan" ${h.parent.plan === 'family' ? 'checked' : ''}><span>Family plan — opens all six worlds and their faces for every child here. Until the family’s own server is built this is a switch a grown-up sets; no payment is ever asked for on a child’s screen.</span></label>
-      <label class="set-row"><input type="checkbox" data-act="feedToggle" ${h.parent.feedOff ? '' : 'checked'}><span>My Feed — up to forty cards a day, chosen on this device from what the child is learning. No likes, no streaks, nothing sent. Untick to remove it.</span></label>
+      <label class="set-row"><input type="checkbox" data-act="plan" ${h.parent.plan === 'family' ? 'checked' : ''}><span>Family plan — opens all six worlds and their faces for every child here.</span></label>
+      <label class="set-row"><input type="checkbox" data-act="feedToggle" ${h.parent.feedOff ? '' : 'checked'}><span>My Feed — up to forty cards a day, chosen on this device from what the child is learning. No likes, no streaks, nothing sent.</span></label>
       <label class="set-row"><input type="checkbox" data-act="tester" ${h.parent.tester ? 'checked' : ''}><span>Tester mode — opens every stop and level for a grown-up to look round. Changes nothing about a child.</span></label>
       <label class="set-row${GKEY ? '' : ' off'}"><input type="checkbox" data-act="streetview" ${h.parent.streetview ? 'checked' : ''} ${GKEY ? '' : 'disabled'}><span>Real photos in Where on Earth? — Google Street View of real places. <b>This is the one thing in the app that contacts another company:</b> while it is on, Where on Earth? loads each photo from Google, so Google sees this device’s internet address and which photo was shown. It sends nothing about your child — no name, no age, no answers, no location. On by default; untick to use paintings only.${GKEY ? '' : ' (Not set up in this copy of the app.)'}</span></label>
       <div class="row gap wrap">${btn('Back up to a file', 'backup')}${btn('Restore from a file', 'restore')}${btn('Delete everything on this device', 'wipe', '', 'danger')}</div>
@@ -718,10 +716,10 @@ export function viewMistakes() {
   const k = kid(R.h), due = missDue(k), all = Object.entries(k.miss || {}).map(([key, m]) => ({ key, ...m })).sort((a, b) => b.at - a.at);
   const waitFor = (m) => { const ms = m.at + [20 * 3600e3, 3 * 864e5][Math.min(m.box, 1)] - Date.now(); return ms <= 0 ? 'ready now' : ms < 864e5 ? 'back tomorrow' : `back in ${Math.ceil(ms / 864e5)} days`; };
   const ansOf = (q) => q.kind === 'map' ? (q.targetName || '') : q.kind === 'order' ? (q.ans || '').split('|').join(' → ') : q.ans;
-  if (!all.length) return `<section class="narrow">${pageHead('My mistakes')}${empty('No mistakes kept yet. When you miss a question it waits here, and comes back a day later — that is how places stick.', btn('Back to my journey', 'nav', 'home', 'big'))}</section>`;
+  if (!all.length) return `<section class="narrow">${pageHead('My mistakes')}${empty('No mistakes yet. A missed question waits here and comes back a day later.', btn('Back to my journey', 'nav', 'home', 'big'))}</section>`;
   return `<section class="narrow mistakes">
-    ${pageHead('My mistakes', `${plural(all.length, 'card')} · ${due.length} ready`)}
-    <div class="card mist-go">${says(due.length ? 'point' : 'sleep', due.length ? `${due.length === 1 ? 'One card is' : `${due.length} cards are`} ready. Right after a gap moves a card up; two steps up and it is yours, and it leaves the deck.` : 'Nothing is ready yet. Each card comes back after a gap — a day, then three days — because remembering later is what learning is.')}
+    ${pageHead('My mistakes')}
+    <div class="card mist-go">${says(due.length ? 'point' : 'sleep', due.length ? `${due.length === 1 ? 'One card is' : `${due.length} cards are`} ready.` : 'Nothing is ready yet — check back tomorrow.')}
       ${due.length ? btn(`Practise my misses (${Math.min(10, due.length)})`, 'practiseMisses', '', 'primary big') : ''}</div>
     <ul class="mist-list">${all.map((m) => `<li class="card mist"><div class="mist-fig">${m.q.html && !/<button/.test(m.q.html) ? m.q.html : ''}</div><div><p class="kicker">${esc(m.from || '')} · ${['step 1 of 2', 'step 2 of 2'][Math.min(m.box, 1)]} · ${waitFor(m)}</p><p>${esc(m.q.text)}</p><p class="muted small">The answer: <b>${esc(ansOf(m.q))}</b>${m.n > 1 ? ` · missed ${m.n} times` : ''}</p></div></li>`).join('')}</ul>
   </section>`;
@@ -751,9 +749,9 @@ export function viewCoach() {
         ${ringLine('App', CZ.RING_COL[0][0], CZ.fmtMins(m.app), m.t.app + 'm')}${ringLine('Practice', CZ.RING_COL[1][0], CZ.fmtMins(m.prac), m.t.prac + 'm')}${ringLine('Right', CZ.RING_COL[2][0], m.right, m.t.right)}</div></div></div>`;
   const radar = g.length ? `<div class="cz-radar">${g.slice(0, 6).map((t) => { const T = CZ.TRAPS[t.k], on = sel && sel.k === t.k;
       return `<button class="cz-trap${on ? ' on' : ''}" style="--tc:${T.col}" data-act="coachTrap" data-arg="${t.k}" aria-pressed="${on}"><span class="cz-trap-t">${esc(T.label)}<span class="cz-bar"><i style="width:${Math.max(14, Math.round((100 * t.n) / maxN))}%"></i></span></span><b>${t.n}</b></button>`; }).join('')}</div>`
-    : '<p class="muted small">No pattern yet — nothing in your mistakes deck.</p>';
+    : '';
   let detail;
-  if (!sel) detail = `<div class="cz-none">${shelly('wave', 96)}<h3>Nothing is catching you yet</h3><p class="muted">Practise a stop and come back. Every question you get wrong teaches me something about how you think.</p>${btn('Go and practise', 'nav', 'continue', 'primary')}</div>`;
+  if (!sel) detail = `<div class="cz-none">${shelly('wave', 96)}<h3>Nothing is catching you yet</h3>${btn('Go and practise', 'nav', 'continue', 'primary')}</div>`;
   else {
     const T = CZ.TRAPS[sel.k], own = sel.items.slice(0, 3);
     const step = (n, t, body, col) => `<div class="cz-step"><span class="cz-n" style="background:${col}">${n}</span><div><p class="cz-st" style="color:${col}">${t}</p>${body}</div></div>`;
@@ -781,7 +779,7 @@ export function viewCoach() {
     ${pageHead('Coach', esc(k.name))}
     ${hero}
     <div class="cz-grid">
-      <div class="cz-col">${panel('What catches you', radar)}${panel('Your numbers', stats)}${panel('Your daily goal', `${tgtRow('app', 'App time', 'm')}${tgtRow('prac', 'Practice time', 'm')}${tgtRow('right', 'Right answers', '')}<p class="muted small">Your own targets, for today only — nothing carries over and nothing counts days in a row. Practice time counts only while you answer questions; games and the map do not move it.</p>`)}</div>
+      <div class="cz-col">${panel('What catches you', radar)}${panel('Your numbers', stats)}${panel('Your daily goal', `${tgtRow('app', 'App time', 'm')}${tgtRow('prac', 'Practice time', 'm')}${tgtRow('right', 'Right answers', '')}<p class="muted small">Practice time counts only while you answer questions.</p>`)}</div>
       ${panel('', detail, 'cz-detail')}
     </div>
     <div class="cz-grid3">${panel('Your level, and the road ahead', ladder)}${panel('Shelly’s habit of the day', tipCard)}</div>

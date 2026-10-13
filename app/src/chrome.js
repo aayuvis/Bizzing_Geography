@@ -106,7 +106,7 @@ export function walletSheet(k) {
   return `<div class="sheet-veil" data-act="wallet" aria-hidden="true"></div>
   <div class="sheet" role="dialog" aria-modal="true" aria-label="Your wallet" id="wallet-sheet">
     <div class="sheet-h"><h2>${ico('coin')} ${plural(c, 'Bizzing coin')}</h2><button class="tool" data-act="wallet" aria-label="Close the wallet">${ico('close')}</button></div>
-    <p class="muted small">Bizzing coins are earned for learning in every Bizzing app — one for a right answer, five for a stop finished — and spent in the Shop at printed prices. Never bought, never by chance.</p>
+    <p class="muted small">Earned by learning in every Bizzing app; spent in the Shop.</p>
     ${walletLines(k)}
     <div class="row gap center"><button class="btn primary" data-act="nav" data-arg="shop">${ico('bag')} Open the Shop</button></div>
   </div>`;
@@ -130,18 +130,18 @@ export function viewSettings() {
     ${k ? sec(1, 'Me', `<label class="set-r"><span><b>Display name</b><i>A first name or nickname — nothing more.</i></span><input class="inp" id="set-name" data-set="name" value="${esc(k.name)}" maxlength="20" autocomplete="off"></label>
       <div class="set-r"><span><b>Avatar</b><i>${esc((byAvatar[k.avatar] || {}).name || '')}</i></span><button class="btn" data-act="nav" data-arg="collection">${av(k.avatar, 32)} Collection</button></div>
       ${R.h.kids.length > 1 ? `<div class="set-r"><span><b>Switch explorer</b></span><div class="row gap wrap">${R.h.kids.map((x) => `<button class="btn small${x.id === k.id ? ' primary-o' : ''}" data-act="switchKid" data-arg="${x.id}" aria-pressed="${x.id === k.id}">${av(x.avatar, 24)} ${esc(x.name)}</button>`).join('')}</div></div>` : ''}`) : ''}
-    ${sec(2, 'Sound &amp; music', `${sw('sound', R.sound, 'Sound effects', 'Soft chimes for right, wrong, coins and medals.')}
-      ${sw('music', dv('music', true), 'Music', 'A calm loop for each world, for home and for games — composed for Bizzing.')}
+    ${sec(2, 'Sound &amp; music', `${sw('sound', R.sound, 'Sound effects')}
+      ${sw('music', dv('music', true), 'Music')}
       <label class="set-r"><span><b>Volume</b><i>${vol}%</i></span><input type="range" min="0" max="100" step="5" value="${vol}" data-set="vol" aria-label="Volume" class="slider"></label>
-      ${k ? sw('readAuto', autoReadOf(k), 'Read aloud', 'Each new question reads itself, in this device’s own voice. The speaker button is on every question.') : ''}
+      ${k ? sw('readAuto', autoReadOf(k), 'Read aloud', 'Each new question reads itself.') : ''}
       ${k ? seg('rate', (k.prefs || {}).rate === 0.85 ? 'slow' : 'normal', [['slow', 'Slower'], ['normal', 'Normal']], 'Reading speed') : ''}`)}
-    ${sec(3, 'Look', `${k ? `<p class="muted small">Your world: its colours, its letters, its living picture and its music. Worlds 1 and 2 are open to everyone; the others open with the family plan, or one at a time for ${WORLD_PRICE} Bizzing coins.</p>
+    ${sec(3, 'Look', `${k ? `
       <div class="world-grid" role="radiogroup" aria-label="Your world">${THEMES.map((t) => worldCard(t, k)).join('')}</div>` : ''}
       ${seg('setMode', mode, [['light', 'Light'], ['dark', 'Dark'], ['auto', 'Match device']], 'Light or dark')}
       ${seg('setText', text, [['s', 'S'], ['m', 'M'], ['l', 'L']], 'Text size')}`)}
     ${sec(4, 'Comfort', `${sw('motion', dv('motion', false), 'Reduce motion', 'The living world holds still; no confetti, no spins.')}
       ${sw('calm', dv('calm', false), 'Calm mode', 'Music off, softer sounds, no confetti.')}`)}
-    ${sec(5, 'Grown-ups', `<div class="set-r"><span><b>Grown-ups’ page</b><i>Age band, daily ring, plan, backup, restore, erase, tester mode — behind the PIN.</i></span><button class="btn" data-act="nav" data-arg="grownups">${ico('lock')} Open</button></div>`)}
+    ${sec(5, 'Grown-ups', `<div class="set-r"><span><b>Grown-ups’ page</b><i>Backup, plan, tester mode — behind the PIN.</i></span><button class="btn" data-act="nav" data-arg="grownups">${ico('lock')} Open</button></div>`)}
     <footer class="set-foot"><button class="linkish" data-act="nav" data-arg="privacy">Privacy</button> · <button class="linkish" data-act="nav" data-arg="help">About</button> · Bizzing Geography ${VERSION}</footer>
   </section>`;
 }
@@ -166,7 +166,7 @@ export function viewCollection() {
   if (tab === 'medals') body = medalShelf(k);
   else if (tab === 'worlds') {
     const cur = themeOf(k);
-    body = `<p class="col-intro small">Two worlds are open to everyone; each of the others opens for ${WORLD_PRICE} Bizzing coins or with the family plan, and brings two packs of faces. <button class="linkish" data-act="nav" data-arg="shop">Open the Shop</button></p>
+    body = `<p class="col-intro small"><button class="linkish" data-act="nav" data-arg="shop">Open the Shop</button></p>
       <div class="col-worlds">${THEMES.map((t, i) => { const n = i + 1, open = worldOpen(n, ctx), short = Math.max(0, WORLD_PRICE - c), use = cur === t.id;
         const faces = CATALOGUE.filter((a) => Math.min(6, Math.ceil(a.pack / 2)) === n), mine = faces.filter((a) => ownedAv.includes(a)).length;
         return `<div class="card col-w${open ? ' open' : ''}${use ? ' on' : ''}" data-world="${t.id}"><span class="wt-art" style="background-image:url(art/w${dark() ? 'n' : 'd'}-${t.id}-s.webp)"></span>
@@ -174,7 +174,7 @@ export function viewCollection() {
           ${use ? '<span class="chip">✓ In use</span>' : open ? `<button class="btn small" data-act="theme" data-arg="${t.id}">Use this world</button>`
             : `<span class="muted small">${short ? `${WORLD_PRICE} coins · ${short} more to go` : `${WORLD_PRICE} coins`}</span><button class="btn small${short ? '' : ' primary-o'}" data-act="buyWorld" data-arg="${n}" ${short ? 'aria-disabled="true"' : ''}>${ico('unlock')} Open for ${WORLD_PRICE}</button>`}</div></div>`; }).join('')}</div>`;
   } else {
-    body = `<p class="col-intro small">Commons are free to everyone. Rares are ${TIERS.rare.price} coins, Epics ${TIERS.epic.price}, Legendaries ${TIERS.legendary.price} — once their world is open, and each Legendary first asks for a piece of learning. Nothing is ever drawn by chance. Tap a face to see its card. <button class="linkish" data-act="nav" data-arg="shop">Open the Shop</button></p>
+    body = `<p class="col-intro small">Commons free · Rares ${TIERS.rare.price} · Epics ${TIERS.epic.price} · Legendaries ${TIERS.legendary.price}, after a medal. <button class="linkish" data-act="nav" data-arg="shop">Open the Shop</button></p>
       ${PACKS.map((p) => { const faces = CATALOGUE.filter((a) => a.pack === p.pack), got = faces.filter((a) => ownedAv.includes(a)).length, [c1, c2] = PACK_COL[p.id] || ['#6C4FE0', '#FFC23D'];
         const w = THEMES[Math.min(6, Math.ceil(p.pack / 2)) - 1];
         return `<div class="card col-pack" data-pack="${p.id}" style="--c1:${c1};--c2:${c2}">
@@ -216,7 +216,7 @@ export function viewShop() {
         ${open ? `<span class="chip">${n <= FREE_WORLDS ? 'Open to everyone' : 'Yours'}</span>` : `<span class="muted small">${short ? `${WORLD_PRICE} coins · ${short} more to go` : `${WORLD_PRICE} coins`} · or the family plan</span><button class="btn small${short ? '' : ' primary-o'}" data-act="buyWorld" data-arg="${n}" ${short ? 'aria-disabled="true"' : ''}>${ico('unlock')} Open for ${WORLD_PRICE}</button>`}</div>`; }).join('')}</div>`;
   } else {
     const sh = shopOf(k);
-    body = `<p class="muted small">Looks: the pin you drop in Where on Earth?, the frame round every map, and your ship in Shelly’s Trade Winds. Nothing here changes your rank, your ship’s speed or a lesson — every lesson is already yours.</p>
+    body = `<p class="muted small">Looks only — never your rank, your ship’s speed or a lesson.</p>
       <ul class="shop">${SHOP.map((it) => { const id2 = it.id.split(':')[1], own = sh.owned.includes(it.id), use = sh[it.kind] === id2;
         return `<li class="shop-i${use ? ' on' : ''}"><span class="shop-look ${it.kind}" data-look="${id2}">${it.kind === 'pin' ? pinSwatch(id2) : it.kind === 'ship' ? shipSwatch(id2) : ''}</span><b>${esc(it.name)}</b><span class="muted small">${esc(it.blurb)}</span>
         ${use ? '<span class="chip">In use</span>' : own ? `<button class="btn small" data-act="use" data-arg="${it.id}">Use</button>` : `<button class="btn small" data-act="buy" data-arg="${it.id}" ${c < it.price ? 'aria-disabled="true"' : ''}>${ico('coin')} ${it.price}</button>`}</li>`; }).join('')}</ul>`;
@@ -248,8 +248,7 @@ export function medalShelf(k) {
   const got = (m) => (k.medals || {})[m.id];
   return `<div id="medals" class="md-groups">${medalGroups().map(([name, ms]) => `<section class="card md-group">
       <h2>${esc(name)} <span class="muted small">${ms.filter(got).length}/${ms.length} won</span></h2>
-      <ol class="medal-shelf">${ms.map((m) => { const on = got(m); return `<li class="${on ? 'got' : ''}" title="${esc(m.how)}">${medallion(m, 64, !!on)}<b>${esc(m.name)}</b><span>${esc(m.how)}</span><em class="md-st">${on ? `Won ${esc(on)}` : 'Locked'}</em></li>`; }).join('')}</ol></section>`).join('')}
-    <p class="muted small center-t">Each one is earned by what you did — never by luck, never by days in a row.</p></div>`;
+      <ol class="medal-shelf">${ms.map((m) => { const on = got(m); return `<li class="${on ? 'got' : ''}" title="${esc(m.how)}">${medallion(m, 64, !!on)}<b>${esc(m.name)}</b><span>${esc(m.how)}</span><em class="md-st">${on ? `Won ${esc(on)}` : 'Locked'}</em></li>`; }).join('')}</ol></section>`).join('')}</div>`;
 }
 export const viewMedals = () => `<section class="narrow">${head('Medals')}${medalShelf(kid(R.h))}</section>`;
 
@@ -362,11 +361,11 @@ export function shell(body, { home = false } = {}) {
     active: NAV_ACTIVE(R.ui.nav), coins: k ? balance(k.name) : 0, dark: dark(), query: R.ui.nav === 'search' ? (R.ui.q || '') : '',
     kid: k ? { name: k.name, avatar: `avatars/${k.avatar}.webp` } : { name: 'Explorer' }, inRun: run,
     drawer: { sub: k ? `Level ${k.road.level} · ${rankOf(k.xp).n}` : 'Welcome',
-      app: [{ icon: 'path', label: 'Your journey', sub: 'the ten levels, stop by stop', href: '#/road' },
-        { icon: 'star', label: 'My mistakes', sub: due ? `${due} ready to try again` : 'misses come back after a gap', href: '#/mistakes' },
-        { icon: 'lamp', label: 'Coach', sub: 'what catches you, and the trick that fixes it', href: '#/coach' },
+      app: [{ icon: 'path', label: 'Your journey', href: '#/road' },
+        { icon: 'star', label: 'My mistakes', sub: due ? `${due} ready to try again` : '', href: '#/mistakes' },
+        { icon: 'lamp', label: 'Coach', href: '#/coach' },
         /* the shell takes four rows here: My Feed has one when it is on; Search keeps the top bar's box */
-        ...(feedOn(h) ? [{ icon: 'feed', label: 'My Feed', sub: 'questions and places for today', href: '#/feed' }] : [{ icon: 'search', label: 'Search', sub: 'places, stops, words and tools', href: '#/search' }])] },
+        ...(feedOn(h) ? [{ icon: 'feed', label: 'My Feed', sub: 'questions and places for today', href: '#/feed' }] : [{ icon: 'search', label: 'Search', href: '#/search' }])] },
     content: `${pre}${body}${home ? '' : `<footer class="foot">${FOOT()}</footer>`}`,
   });
   return `<a class="skip" href="#main">Skip to the content</a>

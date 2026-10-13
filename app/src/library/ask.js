@@ -44,8 +44,7 @@ export function panel(tool, q, st) {
     <button class="t-ask-x" data-act="lib" data-arg="${tool}|close" aria-label="Close (Esc)">✕</button>
     <button class="read-btn t-ask-read" data-act="read" data-arg="#ask-q" aria-label="Read the question to me" title="Read the question to me">${ico('sound')}</button>
     <div class="t-ask-h">${q.flag ? `<img src="flags/${q.flag}.svg" alt="" width="54" height="40">` : ''}<div><p class="kicker">${esc(q.kicker || '')}</p><h3 id="ask-q">What is the capital of ${esc(q.name)}?</h3></div></div>
-    ${done ? `<p class="fb ${st.state === 'revealed' ? '' : 'good'}">${st.state === 'right' ? (st.close ? `Right — it’s spelled <b>${esc(q.display)}</b>.` : `Right — <b>${esc(q.display)}</b>.`) : st.state === 'picked' ? `Right — <b>${esc(q.display)}</b>.` : `The capital is <b>${esc(q.display)}</b>.`}</p>${q.note ? `<p class="muted small">${esc(q.note)}</p>` : ''}
-        <p class="muted small">Tap another ${esc(q.unit || 'place')} on the map to keep going.</p>`
+    ${done ? `<p class="fb ${st.state === 'revealed' ? '' : 'good'}">${st.state === 'right' ? (st.close ? `Right — it’s spelled <b>${esc(q.display)}</b>.` : `Right — <b>${esc(q.display)}</b>.`) : st.state === 'picked' ? `Right — <b>${esc(q.display)}</b>.` : `The capital is <b>${esc(q.display)}</b>.`}</p>${q.note ? `<p class="muted small">${esc(q.note)}</p>` : ''}`
       : `<div class="row gap t-ask-row">
           <input id="t-${tool}-ans" class="inp" data-lib-quiet="ans" value="${esc(st.typed || '')}" placeholder="Type the capital…" aria-label="Type the capital of ${esc(q.name)}" autocomplete="off" autocapitalize="words" spellcheck="false">
           <button class="btn primary" data-act="lib" data-arg="${tool}|check">Check <kbd>Enter</kbd></button>

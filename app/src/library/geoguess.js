@@ -124,7 +124,7 @@ export function view(ctx) {
         ${d.best ? `<span class="muted small">Best round <b>${d.best.toLocaleString('en-US')}</b> · ${d.rounds || 0} played</span>` : ''}
       </div>
       <div class="wo-how" id="wo-how" aria-label="How to play"><button class="read-btn" data-act="read" data-arg="#wo-how" aria-label="Read how to play" title="Read how to play">${ico('sound')}</button><span>${ico('eye')} <b>Look</b> at the place</span><span>${ico('map')} <b>Open</b> the map</span><span>${ico('pin')} <b>Pin</b> it, then Guess</span></div>
-      <p class="muted small">Look at the place, open the map in the corner and drop your pin where you think it is — up to 5,000 points a card. ${on ? `Rounds mix <b>real Street View photos</b> (${photoPool('11-14').length.toLocaleString('en-US')} places in ${new Set(photoPool('11-14').map((p) => p.cc)).size} countries, shot by Google) with <b>painted postcards</b> made with an AI image model; every card says which it is.`
+      <p class="muted small">Up to 5,000 points a card. ${on ? `Rounds mix <b>real Street View photos</b> (${photoPool('11-14').length.toLocaleString('en-US')} places in ${new Set(photoPool('11-14').map((p) => p.cc)).size} countries, shot by Google) with <b>painted postcards</b> made with an AI image model; every card says which it is.`
         : `${POSTCARDS.length} painted postcards of real kinds of places, made with an AI image model.${ctx.photosReady ? ' Real photos are switched off on this device (grown-ups’ page).' : ''}`}</p>
     </div>`;
   }
@@ -132,7 +132,7 @@ export function view(ctx) {
     const tot = g.done.reduce((a, x) => a + x.pts, 0);
     const near = g.done.filter((x) => x.km != null && x.km < 1000).length;
     return `<div class="card end-card"><p class="kicker">${g.daily ? 'Today’s place' : g.timed ? 'Timed round complete' : 'Round complete'}</p><h2><span data-count="${tot}">${tot.toLocaleString('en-US')}</span> ${tot === 1 ? 'point' : 'points'}</h2>
-      <p>You read ${g.done.length} ${g.done.length === 1 ? 'place' : 'places'} in ${g.done.length} countries${near ? ` — ${near} within 1,000 km` : ''}. The land, the plants and the buildings were your clues.</p>
+      <p>You read ${g.done.length} ${g.done.length === 1 ? 'place' : 'places'} in ${g.done.length} countries${near ? ` — ${near} within 1,000 km` : ''}.</p>
       <ul class="t-geo-sum">${g.done.map((x) => `<li><b>${esc(x.place)}</b> — ${x.late ? "time ran out" : fmtKm(x.km) + " away"}, ${pts(x.pts)}</li>`).join('')}</ul>
       <div class="row gap center"><button class="btn primary big" data-act="lib" data-arg="geoguess|start">Play again</button><button class="btn big" data-act="lib" data-arg="geoguess|home">Done</button></div></div>`;
   }

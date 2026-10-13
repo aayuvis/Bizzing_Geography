@@ -50,7 +50,7 @@ export function historyOf(id, { owned, ledger = [], wearing, milestone }) {
   const date = (t) => new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
   const lines = [];
   if (!owned) lines.push(a.tier === 'legendary' && milestone ? `Waits for a medal: ${milestone}, then its coins.` : `Not yours yet — ${TIERS[a.tier].price ? `${TIERS[a.tier].price} Bizzing coins in the Shop` : 'free'}.`);
-  else if (buy) lines.push(`Joined your team on ${date(buy.t)} — ${Math.abs(buy.n)} Bizzing coins you earned by learning.`);
+  else if (buy) lines.push(`Joined your team on ${date(buy.t)} — ${Math.abs(buy.n)} Bizzing coins.`);
   else lines.push(a.tier === 'common' ? 'With you from your first day — a free Common.' : 'Yours from before the Shop opened.');
   if (owned && a.tier === 'legendary' && milestone) lines.push(`Unlocked by learning: ${milestone}.`);
   if (wearing) lines.push('You are wearing it now.');

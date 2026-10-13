@@ -125,7 +125,7 @@ export const answerOf = (q) => (q.kind === 'map' ? q.targetName || '' : q.kind =
 /* Shelly's one line, in the child's own terms */
 export function readLine(k) {
   const g = traps(k);
-  if (!Object.keys(k.miss || {}).length) return { pose: 'wave', line: 'Nothing is catching you right now. Every question you miss teaches me how you think — so go and get some wrong, and I will have something to say.' };
+  if (!Object.keys(k.miss || {}).length) return { pose: 'wave', line: 'Nothing is catching you right now. Miss a few, and I will have something to say.' };
   if (!g.length) return { pose: 'think', line: 'Your misses are spread thin — no one kind of question is catching you. That is a good place to be.' };
   const top = g[0], share = Math.round((100 * top.n) / g.reduce((s, x) => s + x.n, 0));
   const qs = top.items.length === 1 ? 'one question' : top.items.length + ' questions';

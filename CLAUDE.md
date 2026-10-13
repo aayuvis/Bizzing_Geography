@@ -131,6 +131,11 @@ Inherited from the family, and it holds here:
   `--land-hl`…) and three self-hosted faces; its living scene is below. `test/themes.mjs` holds each theme × mode to WCAG and
   to a visible coast: land and sea ≥ 55 apart in colour and the sea the bluer — proven by
   breaking it. Light/dark stays the device's; the theme lives on `k.prefs.theme`.
+- **No filler (the owner, 13 Oct 2026).** A screen never narrates its own mechanics or says the obvious
+  ("picked for you… and then it ends", "tap a face to see its card", "nothing is lost for skipping"). A rule is
+  said once, where it acts (coins in the wallet sheet, hints in Help), never on every screen. What stays: the
+  disclosures the rules require (paintings, review notes, privacy, the PIN, Street View, story labels) and an
+  empty state's one line saying what to do.
 - **Never** put a real model identifier in commits, PRs, code, or any pushed artefact.
 
 ## The shape of the app (the family's, harmonised)
@@ -367,7 +372,10 @@ The shared spec every Bizzing app follows. Here it lives in five files:
   kind and stop). `test/feed.mjs` holds each card to its own link — watched to fail on one generic link.
 - **Ranked on the device** by the family engine (`bizzing-feed.js`, vendored) from `src/feed.js`: the child's
   road as `level`, the last stops and expedition, the Library tools opened, the mistakes deck as `due`. A
-  right answer pays one coin, once; nothing else in the feed pays or counts as learning. The engine is the
+  right answer pays one coin, once; nothing else in the feed pays or counts as learning. **Forty a session**
+  (the owner): `feed.js LIMIT`; the v4 shares scale with it (a kind ≤ a fifth, a world's painting 3 in 20, one
+  true/false in 20) and "about one thing" stays at two. The family heading's subtitle and the end card's sentence
+  are dropped here. The engine is the
   family's and is not edited here: `feed.js capSession` takes its ranked order and keeps at most **2 cards
   about one thing, 4 of a kind, 3 from one world's painting and 1 true/false** a session (audit v4: one topic
   was 6 of 20). No card per expedition day (a template), and no card of fewer than three words.

@@ -31,7 +31,7 @@ export function nextStep(k) {
   const due = missDue(k);
   if (due.length >= MISS_FIRST) {
     const st = byId[due[0].q.stop] || (rd.next && byId[rd.next.stop]);
-    return { act: 'practiseMisses', arg: '', kicker: 'your misses are back', title: `${Math.min(10, due.length)} cards to try again`, sub: 'Each one you missed has waited a day. Right now is when it sticks.', art: st ? `w-${st.world}` : 'w-home', glyph: '⏳', ...where };
+    return { act: 'practiseMisses', arg: '', kicker: 'your misses are back', title: `${Math.min(10, due.length)} cards to try again`, sub: 'Back after a day — try them now.', art: st ? `w-${st.world}` : 'w-home', glyph: '⏳', ...where };
   }
   if (rd.next) {
     const s = byId[rd.next.stop], w = worldOf(s.world);
@@ -45,5 +45,5 @@ export function nextStep(k) {
     const st = ed.stop || (ed.stops || [])[0];
     return { act: 'expDay', arg: `${e.id}|${ed.n}`, kicker: `${e.name} · day ${ed.n} of ${es.days}`, title: dayTitle(ed), html: true, sub: e.blurb || '', art: st ? `w-${byId[st].world}` : `crs-${e.id}`, glyph: e.glyph, ...where };
   }
-  return { act: 'openTool', arg: 'geoguess', kicker: 'Every road walked', title: 'Where on Earth?', sub: 'A real place somewhere on Earth. Pin it on the map.', art: 'lib-geoguess', glyph: '🌍', ...where };
+  return { act: 'openTool', arg: 'geoguess', kicker: 'Every road walked', title: 'Where on Earth?', sub: '', art: 'lib-geoguess', glyph: '🌍', ...where };
 }

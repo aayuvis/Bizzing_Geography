@@ -73,7 +73,7 @@ export function viewSearch(q) {
   return `<section class="narrow search-page">
     <header class="phead"><span></span><div class="phead-t"><h1>Search</h1></div><div class="phead-r"></div></header>
     <div class="search-box">${ico('search')}<input id="search-q" class="inp big" data-search value="${esc(q || '')}" placeholder="A country, a capital, a stop, a word…" aria-label="Search places, stops and words" autocomplete="off" autofocus></div>
-    ${!q || q.trim().length < 2 ? says('think', 'Type a country, a state, a city, a landmark, a word like <b>delta</b> — or the name of a stop.') :
+    ${!q || q.trim().length < 2 ? says('think', 'Countries, states, cities, landmarks, words — or a stop.') :
       res.length ? `<p class="muted small" aria-live="polite">${res.length === 40 ? 'The first 40 matches' : `${res.length} ${res.length === 1 ? 'match' : 'matches'}`}</p>
       <ul class="search-res">${res.map((x) => `<li><button class="card sr" data-act="${x.act}" data-arg="${esc(x.arg)}"><span class="sr-g">${gi(x.glyph)}</span><span class="sr-t"><span class="kicker">${x.kind}</span><b>${esc(x.t)}</b><span class="muted small">${esc(x.sub)}</span></span></button></li>`).join('')}</ul>`
       : `<div class="card empty-state">${shelly('sleep', 110)}<p>Nothing called “${esc(q)}” here yet. Try a shorter word, or a country’s name.</p></div>`}
